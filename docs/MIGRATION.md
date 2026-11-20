@@ -39,7 +39,7 @@ and admin tooling are dropped (41).
 |---|---|---|
 | F1 | IK mixes radians and degrees → steps ~57× too small; low IK success rate | Day 114 |
 | F2 | Prismatic joints scaled by π/180 (SCARA Z-lift barely moves) | Day 113 |
-| C1 | Quiz answer key sent by the browser → certificates can be forged | Days 149–153 |
+| C1 | Quiz answer key sent by the browser → certificates can be forged | Days 159–163 |
 | U1 | 1,179-line simulation page wiring 22 hooks | Day 06 |
 | U2 | Many independent animation loops and timers, no shared simulation time | Day 09 |
 | F5 | Robots stored at 3× real size → non-SI physics | Day 113 |
@@ -154,12 +154,12 @@ Tailwind 4 + shadcn/ui, imperative Three.js in one canvas component. **No compon
 | U1 | 🔴 Problem | **One "god" page.** `app/simulation/page.tsx` (1,179 lines) wires 22 hooks together and passes ~24 props into `SimulatorCanvas`. Every new feature makes it bigger. | Panels read/write a shared **Zustand store**; the page only lays out the workspace |
 | U2 | 🔴 Problem | **Many independent clocks.** 6 hooks/components run their own `requestAnimationFrame` loops and there are 23 `setInterval` calls. Nothing shares one simulation time, so IK, trajectories, gripper and collisions can drift apart. | One fixed-step **simulation kernel** (Day 09) drives everything; rendering just reads state |
 | U3 | 🟠 Problem | **Heavy math on the UI thread.** IK animation and benchmarks run on the main thread (commit `e714cdf` added "yielding" to stop freezes). | Solvers and benchmarks run in **Web Workers** |
-| U4 | 🟠 Problem | **Lessons are hard-coded TSX** (10 files, 490–680 lines each), mixing text, quizzes and layout. Hard to edit and impossible to translate to Bangla. | Lessons as **MDX** content with embedded live labs (Days 146–147) |
+| U4 | 🟠 Problem | **Lessons are hard-coded TSX** (10 files, 490–680 lines each), mixing text, quizzes and layout. Hard to edit and impossible to translate to Bangla. | Lessons as **MDX** content with embedded live labs (Days 156–157) |
 | U5 | 🟠 Problem | **Very large panels** (`SensorPanel` 965, `BenchmarkPanel` 872, `WaypointPanel` 837 lines) mix logic and UI. | Logic in packages, panels become thin views; split by tabs |
 | U6 | 🟡 Problem | **Custom sidebar/panel system** (`SidebarStrip`, `usePanelManager`, `useDraggable`): fixed widths, no docking or splitting. | **Dockview** dockable panels + command palette (Day 06) |
 | U7 | ✅ Keep | Tutorial viewers **reuse `SimulatorCanvas`** via `next/dynamic` instead of building new renderers. | Same pattern: lessons embed the real lab |
 | U8 | ✅ Keep | **Panel registry** (`config/panelRegistry.ts`): id, icon, group, keyboard shortcut, default-open. | Becomes the Studio panel registry (plugin-friendly) |
-| U9 | ✅ Keep | Interactive **spotlight tours** with step validation (`TutorialOverlay`). | Ported on Day 150 |
+| U9 | ✅ Keep | Interactive **spotlight tours** with step validation (`TutorialOverlay`). | Ported on Day 160 |
 | U10 | ✅ Keep | Thoughtful UX details: per-panel shortcuts, colour-coded joint ranges, ghost arms, live metric badges. | Carried over into the new panels |
 
 ### B.2 Decision per file
@@ -194,27 +194,27 @@ Tailwind 4 + shadcn/ui, imperative Three.js in one canvas component. **No compon
 
 | Decision | Files | When |
 |---|---|---|
-| Refactor → MDX lessons (text, quizzes and tasks reused) — 10 files | `lessons/Tutorial1` … `Tutorial10` (5,303 lines) | Day 147 |
-| Refactor → embedded lab components — 9 files | `TutorialRobotViewer` · `TutorialFKViewer` · `TutorialDHViewer` · `TutorialIKViewer` · `TutorialSingularityViewer` · `TutorialWorkspaceViewer` · `TutorialTrajectoryViewer` · `TutorialDynamicsViewer` · `TutorialSensorViewer` | Days 146–147 |
-| Refactor — 3 files | `TutorialOverlay` (spotlight tours) · `TutorialGrid` · `TutorialLauncher` | Days 148–150 |
-| Reuse — 2 files | `QuizQuestion` · `theory/MathBlock` (KaTeX) | Day 146 |
+| Refactor → MDX lessons (text, quizzes and tasks reused) — 10 files | `lessons/Tutorial1` … `Tutorial10` (5,303 lines) | Day 157 |
+| Refactor → embedded lab components — 9 files | `TutorialRobotViewer` · `TutorialFKViewer` · `TutorialDHViewer` · `TutorialIKViewer` · `TutorialSingularityViewer` · `TutorialWorkspaceViewer` · `TutorialTrajectoryViewer` · `TutorialDynamicsViewer` · `TutorialSensorViewer` | Days 156–157 |
+| Refactor — 3 files | `TutorialOverlay` (spotlight tours) · `TutorialGrid` · `TutorialLauncher` | Days 158–160 |
+| Reuse — 2 files | `QuizQuestion` · `theory/MathBlock` (KaTeX) | Day 156 |
 
 **Landing site** (15 files)
 
 | Decision | Files | When |
 |---|---|---|
-| Refactor (new brand, all labs) — 10 files | `Hero` · `HeroCanvas` · `Features` · `BenchmarkShowcase` · `Navbar` · `NavLinks` · `MobileMenu` · `Footer` · `SmoothHashScroll` · `SimulatorButton` | Day 10 (v0), Day 166 (final) |
+| Refactor (new brand, all labs) — 10 files | `Hero` · `HeroCanvas` · `Features` · `BenchmarkShowcase` · `Navbar` · `NavLinks` · `MobileMenu` · `Footer` · `SmoothHashScroll` · `SimulatorButton` | Day 10 (v0), Day 176 (final) |
 | Drop → GitHub Discussions / Issues — 4 files | `Reviews` · `ReviewForm` · `StarRating` · `FeedbackForm` | — |
-| Defer — 1 file | `LogoutButton` | Day 151 (optional accounts) |
+| Defer — 1 file | `LogoutButton` | Day 161 (optional accounts) |
 
 **Accounts, dashboards, admin, payment** (24 files)
 
 | Decision | Files | When |
 |---|---|---|
-| Defer (optional accounts) — 3 files | `auth/AuthBackground` · `auth/PasswordField` · `auth/SubmitButton` | Day 151 |
-| Defer (learner profile) — 5 files | `dashboard/ProfileCard` · `TutorialProgressCard` · `TutorialAchievementsCard` · `BenchmarkHistoryCard` · `ResearchExportCard` | Days 151–153 |
+| Defer (optional accounts) — 3 files | `auth/AuthBackground` · `auth/PasswordField` · `auth/SubmitButton` | Day 161 |
+| Defer (learner profile) — 5 files | `dashboard/ProfileCard` · `TutorialProgressCard` · `TutorialAchievementsCard` · `BenchmarkHistoryCard` · `ResearchExportCard` | Days 161–163 |
 | Drop (paid tiers & session limits) — 6 files | `dashboard/PaymentHistoryCard` · `PremiumUsageCard` · `UpgradeCTA` · `SessionWidget` · `SessionHistoryCard` · `payment/PaymentForm` | — |
-| Drop (admin for payments, sessions, reviews) — 10 files | `admin/PaymentManagementPanel` · `ActiveSessionsPanel` · `UserManagementTable` · `AnnouncementComposer` · `FeedbackInboxPanel` · `ReviewModerationPanel` · `OverviewCards` · `RoleDistributionChart` · `SessionsTrendChart` · `TutorialCompletionChart` | — (classroom mode on Day 152 is new) |
+| Drop (admin for payments, sessions, reviews) — 10 files | `admin/PaymentManagementPanel` · `ActiveSessionsPanel` · `UserManagementTable` · `AnnouncementComposer` · `FeedbackInboxPanel` · `ReviewModerationPanel` · `OverviewCards` · `RoleDistributionChart` · `SessionsTrendChart` · `TutorialCompletionChart` | — (classroom mode on Day 162 is new) |
 
 **UI kit** (6 files): `badge` · `button` · `separator` · `slider` · `tabs` · `tooltip`: **Reuse**
 (regenerated with the shadcn CLI on Day 05 so they match the new design tokens).
@@ -243,11 +243,11 @@ libraries (`lib/auth`, `lib/db`, `lib/email`, `lib/certificate`), `src/proxy.ts`
 
 | # | Type | Finding | Studio approach |
 |---|---|---|---|
-| C1 | 🔴 Problem | **Quiz answers are graded with a key sent by the browser.** `submitTutorial()` receives `correctAnswers` from the lesson component, so anyone can send their own key and pass every lesson, which also unlocks the certificate. The code comment calls this safe because it only affects the user's own score, but it does make certificates untrustworthy. | Practice quizzes are graded locally (no account needed). Anything that counts (certificates, classroom grades) is graded on the server with keys that never reach the browser (Days 149–153) |
+| C1 | 🔴 Problem | **Quiz answers are graded with a key sent by the browser.** `submitTutorial()` receives `correctAnswers` from the lesson component, so anyone can send their own key and pass every lesson, which also unlocks the certificate. The code comment calls this safe because it only affects the user's own score, but it does make certificates untrustworthy. | Practice quizzes are graded locally (no account needed). Anything that counts (certificates, classroom grades) is graded on the server with keys that never reach the browser (Days 159–163) |
 | C2 | 🟠 Problem | **Database on every page load.** `proxy.ts` looks up the session in Postgres for `/`, `/landing`, `/simulation`, `/tutorials` and more. A cold or slow database slows down the simulator itself. | Labs and lessons are static and work offline; the session check runs only on account routes |
 | C3 | 🟠 Problem | **Login required to simulate** (sessions, 45-minute limit, cooldown). | Local-first: no login needed for any lab; accounts are optional for cloud save, classes and certificates |
 | C4 | 🟡 Problem | **Paid membership + cron job on Vercel Hobby**, which is for non-commercial use only. | Removed: no payments, no cron |
-| C5 | ✅ Keep | **Strong authentication code:** salted scrypt password hashes, `timingSafeEqual`, SHA-256-hashed session and reset tokens, httpOnly + secure + sameSite cookies, revocable sessions, database-backed rate limits, and a dummy hash so login timing does not reveal which emails exist. | Reused as-is for optional accounts (Day 151) |
+| C5 | ✅ Keep | **Strong authentication code:** salted scrypt password hashes, `timingSafeEqual`, SHA-256-hashed session and reset tokens, httpOnly + secure + sameSite cookies, revocable sessions, database-backed rate limits, and a dummy hash so login timing does not reveal which emails exist. | Reused as-is for optional accounts (Day 161) |
 | C6 | ✅ Keep | **Professional database workflow:** checksummed migrations that refuse to overwrite unknown tables, an idempotent seed, and DB/HTTP tests that clean up after themselves. | Same pattern for the Studio schema |
 | C7 | ✅ Keep | **Server-only database access**, with queries scoped to the signed-in user (`lib/db/query.ts`) and fresh admin checks for privileged actions. | Same rules |
 
@@ -258,30 +258,30 @@ libraries (`lib/auth`, `lib/db`, `lib/email`, `lib/certificate`), `src/proxy.ts`
 | Decision | Files | When |
 |---|---|---|
 | Rewrite — 1 file | `simulation/page.tsx` 1,179 (the god page, U1) | Day 06 (Studio workspace route) |
-| Refactor — 10 files | `layout.tsx` · `globals.css` (→ design tokens) · `page.tsx` · `landing/page.tsx` · `tutorials/page.tsx` · `tutorials/[number]/page.tsx` · `icon.tsx` · `opengraph-image.tsx` · `robots.ts` · `sitemap.ts` | Days 03–10, lessons on Days 146–148 |
-| Defer — 2 files | `dashboard/layout.tsx` · `dashboard/page.tsx` (learner profile) | Day 151 |
+| Refactor — 10 files | `layout.tsx` · `globals.css` (→ design tokens) · `page.tsx` · `landing/page.tsx` · `tutorials/page.tsx` · `tutorials/[number]/page.tsx` · `icon.tsx` · `opengraph-image.tsx` · `robots.ts` · `sitemap.ts` | Days 03–10, lessons on Days 156–158 |
+| Defer — 2 files | `dashboard/layout.tsx` · `dashboard/page.tsx` (learner profile) | Day 161 |
 | Drop — 4 files | `dashboard/premium/page.tsx` · `dashboard/admin/page.tsx` · `payment/page.tsx` · `payment/success/page.tsx` | — |
 
 **Authentication pages** (7 files): `auth/actions.ts` · `auth/layout.tsx` · `auth/login` ·
 `auth/signup` · `auth/forgot-password` · `auth/reset-password` · `auth/verify/route.ts`: **Defer**
-to Day 151 (optional accounts).
+to Day 161 (optional accounts).
 
 **Server actions & API routes** (12 files)
 
 | Decision | Files | When |
 |---|---|---|
-| Defer — 4 files | `actions/tutorial.ts` (fix C1) · `actions/robotDesigns.ts` (→ cloud save of `.rsim` projects) · `actions/dashboard.ts` · `api/certificate/route.ts` | Days 151–153 |
+| Defer — 4 files | `actions/tutorial.ts` (fix C1) · `actions/robotDesigns.ts` (→ cloud save of `.rsim` projects) · `actions/dashboard.ts` · `api/certificate/route.ts` | Days 161–163 |
 | Drop — 8 files | `actions/admin.ts` · `actions/payment.ts` · `actions/premium.ts` · `actions/membership.ts` · `actions/session.ts` · `actions/reviews.ts` · `actions/feedback.ts` · `api/cron/expiry-warning/route.ts` | — |
 
-**Server libraries, proxy, database, scripts** (20 files): all **Defer** to Day 151, when optional
+**Server libraries, proxy, database, scripts** (20 files): all **Defer** to Day 161, when optional
 accounts arrive. They are high quality (C5–C7) and come back almost unchanged.
 
-| Group | Files | Notes for Day 151 |
+| Group | Files | Notes for Day 161 |
 |---|---|---|
 | Auth | `lib/auth/core.ts` · `crypto.ts` · `session.ts` · `proxy.ts` · `admin-guard.ts` | Remove membership checks from `core.ts`; admin → teacher role |
 | Database | `lib/db/query.ts` · `schema.ts` · `server.ts` · `service.ts` · `sql.ts` | Same Neon client |
 | Email | `lib/email/resend.ts` · `send.ts` · `templates.ts` | Keep verify/reset templates; drop payment templates |
-| Certificate | `lib/certificate/generateCertificate.tsx` | Day 153; only for server-graded completions |
+| Certificate | `lib/certificate/generateCertificate.tsx` | Day 163; only for server-graded completions |
 | Route guard | `src/proxy.ts` | Matcher limited to account routes (C2) |
 | Schema | `database/001_initial.sql` | New schema: keep users, profiles, auth sessions/tokens, rate limits, tutorial progress, designs (→ projects); add classes; drop payments, memberships, session limits, simulation sessions, reviews, feedback |
 | Scripts | `scripts/migrate.ts` · `seed.ts` · `test-db.ts` · `test-http.ts` | Same workflow, new schema |
@@ -296,11 +296,11 @@ accounts arrive. They are high quality (C5–C7) and come back almost unchanged.
 
 | File | Lines | Decision | When | Notes |
 |---|---:|---|---|---|
-| `theoryContent.ts` | 300 | Reuse | Day 146 | KaTeX formula cards → theory reference for every lab |
+| `theoryContent.ts` | 300 | Reuse | Day 156 | KaTeX formula cards → theory reference for every lab |
 | `challengeContent.ts` | 165 | Reuse | Days 91, 128 | Challenge definitions for the 2D/3D challenge system |
 | `panelRegistry.ts` | 262 | Refactor | Day 06 | Studio panel registry (U8) |
-| `tutorials.ts` | 187 | Refactor | Day 147 | Lesson metadata → MDX front-matter |
-| `tutorialContent.ts` | 159 | Refactor | Day 147 | Same; quiz keys move server-side (C1) |
+| `tutorials.ts` | 187 | Refactor | Day 157 | Lesson metadata → MDX front-matter |
+| `tutorialContent.ts` | 159 | Refactor | Day 157 | Same; quiz keys move server-side (C1) |
 
 ### D.2 Project configuration (root, 15 files)
 
@@ -314,7 +314,7 @@ accounts arrive. They are high quality (C5–C7) and come back almost unchanged.
 | `pnpm-workspace.yaml` | Refactor (Day 03) | Add workspace packages; keep `allowBuilds` |
 | `AGENTS.md` | Reuse (Day 03) | Important warning that Next.js 16 differs from older docs: read `node_modules/next/dist/docs/` first |
 | `CLAUDE.md` | Merged | Its only line (`@AGENTS.md`) goes into the Studio `CLAUDE.md` |
-| `.env.example` | Defer (Day 151) | Database and email variables, only when accounts arrive |
+| `.env.example` | Defer (Day 161) | Database and email variables, only when accounts arrive |
 | `vercel.json` | Drop | Only held the expiry-warning cron |
 | `README.md` · `LICENSE` · `.gitignore` | Replaced | Already written for Studio on Day 01 |
 | `next-env.d.ts` | Generated | Created by Next.js |
@@ -339,8 +339,8 @@ accounts arrive. They are high quality (C5–C7) and come back almost unchanged.
 |---|---|---|
 | Fixing F1/F2/F5 changes IK and benchmark numbers, so old RoboSim results (README, landing page, commit notes) are not comparable | Medium | Re-baseline benchmarks with seeded runs on Day 128; label old numbers as "RoboSim v1" |
 | Porting happens late (Days 111–128) and the old code may change before then | Low | Port from a fixed commit (`392b140`) unless the owner says otherwise; re-audit diffs if RoboSim changes |
-| Lessons were written for the old UI; wording refers to old panels and controls | Low | Update text while converting to MDX (Day 147) |
-| Optional accounts return on Day 151 with a new schema; old RoboSim users are not migrated | Low | Studio is a new product; RoboSim stays online as-is |
+| Lessons were written for the old UI; wording refers to old panels and controls | Low | Update text while converting to MDX (Day 157) |
+| Optional accounts return on Day 161 with a new schema; old RoboSim users are not migrated | Low | Studio is a new product; RoboSim stays online as-is |
 
 ### Owner decisions for the old RoboSim (not part of the Studio plan)
 These concern `E:\My Projects\robosim` and the live site robosim-bd.vercel.app. **Nothing here is done

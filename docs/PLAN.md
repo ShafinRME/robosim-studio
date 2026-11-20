@@ -1,6 +1,6 @@
 # RoboSim Studio — Development Plan
 
-180 work sessions ("Days") in 12 phases, 5 sessions per week (Sun–Thu) starting 2026-11-22.
+190 work sessions ("Days") in 13 phases, 5 sessions per week (Sun–Thu) starting 2026-11-22.
 Dates are targets: if a session is missed, later dates shift. Every phase ends in a deployed, tested release.
 
 | Phase | Name | Days | Release |
@@ -14,9 +14,10 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | P6 | Control & Power Electronics Lab | 96–110 | v0.6 — Control & Power |
 | P7 | 3D Robotics Lab | 111–132 | v0.7 — 3D Robotics |
 | P8 | ROS Lab | 133–145 | v0.8 — ROS Lab |
-| P9 | Learning Platform | 146–158 | v0.9 — Public beta |
-| P10 | Hardening & v1.0 Launch | 159–170 | v1.0 — Public launch |
-| P11 | Research Paper & Evaluation | 171–180 | Paper submitted |
+| P9 | Gesture Control Lab | 146–155 | v0.9 — Gesture Control |
+| P10 | Learning Platform | 156–168 | v0.10 — Public beta |
+| P11 | Hardening & v1.0 Launch | 169–180 | v1.0 — Public launch |
+| P12 | Research Paper & Evaluation | 181–190 | Paper submitted |
 
 ## P0 · Foundation (Days 1–10)
 
@@ -26,7 +27,7 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | Day | Date | Focus | Tasks | Done when |
 |---|---|---|---|---|
 | 01 | 2026-11-22 | RoboSim audit (read-only) | Read the original RoboSim repo (read-only). Inventory every module as Reuse / Refactor / Drop. Write MIGRATION.md (what moves into which package). The original RoboSim repo is never modified. | MIGRATION.md lists all 236 files with a decision |
-| 02 | 2026-11-23 | Product spec | Write PRD.md: vision, target users (school, university, self-learners, teachers), the 9 labs, supported boards, non-goals, success metrics. Pick MIT license. Create the new GitHub repo robosim-studio. | PRD reviewed and committed; repo public |
+| 02 | 2026-11-23 | Product spec | Write PRD.md: vision, target users (school, university, self-learners, teachers), the 10 labs, supported boards, non-goals, success metrics. Pick MIT license. Create the new GitHub repo robosim-studio. | PRD reviewed and committed; repo public |
 | 03 | 2026-11-24 | Monorepo scaffold | pnpm workspaces + Turborepo; apps/web (Next.js 16, React 19, TS strict); packages/core, ui; ESLint, Prettier, Tailwind 4, shadcn/ui. Same versions as RoboSim so code ports cleanly. | pnpm dev runs; pnpm build passes |
 | 04 | 2026-11-25 | CI/CD & quality gates | GitHub Actions: lint, typecheck, Vitest, Playwright smoke, build. Vercel preview deploy per PR. Branches: main / develop / feat/*. Conventional commits + changesets for versioning. | Green CI on a test PR with preview URL |
 | 05 | 2026-11-26 | Design system | Design tokens (color, spacing, type), dark/light theme, icon set, refreshed logo, panel/toolbar/inspector components in packages/ui. | UI kit page renders all components |
@@ -63,7 +64,7 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | 28 | 2026-12-29 | SPICE engine | ngspice compiled to WebAssembly: netlist export, DC sweep, AC analysis, Bode plot. | Same circuit: MNA vs SPICE agree |
 | 29 | 2026-12-30 | Export | SPICE netlist, schematic PNG/SVG, BOM CSV. | Exports open in LTspice/KiCad viewers |
 | 30 | 2026-12-31 | Example gallery | 15 example circuits (Ohm's law → op-amp filter), each with an automated validation test. | All examples tested in CI |
-| 31 | 2027-01-03 | Cross-device test | Chrome, Edge, Firefox, Safari; 4 GB RAM laptop; tablet. Fix performance issues. | 60 fps editing on low-end laptop |
+| 31 | 2027-01-03 | Cross-device test | Chrome, Edge, Firefox, Safari on Windows, macOS and Linux; 8 GB RAM laptop with integrated graphics. Fix performance issues. | 60 fps editing on low-end laptop |
 | 32 | 2027-01-04 | Release v0.1 | Changelog, docs page, tag release, deploy. Phase review & plan adjustment. | v0.1 live |
 
 ## P2 · Microcontroller Lab: Arduino & Raspberry Pi Pico (Days 33–50)
@@ -158,7 +159,7 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | 91 | 2027-03-28 | Challenges | Maze, line race, mini-sumo: scoring, timer, replay. | Challenge replay works |
 | 92 | 2027-03-29 | Multi-robot | Several robots, each with its own MCU. | Two robots in one world |
 | 93 | 2027-03-30 | Examples & tests | 15 robot examples; deterministic replay tests in CI. | CI green |
-| 94 | 2027-03-31 | Performance | Low-end tuning, physics rate control. | 30 fps on 4 GB laptop |
+| 94 | 2027-03-31 | Performance | Low-end tuning, physics rate control. | 30 fps on 8 GB laptop |
 | 95 | 2027-04-01 | Release v0.5 | Docs, changelog, deploy, phase review. | v0.5 live |
 
 ## P6 · Control & Power Electronics Lab (Days 96–110)
@@ -207,11 +208,11 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | 124 | 2027-05-12 | Computer vision | OpenCV.js in Worker: color tracking, ArUco markers. | Robot follows a colored ball |
 | 125 | 2027-05-13 | Quadcopter control | Cascaded PID, attitude estimation (complementary filter). | Stable hover & waypoint |
 | 126 | 2027-05-16 | MuJoCo spike | Evaluate MuJoCo WebAssembly for research-grade contacts. Go / no-go. | Spike report |
-| 127 | 2027-05-17 | Performance | Instancing, LOD, shadow quality tiers, optional WebGPU renderer flag. | 30 fps on 4 GB laptop |
+| 127 | 2027-05-17 | Performance | Instancing, LOD, shadow quality tiers, optional WebGPU renderer flag. | 30 fps on 8 GB laptop |
 | 128 | 2027-05-18 | Benchmarks port | IK, workspace, smoothness, manipulability benchmark suite. | JSON reports |
 | 129 | 2027-05-19 | Examples | 15 3D examples. | All load in < 3 s |
 | 130 | 2027-05-20 | Visual tests | Playwright screenshot tests for 3D scenes. | CI green |
-| 131 | 2027-05-23 | Cross-device test | Browsers, laptops, tablet. | Issues fixed |
+| 131 | 2027-05-23 | Cross-device test | Browsers, desktops and laptops (Windows, macOS, Linux). | Issues fixed |
 | 132 | 2027-05-24 | Release v0.7 | Docs, changelog, deploy, phase review. | v0.7 live |
 
 ## P8 · ROS Lab (Days 133–145)
@@ -235,62 +236,80 @@ Dates are targets: if a session is missed, later dates shift. Every phase ends i
 | 144 | 2027-06-09 | Examples & tests | 10 ROS examples. | CI green |
 | 145 | 2027-06-10 | Release v0.8 | Docs, changelog, deploy, phase review. | v0.8 live |
 
-## P9 · Learning Platform (Days 146–158)
+## P9 · Gesture Control Lab (Days 146–155)
 
-**Goal:** Turn the labs into a structured course with lessons, tasks, accounts and classrooms.  
-**Milestone:** v0.9 — Public beta
+**Goal:** Move simulated and real robot arms, mobile robots and drones in real time with hand and body gestures from a webcam.  
+**Milestone:** v0.9 — Gesture Control
 
 | Day | Date | Focus | Tasks | Done when |
 |---|---|---|---|---|
-| 146 | 2027-06-13 | Lesson engine | MDX lessons with embedded live labs, step validation, local progress. | Sample lesson works offline |
-| 147 | 2027-06-14 | Port RoboSim tutorials | Move the 10 existing tutorials into the new format. | 10 lessons live |
-| 148 | 2027-06-15 | Curriculum map | Tracks: Electronics → Arduino → ESP32/IoT → Robots → Control → Power → 3D → ROS → Advanced. | Course map page |
-| 149 | 2027-06-16 | Auto-graded tasks | Quiz engine + task checks (pin traces, robot position, controller performance). | Tasks grade automatically |
-| 150 | 2027-06-17 | Guided tours | Port spotlight tours to new UI. | 3 tours |
-| 151 | 2027-06-20 | Optional accounts | Reuse RoboSim's Neon auth (scrypt, sessions); cloud save; public project gallery. Labs still work without login. | Login optional, tested |
-| 152 | 2027-06-21 | Classroom mode | Teachers create classes and assignments, view submissions. | End-to-end class test |
-| 153 | 2027-06-22 | Certificates | Port PDF certificate generator. | Certificate downloads |
-| 154 | 2027-06-23 | Bangla + English | i18n for UI and lessons. | Language switch |
-| 155 | 2027-06-24 | Accessibility | WCAG 2.1 AA audit, keyboard navigation, screen-reader labels. | Audit issues fixed |
-| 156 | 2027-06-27 | Documentation site | User guide, developer docs, component-authoring guide (Fumadocs). | docs site live |
-| 157 | 2027-06-28 | Flagship lessons | 10 new lessons covering ESP32, robots, control. | 20 lessons total |
-| 158 | 2027-06-29 | Release v0.9 beta | Invite 20–30 beta testers (students, juniors, teachers). | Beta live |
+| 146 | 2027-06-13 | Gesture lab ADR | Pipeline: webcam → landmark model → filter → gesture/pose → mapping → safety layer → target (sim robot, real robot or ROS topic). Latency budget (< 100 ms camera-to-motion), privacy rule (video is processed only in the browser, never uploaded), Low-end fallback. | ADR-005 committed |
+| 147 | 2027-06-14 | Live video & tracking | getUserMedia camera picker; MediaPipe Tasks Vision (Apache-2.0) Hand + Pose Landmarker running in a Worker (WASM/WebGL); live skeleton overlay on the video; FPS and latency meter; Low-end mode (lower resolution, hands only). | 21 hand + 33 body landmarks tracked live at ≥ 15 fps on an 8 GB laptop |
+| 148 | 2027-06-15 | Gestures & calibration | One Euro filter for smooth, low-lag landmarks; calibration (neutral pose, arm length, camera distance); static gestures (open hand, fist, pinch, point) and dynamic gestures (swipe, circle); confidence thresholds. | Gesture recogniser ≥ 95% on a recorded test set |
+| 149 | 2027-06-16 | Arm teleoperation | Two modes: Cartesian (hand position → end-effector target via the IK from Day 114) and Mimic (shoulder/elbow/wrist angles → robot joint angles). Pinch → gripper; workspace scaling; clutch gesture to re-centre. | Pick-and-place with gestures on the 3D UR5 and a 4-DOF servo arm |
+| 150 | 2027-06-17 | Mobile robots, drones & ROS | Body/hand pose → /cmd_vel for 2D and 3D mobile robots; gesture commands for the quadcopter (take off, land, move, hover); gestures published as ROS topics (/gesture, /cmd_vel, /joint_trajectory). | Rover and drone driven by gestures; topics visible in the ROS Lab |
+| 151 | 2027-06-20 | Safety layer | Deadman rule (hand lost or low confidence → smooth stop), velocity/acceleration/joint limits, virtual workspace fence, e-stop key and on-screen e-stop, rate limiting of commands. Unit tests for every rule. | All safety tests pass; robot stops within 200 ms when the hand leaves the frame |
+| 152 | 2027-06-21 | Real robot bridge | Web Serial (Chrome/Edge) to Arduino/ESP32 servo or stepper arms with our open firmware and command protocol; ESP32 over Wi-Fi WebSocket; same safety layer for real hardware; end-to-end latency measurement. | A real low-cost servo arm follows the hand in real time |
+| 153 | 2027-06-22 | Real-time robot video & digital twin | Second video stream of the real robot (ESP32-CAM MJPEG, phone camera via WebRTC, or USB webcam) shown next to the simulated twin; twin follows the real joint feedback; real ROS 2 robots via rosbridge (Day 139). | Gesture video, robot video and 3D twin run side by side in one workspace |
+| 154 | 2027-06-23 | Record, replay & tests | Record gesture sessions as robot trajectories; replay on sim or real robot; export CSV/JSON datasets (learning-from-demonstration). CI uses recorded landmark files instead of a camera. 8 gesture examples. | CI green with recorded-landmark tests |
+| 155 | 2027-06-24 | Release v0.9 | Docs (including a low-cost servo-arm build guide and camera privacy note), changelog, deploy, phase review. | v0.9 live |
 
-## P10 · Hardening & v1.0 Launch (Days 159–170)
+## P10 · Learning Platform (Days 156–168)
+
+**Goal:** Turn the labs into a structured course with lessons, tasks, accounts and classrooms.  
+**Milestone:** v0.10 — Public beta
+
+| Day | Date | Focus | Tasks | Done when |
+|---|---|---|---|---|
+| 156 | 2027-06-27 | Lesson engine | MDX lessons with embedded live labs, step validation, local progress. | Sample lesson works offline |
+| 157 | 2027-06-28 | Port RoboSim tutorials | Move the 10 existing tutorials into the new format. | 10 lessons live |
+| 158 | 2027-06-29 | Curriculum map | Tracks: Electronics → Arduino → ESP32/IoT → Robots → Control → Power → 3D → ROS → Gesture Control → Advanced. | Course map page |
+| 159 | 2027-06-30 | Auto-graded tasks | Quiz engine + task checks (pin traces, robot position, controller performance). | Tasks grade automatically |
+| 160 | 2027-07-01 | Guided tours | Port spotlight tours to new UI. | 3 tours |
+| 161 | 2027-07-04 | Optional accounts | Reuse RoboSim's Neon auth (scrypt, sessions); cloud save; public project gallery. Labs still work without login. | Login optional, tested |
+| 162 | 2027-07-05 | Classroom mode | Teachers create classes and assignments, view submissions. | End-to-end class test |
+| 163 | 2027-07-06 | Certificates | Port PDF certificate generator. | Certificate downloads |
+| 164 | 2027-07-07 | Bangla + English | i18n for UI and lessons. | Language switch |
+| 165 | 2027-07-08 | Accessibility | WCAG 2.1 AA audit, keyboard navigation, screen-reader labels. | Audit issues fixed |
+| 166 | 2027-07-11 | Documentation site | User guide, developer docs, component-authoring guide (Fumadocs). | docs site live |
+| 167 | 2027-07-12 | Flagship lessons | 10 new lessons covering ESP32, robots, control. | 20 lessons total |
+| 168 | 2027-07-13 | Release v0.10 beta | Invite 20–30 beta testers (students, juniors, teachers). | Beta live |
+
+## P11 · Hardening & v1.0 Launch (Days 169–180)
 
 **Goal:** Production quality: fast, secure, documented, open-source ready.  
 **Milestone:** v1.0 — Public launch
 
 | Day | Date | Focus | Tasks | Done when |
 |---|---|---|---|---|
-| 159 | 2027-06-30 | Beta triage | Collect and prioritise feedback (GitHub issues). | Prioritised backlog |
-| 160 | 2027-07-01 | Bug-fix sprint 1 | Top-priority bugs. | P0 bugs = 0 |
-| 161 | 2027-07-04 | Bug-fix sprint 2 | Remaining P1 bugs. | P1 bugs = 0 |
-| 162 | 2027-07-05 | Performance budget | Lazy-load each lab and WASM, bundle splitting, Lighthouse. | First load < 3 s on 4G |
-| 163 | 2027-07-06 | Security | Compile-service sandbox (no network, CPU/memory/time limits), CSP, rate limits, dependency audit. | Security checklist passed |
-| 164 | 2027-07-07 | Observability | Sentry (free), Vercel Analytics, uptime monitor + keep-warm for Render. | Alerts working |
-| 165 | 2027-07-08 | Open-source readiness | CONTRIBUTING, Code of Conduct, issue/PR templates, plugin API docs. | First external PR possible |
-| 166 | 2027-07-11 | Professional website | Landing page, demos, screenshots, CITATION.cff, Zenodo DOI. | Citable software |
-| 167 | 2027-07-12 | Launch assets | Demo video, screenshots, README, press kit. | Assets ready |
-| 168 | 2027-07-13 | v1.0 release | Tag, deploy, announce. | v1.0 live |
-| 169 | 2027-07-14 | Post-launch fixes | Hotfixes from launch traffic. | Stable |
-| 170 | 2027-07-15 | Retrospective | What worked, roadmap v2 (instruction-level ESP32, MuJoCo, humanoids, RL). | ROADMAP-v2.md |
+| 169 | 2027-07-14 | Beta triage | Collect and prioritise feedback (GitHub issues). | Prioritised backlog |
+| 170 | 2027-07-15 | Bug-fix sprint 1 | Top-priority bugs. | P0 bugs = 0 |
+| 171 | 2027-07-18 | Bug-fix sprint 2 | Remaining P1 bugs. | P1 bugs = 0 |
+| 172 | 2027-07-19 | Performance budget | Lazy-load each lab and WASM, bundle splitting, Lighthouse. | First load < 3 s on 4G |
+| 173 | 2027-07-20 | Security | Compile-service sandbox (no network, CPU/memory/time limits), CSP, rate limits, dependency audit. | Security checklist passed |
+| 174 | 2027-07-21 | Observability | Sentry (free), Vercel Analytics, uptime monitor + keep-warm for Render. | Alerts working |
+| 175 | 2027-07-22 | Open-source readiness | CONTRIBUTING, Code of Conduct, issue/PR templates, plugin API docs. | First external PR possible |
+| 176 | 2027-07-25 | Professional website | Landing page, demos, screenshots, CITATION.cff, Zenodo DOI. | Citable software |
+| 177 | 2027-07-26 | Launch assets | Demo video, screenshots, README, press kit. | Assets ready |
+| 178 | 2027-07-27 | v1.0 release | Tag, deploy, announce. | v1.0 live |
+| 179 | 2027-07-28 | Post-launch fixes | Hotfixes from launch traffic. | Stable |
+| 180 | 2027-07-29 | Retrospective | What worked, roadmap v2 (instruction-level ESP32, MuJoCo, humanoids, RL). | ROADMAP-v2.md |
 
-## P11 · Research Paper & Evaluation (Days 171–180)
+## P12 · Research Paper & Evaluation (Days 181–190)
 
 **Goal:** Turn the software into a peer-reviewed publication — the strongest signal for PhD offers.  
 **Milestone:** Paper submitted
 
 | Day | Date | Focus | Tasks | Done when |
 |---|---|---|---|---|
-| 171 | 2027-07-18 | Study design | Pre/post knowledge test + usability survey (SUS) for beta users; ethics/consent form. | Study protocol |
-| 172 | 2027-07-19 | Run study | Collect data from learners (target ≥ 30). | Data collected |
-| 173 | 2027-07-20 | Technical evaluation | Solver accuracy vs SPICE/MATLAB, timing accuracy of MCU emulation, performance across devices. | Tables & figures |
-| 174 | 2027-07-21 | Paper: intro & related work | Position vs Tinkercad, Wokwi, Gazebo, Webots, CoppeliaSim. | Sections drafted |
-| 175 | 2027-07-22 | Paper: architecture | Signal Bus, co-simulation, ESP32 API-level emulation, browser-only design. | Section drafted |
-| 176 | 2027-07-25 | Paper: results | Study + technical results, limitations. | Section drafted |
-| 177 | 2027-07-26 | Paper: polish | Abstract, figures, references (IEEE format). | Full draft |
-| 178 | 2027-07-27 | Review | Ask a senior researcher to review; revise. | Revised draft |
-| 179 | 2027-07-28 | arXiv + submission | Submit to IEEE Trans. on Education / Computer Applications in Engineering Education / IEEE FIE. | Submitted |
-| 180 | 2027-07-29 | Hand-off to content phase | Start the weekly lesson series built on v1.0. | Season 1 calendar ready |
+| 181 | 2027-08-01 | Study design | Pre/post knowledge test + usability survey (SUS) for beta users; ethics/consent form. | Study protocol |
+| 182 | 2027-08-02 | Run study | Collect data from learners (target ≥ 30). | Data collected |
+| 183 | 2027-08-03 | Technical evaluation | Solver accuracy vs SPICE/MATLAB, timing accuracy of MCU emulation, gesture-control latency and tracking accuracy, performance across devices. | Tables & figures |
+| 184 | 2027-08-04 | Paper: intro & related work | Position vs Tinkercad, Wokwi, Gazebo, Webots, CoppeliaSim. | Sections drafted |
+| 185 | 2027-08-05 | Paper: architecture | Signal Bus, co-simulation, ESP32 API-level emulation, browser-only gesture teleoperation with a safety layer, browser-only design. | Section drafted |
+| 186 | 2027-08-08 | Paper: results | Study + technical results, limitations. | Section drafted |
+| 187 | 2027-08-09 | Paper: polish | Abstract, figures, references (IEEE format). | Full draft |
+| 188 | 2027-08-10 | Review | Ask a senior researcher to review; revise. | Revised draft |
+| 189 | 2027-08-11 | arXiv + submission | Submit to IEEE Trans. on Education / Computer Applications in Engineering Education / IEEE FIE. | Submitted |
+| 190 | 2027-08-12 | Hand-off to content phase | Start the weekly lesson series built on v1.0. | Season 1 calendar ready |
 

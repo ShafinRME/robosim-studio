@@ -1,8 +1,11 @@
 # RoboSim Studio — instructions for Claude Code
 
 Free, open-source (MIT), browser-based robotics lab: circuits, Arduino / ESP32 / Pico emulation,
-sensors, control, power electronics, 2D/3D physics simulation and ROS 2, beginner to advanced.
-Runs on any computer in a browser; built only with free tools; deployed on free tiers (Vercel, Render).
+sensors, control, power electronics, 2D/3D physics simulation, ROS 2 and real-time gesture control
+of simulated and real robots, beginner to advanced.
+Runs on any desktop or laptop in a browser; built with free tools; deployed on free tiers (Vercel, Render).
+Budget: up to ~3,000 BDT (≈ US$25) per month if a free tier is not enough — mainly after development is
+complete; always ask the owner before suggesting any paid service.
 
 ## Start of every session
 1. Read `docs/STATUS.md` (where we are) and the current Day in `docs/PLAN.md`.
@@ -34,14 +37,16 @@ Runs on any computer in a browser; built only with free tools; deployed on free 
 ## Quality bar
 - TypeScript strict, no `any`; lint + typecheck + tests green before any merge.
 - Unit tests for all logic (solvers, emulators, kinematics); every example gets an automated test.
-- Heavy simulation runs in Web Workers; must stay usable on a 4 GB RAM laptop (Low-end mode).
+- Heavy simulation runs in Web Workers; must stay usable on an 8 GB RAM laptop with
+  integrated graphics (Low-end mode). Target devices: desktops and laptops only — no phone/tablet UI.
 - Only MIT / Apache-2.0 / BSD dependencies. Our own visual design — never copy other products' assets.
 - Significant decisions are recorded as ADRs in `docs/adr/NNN-title.md`.
 
 ## Docs map
 | File | Purpose |
 |---|---|
-| `docs/PLAN.md` | 180-day plan (12 phases), source of truth for each Day's scope |
+| `docs/PRD.md` | Product spec: vision, users, the 10 labs, boards, non-goals, metrics |
+| `docs/PLAN.md` | 190-day plan (13 phases), source of truth for each Day's scope. Generated from the owner's plan source: never edit by hand |
 | `docs/STATUS.md` | Handoff note: current Day/step, next action, open issues |
 | `docs/DEVLOG.md` | One short entry per finished Day |
 | `docs/MIGRATION.md` | What we reuse / refactor / drop from the original RoboSim (Day 01) |
