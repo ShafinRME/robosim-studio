@@ -9,6 +9,16 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 04 — CI/CD & quality gates (2026-11-21)
+- Built: Vitest unit tests; Playwright browser smoke tests; GitHub Actions CI (format, lint, typecheck,
+  unit tests, build + e2e on the production build); Conventional Commits PR-title check; PR template;
+  Changesets (fixed `@robosim/*` versions); Vercel project with a preview URL on every PR and
+  production = `main` only (robosim-studio-lemon.vercel.app); branch protection on `develop` and `main`.
+- Learned: pushing workflow files needs the `workflow` scope on the GitHub CLI token; things installed
+  outside the repo (Playwright browsers) must be installed from the owner's own terminal; `pnpm add`
+  crashes a running dev server, so stop it first; the new title check immediately caught our own PR title.
+- Next: Day 05 — Design system (our own tokens, theme, icons, logo, panel/toolbar components).
+
 ## Day 03 — Monorepo scaffold (2026-11-21)
 - Built: pnpm + Turborepo monorepo; `apps/web` (Next.js 16.2, React 19.2, strict TS, port 3100);
   `packages/core` (framework-free, lists the 10 labs) and `packages/ui` (shadcn Button, `cn`, theme CSS);
