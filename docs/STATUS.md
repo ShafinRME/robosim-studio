@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 05 — Design system · Step 5/8 done, waiting for owner check
+**Current:** Day 05 — Design system · Step 6/8 done, waiting for owner check
 **Branch:** `feat/day-05-design-system` — draft PR into `develop` (CI runs on every push)
 **Session:** Days 02–05 in one session; Day 05 ends the block → Day 06 starts a new session
 **Updated:** 2026-11-21
@@ -13,8 +13,8 @@
 | 3/8 | Dark / light / system theme with a theme switcher (very digital look) | ✅ done |
 | 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ✅ done |
 | 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ✅ done |
-| 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ⏳ next |
-| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ⬜ |
+| 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ✅ done |
+| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ⏳ next |
 | 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ⬜ |
 
 ## Decisions (Day 05)
@@ -36,10 +36,14 @@
   Button (6 variants, 3 sizes) + IconButton (label required), Input, Select, Switch, Slider, Tabs
   (instrument strip), Tooltip (+ provider in layout), Badge (status LED), Kbd, Separator, and
   **NumberField** with engineering units (`parseSI`/`formatSI`/`clampStep` in `@robosim/core`, 38 tests).
+- Workspace components: **Panel** (header with icon/meta/actions, body, footer, bezel highlight), **Toolbar**
+  (Radix roving focus — one Tab stop, ←/→ between tools; toggle groups; tooltips with shortcuts),
+  **Inspector** (collapsible property grid, label↔control linking, live read-only values). `animate-flow`
+  utility for current flow along wires. UI kit has a live LED-circuit workspace demo (12 e2e tests).
 - Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
 ## Next action
-Owner tries the Controls section on http://localhost:3100/ui-kit, then says "next" → Day 05 · Step 6/8.
+Owner tries the Workspace demo on http://localhost:3100/ui-kit, then says "next" → Day 05 · Step 7/8.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

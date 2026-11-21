@@ -191,6 +191,16 @@
 
 /* ---------- Digital surfaces ---------- */
 
+/* Current flow along a wire: use with stroke-dasharray, e.g. "2 10". */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@utility animate-flow {
+  animation: flow 0.9s linear infinite;
+}
+
 /* Blueprint canvas: fine dot grid every 16 px with a faint major line every 80 px. */
 @utility bg-blueprint {
   background-color: var(--canvas);

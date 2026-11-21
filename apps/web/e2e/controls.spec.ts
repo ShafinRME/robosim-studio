@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 test.describe("UI kit controls", () => {
   test("engineering number field accepts SI prefixes and rejects nonsense", async ({ page }) => {
     await page.goto("/ui-kit");
-    const resistance = page.getByRole("spinbutton", { name: "Resistance" });
-    const current = page.locator("output");
+    const resistance = page.locator("#controls").getByRole("spinbutton", { name: "Resistance" });
+    const current = page.locator("#controls output");
 
     await resistance.fill("10k");
     await resistance.press("Enter");
@@ -22,7 +22,7 @@ test.describe("UI kit controls", () => {
 
   test("arrow keys step the value, Shift steps ×10", async ({ page }) => {
     await page.goto("/ui-kit");
-    const supply = page.getByRole("spinbutton", { name: "Supply" });
+    const supply = page.locator("#controls").getByRole("spinbutton", { name: "Supply" });
     await supply.focus();
     await supply.press("ArrowUp");
     await expect(supply).toHaveValue("5.1");
@@ -32,12 +32,12 @@ test.describe("UI kit controls", () => {
 
   test("switch and run button toggle state", async ({ page }) => {
     await page.goto("/ui-kit");
-    const snap = page.getByRole("switch").first();
+    const snap = page.locator("#controls").getByRole("switch").first();
     await expect(snap).toHaveAttribute("aria-checked", "true");
     await snap.click();
     await expect(snap).toHaveAttribute("aria-checked", "false");
 
-    await page.getByRole("button", { name: "Run", exact: true }).click();
-    await expect(page.getByText("Running", { exact: true })).toBeVisible();
+    await page.locator("#controls").getByRole("button", { name: "Run", exact: true }).click();
+    await expect(page.locator("#controls").getByText("Running", { exact: true })).toBeVisible();
   });
 });

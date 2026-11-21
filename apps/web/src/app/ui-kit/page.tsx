@@ -3,6 +3,7 @@ import { Logo, LogoMark } from "@robosim/ui/components/logo";
 import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import { ROBOTICS_ICONS } from "@robosim/ui/icons/robotics";
 import { ControlsDemo } from "./controls-demo";
+import { WorkspaceDemo } from "./workspace-demo";
 import {
   Activity,
   Cpu,
@@ -236,6 +237,10 @@ export default function UiKitPage() {
             <IconGrid icons={ROBOTICS_ICONS} accent />
             <IconGrid icons={UI_ICONS} />
           </div>
+        </Section>
+
+        <Section id="workspace" title="Workspace — panel · toolbar · inspector">
+          <WorkspaceDemo />
         </Section>
 
         <Section id="controls" title="Controls">
