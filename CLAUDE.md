@@ -12,7 +12,9 @@ complete; always ask the owner before suggesting any paid service.
 2. Show the owner today's step list (`Day NN · Step 1/N … N/N`) before doing anything.
 
 ## Working rules (agreed with the owner — follow strictly)
-- **One Day = one conversation.** A new Day always starts in a new session in this folder.
+- **One session = 5 Days.** Days 1–5, 6–10, 11–15, … share one conversation in this folder. A new
+  session starts only after Day 5, 10, 15, … is complete (so Day 6, 11, 16, … open a new session).
+  Each Day still has its own branch and PR.
 - **One step per prompt.** Label every step `Day NN · Step X/N`. Do exactly one step, then stop and
   give clear **manual test instructions** (what to run, what to click, what the owner should see).
   Wait for the owner to say "next" (or report a problem — fix it first) before the next step.
@@ -24,10 +26,16 @@ complete; always ask the owner before suggesting any paid service.
   - Each Day works on `feat/day-NN-short-topic`, created from the latest `develop`.
   - End of Day (only after the owner approves the final test): add a `docs/DEVLOG.md` entry,
     commit (Conventional Commits), push the day branch, open a PR into `develop`, squash-merge.
-- **End of Day card:** after the merge, always give the owner complete instructions to start the
-  next Day: New session → choose folder `E:\My Projects\robosim-studio` → rename the session
-  `Day NN – <topic>` → the exact first message to type → anything to prepare (accounts, installs),
-  expected time and number of steps.
+- **End of Day:** after the merge, give a short note for the next Day (topic, prep, steps) and continue
+  in the same session. **End of block** (Day 5, 10, 15, …): give complete instructions to start the
+  next session: New session → choose folder `E:\My Projects\robosim-studio` → rename the session
+  `Days NN–MM – <topic>` → the exact first message to type → anything to prepare (accounts,
+  installs), expected time.
+- **User Manual, kept up to date.** When a feature passes the owner's test, add it to
+  `docs/manual/user-manual.md` the same Day: what each button/control does, how to use it step by
+  step, and a screenshot (take it yourself from the running app, or ask the owner). Then run
+  `pnpm manual` and commit the PDF with the Day's PR. Never document features that are not built yet.
+- **Short reports.** After each step give only the main points and the manual test, not long write-ups.
 - **Accounts** (GitHub settings, Vercel, Neon, Supabase, Render, Google): never operate them yourself.
   Give the owner step-by-step manual instructions instead.
 - **`E:\My Projects\robosim` (the original RoboSim) is read-only.** Read it for knowledge only;
@@ -39,7 +47,9 @@ complete; always ask the owner before suggesting any paid service.
 - Unit tests for all logic (solvers, emulators, kinematics); every example gets an automated test.
 - Heavy simulation runs in Web Workers; must stay usable on an 8 GB RAM laptop with
   integrated graphics (Low-end mode). Target devices: desktops and laptops only — no phone/tablet UI.
-- Only MIT / Apache-2.0 / BSD dependencies. Our own visual design — never copy other products' assets.
+- Only MIT / Apache-2.0 / BSD dependencies. Our own visual design — never copy other products' assets,
+  and never copy the old RoboSim look. The UI must feel like professional simulation software:
+  original, polished, beautiful and smooth (design system on Day 05, workspace shell on Day 06).
 - Significant decisions are recorded as ADRs in `docs/adr/NNN-title.md`.
 
 ## Docs map
@@ -51,6 +61,23 @@ complete; always ask the owner before suggesting any paid service.
 | `docs/DEVLOG.md` | One short entry per finished Day |
 | `docs/MIGRATION.md` | What we reuse / refactor / drop from the original RoboSim (Day 01) |
 | `docs/adr/` | Architecture Decision Records |
+| `docs/manual/` | User Manual source (`user-manual.md`), screenshots (`images/`) and the built PDF |
 
 ## Commands
-_Filled in on Day 03 when the monorepo is scaffolded (pnpm + Turborepo + Next.js 16)._
+Run from the repo root (pnpm 10 + Turborepo). Node ≥ 22.14.
+
+| Command | What it does |
+|---|---|
+| `pnpm install` | Install all workspace dependencies |
+| `pnpm dev` | Web app at http://localhost:3100 (port 3100; the owner uses 3000 for another project) |
+| `pnpm build` | Production build of every package/app |
+| `pnpm lint` | ESLint, zero warnings allowed |
+| `pnpm typecheck` | TypeScript strict check of every package |
+| `pnpm format` / `pnpm format:check` | Prettier write / check (Markdown is not formatted) |
+| `pnpm manual` | Build `docs/manual/RoboSim-Studio-User-Manual.pdf` (needs Chrome or Edge) |
+| `pnpm --filter @robosim/web <script>` | Run one package's script |
+
+Layout: `apps/web` (Next.js 16 app) · `packages/core` (framework-free logic, no React/DOM) ·
+`packages/ui` (shadcn components, `cn`, theme CSS). Add shadcn components from `packages/ui`.
+
+Dev server: Claude starts `pnpm dev` in a Terminal tab and keeps it running; the owner only checks the page.

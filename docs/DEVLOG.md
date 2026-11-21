@@ -9,6 +9,16 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 03 — Monorepo scaffold (2026-11-21)
+- Built: pnpm + Turborepo monorepo; `apps/web` (Next.js 16.2, React 19.2, strict TS, port 3100);
+  `packages/core` (framework-free, lists the 10 labs) and `packages/ui` (shadcn Button, `cn`, theme CSS);
+  Tailwind 4 + shadcn/ui (monorepo setup); one ESLint 9 config (no `any`, core can't import React) +
+  Prettier with Tailwind class sorting; User Manual source + `pnpm manual` → PDF with screenshots.
+- Learned: background installs on a slow connection can crash a running dev server (restart it after);
+  shadcn 4.7 suggests a 0.x `cn` package — we kept clsx + tailwind-merge; a fixed-height flex cover
+  breaks Chrome PDF printing — normal flow + `break-after: page` is reliable.
+- Next: Day 04 — CI/CD & quality gates (GitHub Actions, Vitest, Playwright smoke, Vercel previews).
+
 ## Day 02 — Product spec (2026-11-21)
 - Built: `docs/PRD.md` (vision, problem, principles, 4 personas, the 10 labs, boards and platforms,
   non-goals, success metrics, constraints, risks, open questions); ADR 001 fixing the 10 labs.

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@robosim/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}
