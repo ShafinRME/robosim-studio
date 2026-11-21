@@ -125,7 +125,7 @@ function InspectorValue({
   return (
     <output
       className={cn(
-        "tabular flex h-(--control-h) items-center rounded-md px-2 font-mono text-[0.8125rem]",
+        "tabular flex h-(--control-h) items-center overflow-hidden rounded-md px-2 font-mono text-[0.8125rem] whitespace-nowrap",
         tone === "brand" && "bg-brand-soft text-brand",
         tone === "muted" && "bg-surface-3 text-muted-foreground",
         tone === "warning" && "bg-warning/12 text-warning",

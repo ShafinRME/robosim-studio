@@ -338,7 +338,7 @@ export function WorkspaceDemo() {
               <InspectorRow label="Power">
                 <InspectorValue tone={overheating ? "danger" : "brand"}>
                   {formatSI(power, "W")}
-                  {overheating ? " · too hot!" : ""}
+                  {overheating ? " · too hot" : ""}
                 </InspectorValue>
               </InspectorRow>
             </InspectorSection>

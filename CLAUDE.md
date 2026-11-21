@@ -86,6 +86,7 @@ Run from the repo root (pnpm 10 + Turborepo). Node ≥ 22.14.
 | `pnpm test` / `pnpm test:watch` | Vitest unit tests (`*.test.ts` next to the code they test) |
 | `pnpm test:e2e` | Playwright browser smoke tests (`apps/web/e2e`); reuses the dev server on 3100 |
 | `pnpm format` / `pnpm format:check` | Prettier write / check (Markdown is not formatted) |
+| `pnpm manual:screenshots` | Re-capture the User Manual screenshots (`apps/web/e2e-manual`) into `docs/manual/images` |
 | `pnpm manual` | Build `docs/manual/RoboSim-Studio-User-Manual.pdf` (needs Chrome or Edge) |
 | `pnpm --filter @robosim/web <script>` | Run one package's script |
 

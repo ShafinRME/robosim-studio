@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 05 — Design system · Step 6/8 done, waiting for owner check
+**Current:** Day 05 — Design system · Step 7/8 done, waiting for owner check
 **Branch:** `feat/day-05-design-system` — draft PR into `develop` (CI runs on every push)
 **Session:** Days 02–05 in one session; Day 05 ends the block → Day 06 starts a new session
 **Updated:** 2026-11-21
@@ -14,8 +14,8 @@
 | 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ✅ done |
 | 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ✅ done |
 | 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ✅ done |
-| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ⏳ next |
-| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ⬜ |
+| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ✅ done |
+| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ⏳ next |
 
 ## Decisions (Day 05)
 - ADR 002: design language **Signal** — dark-first cool graphite surfaces, Signal teal brand, copper
@@ -40,10 +40,12 @@
   (Radix roving focus — one Tab stop, ←/→ between tools; toggle groups; tooltips with shortcuts),
   **Inspector** (collapsible property grid, label↔control linking, live read-only values). `animate-flow`
   utility for current flow along wires. UI kit has a live LED-circuit workspace demo (12 e2e tests).
+- User Manual chapters 3–6 (home, themes, engineering number fields, workspace) with screenshots captured
+  by a repeatable Playwright script (`pnpm manual:screenshots`); UI kit got a sticky section nav.
 - Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
 ## Next action
-Owner tries the Workspace demo on http://localhost:3100/ui-kit, then says "next" → Day 05 · Step 7/8.
+Owner reads the new User Manual chapters (`docs/manual/RoboSim-Studio-User-Manual.pdf`), then says "next" → Day 05 · Step 8/8 (merge + new-session card).
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

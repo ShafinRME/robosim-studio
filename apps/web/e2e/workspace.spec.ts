@@ -9,13 +9,13 @@ test.describe("UI kit workspace (panel · toolbar · inspector)", () => {
     await expect(inspector.getByText("13.6 mA")).toBeVisible();
     await resistance.fill("10");
     await resistance.press("Enter");
-    await expect(inspector.getByText(/too hot!/)).toBeVisible();
+    await expect(inspector.getByText(/too hot/)).toBeVisible();
     await expect(page.getByText("1 warning")).toBeVisible();
 
     await resistance.fill("1k");
     await resistance.press("Enter");
     await expect(inspector.getByText("3 mA")).toBeVisible();
-    await expect(inspector.getByText(/too hot!/)).toHaveCount(0);
+    await expect(inspector.getByText(/too hot/)).toHaveCount(0);
   });
 
   test("toolbar is one tab stop with arrow-key navigation", async ({ page }) => {

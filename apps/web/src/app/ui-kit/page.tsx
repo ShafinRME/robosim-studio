@@ -75,6 +75,16 @@ const UI_ICONS = {
   Gesture: Hand,
 };
 
+const NAV: [id: string, label: string][] = [
+  ["brand-mark", "Logo"],
+  ["surfaces", "Colour"],
+  ["type", "Type"],
+  ["icons", "Icons"],
+  ["workspace", "Workspace"],
+  ["controls", "Controls"],
+  ["shape", "Shape"],
+];
+
 const TYPE_SCALE = [
   { label: "2xs · 11", className: "text-2xs", sample: "Status bar · pin labels" },
   { label: "xs · 12", className: "text-xs", sample: "Inspector labels · tooltips" },
@@ -93,7 +103,7 @@ const RADII = [
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-6">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-16">
       <h2
         id={`${id}-title`}
         className="mb-3 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase"
@@ -168,6 +178,21 @@ export default function UiKitPage() {
           </div>
           <ThemeSwitcher />
         </header>
+
+        <nav
+          aria-label="UI kit sections"
+          className="sticky top-3 z-10 -mx-2 flex flex-wrap gap-1 rounded-lg border bg-surface-1/85 p-1 shadow-panel backdrop-blur"
+        >
+          {NAV.map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="rounded-md px-2 py-1 font-mono text-2xs tracking-wider text-muted-foreground uppercase transition-colors hover:bg-surface-3 hover:text-brand focus-visible:outline-2"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
 
         <Section id="brand-mark" title="Logo">
           <div className="grid gap-4 md:grid-cols-[auto_1fr]">
