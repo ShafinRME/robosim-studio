@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 04 — CI/CD & quality gates · Step 5/6 in progress — waiting for owner to connect Vercel
+**Current:** Day 04 — CI/CD & quality gates · Step 6/6 — waiting for owner to add branch protection, then merge
 **Branch:** `feat/day-04-ci-quality-gates` — pushed; draft PR #4 into `develop` (CI green)
 **Session:** Days 02–05 in one session (one session per 5 Days; next new session = Day 06)
 **Updated:** 2026-11-21
@@ -12,8 +12,8 @@
 | 2/6 | Playwright smoke test of the home page; `pnpm test:e2e` | ✅ done |
 | 3/6 | GitHub Actions CI: format, lint, typecheck, unit tests, build, e2e on every PR | ✅ done (green on PR #4) |
 | 4/6 | Versioning & PR hygiene: Changesets, PR title check (Conventional Commits), PR template | ✅ done |
-| 5/6 | Vercel: owner connects the repo (step-by-step guide); preview deploy per PR | ⏳ next |
-| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ⬜ |
+| 5/6 | Vercel: owner connects the repo (step-by-step guide); preview deploy per PR | ✅ done |
+| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ⏳ next |
 
 ## Decisions (Day 04)
 - Vitest 5.1 at the root (`vitest.config.mts`); tests live next to the code as `*.test.ts`.
@@ -27,10 +27,12 @@
 - PR titles must follow Conventional Commits (`.github/workflows/pr-title.yml`) — they become the
   squash commit message. PR template with test checklist and User Manual / changeset reminders.
 - Owner (2026-11-21): Claude may push the day branch and update a draft PR anytime to run CI.
+- Vercel project `robosim-studio` (Hobby), root `apps/web`; production domain robosim-studio-lemon.vercel.app
+  (production = `main` only); every PR gets a Preview URL (Vercel login required by default protection).
 - Installing packages crashes a running dev server → stop it before installs, restart after (CLAUDE.md).
 
 ## Next action
-Owner follows `docs/guides/vercel.md` (import repo, root `apps/web`, Node 22.x, production branch `main`), then says "done" → Claude checks the Vercel preview on PR #4.
+Owner adds GitHub rulesets for `develop` and `main` (steps given in chat, also in `docs/guides/github-branch-protection.md`), then Claude marks PR #4 ready and squash-merges it. Then Day 05 — Design system, in this same session.
 
 ## Open issues
 - Math findings F1–F13 in `docs/MIGRATION.md` are fixed during porting (Days 113–115), not in the old RoboSim.
