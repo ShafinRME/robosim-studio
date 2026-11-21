@@ -168,21 +168,27 @@ export default function UiKitPage() {
         </header>
 
         <Section id="brand-mark" title="Logo">
-          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
+          <div className="grid gap-4 md:grid-cols-[auto_1fr]">
             <div className="flex items-center justify-center rounded-md border bg-canvas p-8">
-              <Logo markClassName="size-10" className="scale-125" />
+              <LogoMark className="size-32" />
             </div>
-            <div className="flex items-center justify-center gap-4 rounded-md border bg-surface-2 p-8">
-              <LogoMark className="size-6" />
-              <LogoMark className="size-10" />
-              <LogoMark className="size-14" />
-            </div>
-            <div className="flex flex-col justify-center gap-1 rounded-md border bg-surface-2 p-5 text-xs text-muted-foreground">
-              <span className="font-mono text-2xs tracking-widest text-brand uppercase">
-                Signal arm
-              </span>
-              Grounded base, hollow elbow joint and a copper end-effector emitting a signal — drawn
-              like a trace on a teal-to-blue tile.
+            <div className="grid gap-4">
+              <div className="flex items-center justify-center rounded-md border bg-canvas p-6">
+                <Logo markClassName="size-10" className="scale-125" />
+              </div>
+              <div className="flex items-end justify-center gap-5 rounded-md border bg-surface-2 p-6">
+                {["size-4", "size-6", "size-8", "size-12", "size-16"].map((size) => (
+                  <LogoMark key={size} className={size} />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                <span className="mr-2 font-mono text-2xs tracking-widest text-brand uppercase">
+                  R-Arm
+                </span>
+                The letter R built as an articulated robot arm: base plate and column, shoulder
+                link, forearm and a copper end-effector, with punched pins at the joints. One stroke
+                weight, teal→blue signal gradient on a deep ink tile; readable from 16 px.
+              </p>
             </div>
           </div>
         </Section>
