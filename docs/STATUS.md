@@ -1,7 +1,7 @@
 # Status
 
-**Current:** Day 04 — CI/CD & quality gates · Step 6/6 — waiting for owner to add branch protection, then merge
-**Branch:** `feat/day-04-ci-quality-gates` — pushed; draft PR #4 into `develop` (CI green)
+**Current:** Day 04 — CI/CD & quality gates · ✅ complete (6/6)
+**Branch:** `feat/day-04-ci-quality-gates` → PR #4 squash-merged into `develop`
 **Session:** Days 02–05 in one session (one session per 5 Days; next new session = Day 06)
 **Updated:** 2026-11-21
 
@@ -13,7 +13,7 @@
 | 3/6 | GitHub Actions CI: format, lint, typecheck, unit tests, build, e2e on every PR | ✅ done (green on PR #4) |
 | 4/6 | Versioning & PR hygiene: Changesets, PR title check (Conventional Commits), PR template | ✅ done |
 | 5/6 | Vercel: owner connects the repo (step-by-step guide); preview deploy per PR | ✅ done |
-| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ⏳ next |
+| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ✅ done |
 
 ## Decisions (Day 04)
 - Vitest 5.1 at the root (`vitest.config.mts`); tests live next to the code as `*.test.ts`.
@@ -29,10 +29,13 @@
 - Owner (2026-11-21): Claude may push the day branch and update a draft PR anytime to run CI.
 - Vercel project `robosim-studio` (Hobby), root `apps/web`; production domain robosim-studio-lemon.vercel.app
   (production = `main` only); every PR gets a Preview URL (Vercel login required by default protection).
+- Rulesets `protect-develop` and `protect-main` (active): PR required (0 approvals, squash only), linear
+  history, no force push/deletion, 4 required checks (quality, Playwright, PR title, Vercel).
 - Installing packages crashes a running dev server → stop it before installs, restart after (CLAUDE.md).
 
 ## Next action
-Owner adds GitHub rulesets for `develop` and `main` (steps given in chat, also in `docs/guides/github-branch-protection.md`), then Claude marks PR #4 ready and squash-merges it. Then Day 05 — Design system, in this same session.
+Day 05 — Design system, **in this same session** (Days 02–05). Owner says "Day 05" or "next". Day 05 ends the block:
+after it, Day 06 starts in a new session.
 
 ## Open issues
 - Math findings F1–F13 in `docs/MIGRATION.md` are fixed during porting (Days 113–115), not in the old RoboSim.
