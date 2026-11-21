@@ -24,8 +24,10 @@ complete; always ask the owner before suggesting any paid service.
     unless the owner explicitly asks for a release.
   - `develop` = integration branch.
   - Each Day works on `feat/day-NN-short-topic`, created from the latest `develop`.
+  - During the Day, commit and push the day branch and open/update a draft PR into `develop` whenever
+    CI needs to run — no need to ask (owner permission 2026-11-21); the owner checks CI.
   - End of Day (only after the owner approves the final test): add a `docs/DEVLOG.md` entry,
-    commit (Conventional Commits), push the day branch, open a PR into `develop`, squash-merge.
+    commit (Conventional Commits), push, mark the PR ready, squash-merge into `develop`.
 - **End of Day:** after the merge, give a short note for the next Day (topic, prep, steps) and continue
   in the same session. **End of block** (Day 5, 10, 15, …): give complete instructions to start the
   next session: New session → choose folder `E:\My Projects\robosim-studio` → rename the session
