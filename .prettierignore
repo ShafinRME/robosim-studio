@@ -1,0 +1,10 @@
+# Generated or vendored
+pnpm-lock.yaml
+**/.next/
+**/.turbo/
+**/dist/
+**/coverage/
+**/next-env.d.ts
+
+# Docs are hand-written Markdown; docs/PLAN.md is generated from the owner's plan source.
+**/*.md
