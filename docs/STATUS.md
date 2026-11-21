@@ -1,8 +1,8 @@
 # Status
 
-**Current:** Day 05 — Design system · Step 7/8 done, waiting for owner check
-**Branch:** `feat/day-05-design-system` — draft PR into `develop` (CI runs on every push)
-**Session:** Days 02–05 in one session; Day 05 ends the block → Day 06 starts a new session
+**Current:** Day 05 — Design system · ✅ complete (8/8) — block Days 02–05 finished
+**Branch:** `feat/day-05-design-system` → PR #5 squash-merged into `develop`
+**Session:** Days 02–05 done. **Day 06 starts a NEW session** (block Days 06–10).
 **Updated:** 2026-11-21
 
 ## Day 05 steps
@@ -15,7 +15,7 @@
 | 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ✅ done |
 | 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ✅ done |
 | 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ✅ done |
-| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ⏳ next |
+| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ✅ done |
 
 ## Decisions (Day 05)
 - ADR 002: design language **Signal** — dark-first cool graphite surfaces, Signal teal brand, copper
@@ -45,7 +45,9 @@
 - Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
 ## Next action
-Owner reads the new User Manual chapters (`docs/manual/RoboSim-Studio-User-Manual.pdf`), then says "next" → Day 05 · Step 8/8 (merge + new-session card).
+Day 06 — Studio workspace shell, in a **new session**. Owner: New session → folder
+`E:\My Projects\robosim-studio` → rename `Days 06–10 – Studio core` → first message:
+`Day 06. Read CLAUDE.md and docs/STATUS.md, then show me today's steps.`
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

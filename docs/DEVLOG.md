@@ -9,6 +9,21 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 05 — Design system (2026-11-22)
+- Built: "Signal" design language (ADR 002) — tokens, IBM Plex fonts, dark/light/system themes with a
+  switcher, blueprint grid and glow; final "Kinematic Frame" logo + favicon (4 design rounds); 12 own
+  robotics icons; controls (buttons, inputs, select, switch, slider, tabs, tooltip, badge, kbd) and an
+  engineering NumberField (`parseSI`/`formatSI` in core); Panel, Toolbar, Inspector; live UI kit at
+  `/ui-kit`; User Manual chapters with auto-captured screenshots. **Security baseline:** 34 known
+  vulnerabilities (5 critical, mostly Next.js 16.2.6) → 0; SHA-pinned actions, CodeQL, Dependabot,
+  audit gate, security headers with an e2e guard, 3-day release-age guard, SECURITY.md, GitHub
+  security settings.
+- Learned: copying RoboSim's versions brought its vulnerabilities — audit first, security beats parity;
+  a logo must be unmistakable at a glance and different from RoboSim's arm; shadcn 4.7 output needs
+  restyling and import fixes; shell-escaped regexes lose backslashes — edit files directly.
+- Next: Day 06 — Studio workspace shell (Dockview docking, top bar, tabs, status bar, command palette),
+  in a **new session** (Days 06–10).
+
 ## Day 04 — CI/CD & quality gates (2026-11-21)
 - Built: Vitest unit tests; Playwright browser smoke tests; GitHub Actions CI (format, lint, typecheck,
   unit tests, build + e2e on the production build); Conventional Commits PR-title check; PR template;
