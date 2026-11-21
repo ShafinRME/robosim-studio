@@ -73,6 +73,8 @@ Run from the repo root (pnpm 10 + Turborepo). Node ≥ 22.14.
 | `pnpm build` | Production build of every package/app |
 | `pnpm lint` | ESLint, zero warnings allowed |
 | `pnpm typecheck` | TypeScript strict check of every package |
+| `pnpm test` / `pnpm test:watch` | Vitest unit tests (`*.test.ts` next to the code they test) |
+| `pnpm test:e2e` | Playwright browser smoke tests (`apps/web/e2e`); reuses the dev server on 3100 |
 | `pnpm format` / `pnpm format:check` | Prettier write / check (Markdown is not formatted) |
 | `pnpm manual` | Build `docs/manual/RoboSim-Studio-User-Manual.pdf` (needs Chrome or Edge) |
 | `pnpm --filter @robosim/web <script>` | Run one package's script |
@@ -81,3 +83,5 @@ Layout: `apps/web` (Next.js 16 app) · `packages/core` (framework-free logic, no
 `packages/ui` (shadcn components, `cn`, theme CSS). Add shadcn components from `packages/ui`.
 
 Dev server: Claude starts `pnpm dev` in a Terminal tab and keeps it running; the owner only checks the page.
+**Stop the dev server before `pnpm install` / `pnpm add`** and start it again afterwards — pnpm relinks
+`node_modules` and the running Turbopack server crashes ("couldn't find next/package.json").

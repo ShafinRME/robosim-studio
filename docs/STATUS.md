@@ -1,34 +1,31 @@
 # Status
 
-**Current:** Day 03 — Monorepo scaffold · ✅ complete (7/7)
-**Branch:** `feat/day-03-monorepo-scaffold` → squash-merged into `develop`
+**Current:** Day 04 — CI/CD & quality gates · Step 3/6 written — needs a push to run on GitHub
+**Branch:** `feat/day-04-ci-quality-gates` (from `develop`, not pushed yet)
 **Session:** Days 02–05 in one session (one session per 5 Days; next new session = Day 06)
 **Updated:** 2026-11-21
 
-## Day 03 steps
+## Day 04 steps
 | Step | Task | State |
 |---|---|---|
-| 1/7 | Day branch; root workspace (pnpm, Turborepo, strict base tsconfig); new session rule in CLAUDE.md | ✅ done |
-| 2/7 | `apps/web`: Next.js 16 + React 19 + TS strict, placeholder home page | ✅ done |
-| 3/7 | Tailwind 4 + shadcn/ui | ✅ done |
-| 4/7 | `packages/core` and `packages/ui`, used by the web app | ✅ done |
-| 5/7 | ESLint 9 + Prettier, `lint` / `typecheck` / `format` scripts, Commands section in CLAUDE.md | ✅ done |
-| 6/7 | User Manual: `docs/manual/` source, screenshot, `pnpm manual` → PDF | ✅ done |
-| 7/7 | Owner review → DEVLOG, commit, push, PR into `develop`, squash-merge | ✅ done |
+| 1/6 | Day branch; Vitest + first unit tests (`@robosim/core` labs, `@robosim/ui` `cn`); `pnpm test` | ✅ done |
+| 2/6 | Playwright smoke test of the home page; `pnpm test:e2e` | ✅ done |
+| 3/6 | GitHub Actions CI: format, lint, typecheck, unit tests, build, e2e on every PR | 🔄 written, not yet run on GitHub |
+| 4/6 | Versioning & PR hygiene: Changesets, PR title check (Conventional Commits), PR template | ⬜ |
+| 5/6 | Vercel: owner connects the repo (step-by-step guide); preview deploy per PR | ⬜ |
+| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ⬜ |
 
-## Decisions (Day 03)
-- Versions follow RoboSim so code ports cleanly: Node ≥ 22.14, pnpm 10.33.1, TypeScript 5.9.3,
-  Next.js 16.2.6, React 19.2.4, Tailwind 4.3, shadcn 4.7, ESLint 9.39. Turborepo 2.11.13.
-- Dev server on **port 3100** (owner uses 3000 elsewhere); Claude starts it in a Terminal tab.
-- Packages ship TypeScript source; Next.js compiles them (`transpilePackages`). `@robosim/core` has no
-  React/DOM (enforced by ESLint). `@robosim/ui` holds shadcn components, `cn` and the theme CSS.
-- No `.nvmrc` / `engine-strict` (owner's shell prompts on `.nvmrc`; a shadcn dependency wants Node ≥ 22.22).
-- User Manual PDF grows with every tested feature (`pnpm manual`).
-- UI must be original and professional — never copy the old RoboSim look (real design from Day 05).
+## Decisions (Day 04)
+- Vitest 5.1 at the root (`vitest.config.mts`); tests live next to the code as `*.test.ts`.
+- Playwright 1.65 (Chromium only) in `apps/web/e2e`; locally reuses the dev server on 3100, in CI runs
+  the production build (`pnpm start`). Smoke test: title, heading, no console errors, 10 labs.
+- CI (`.github/workflows/ci.yml`): two jobs on every PR/push to develop/main — quality (format, lint,
+  typecheck, unit tests, build) and e2e (Playwright on the production build). Node 22 (latest 22.x),
+  pnpm from `packageManager`, actions checkout/setup-node v7, pnpm/action-setup v6.
+- Installing packages crashes a running dev server → stop it before installs, restart after (CLAUDE.md).
 
 ## Next action
-Day 04 — CI/CD & quality gates, **in this same session** (Days 02–05). Owner says "Day 04" or "next".
-Prep: the owner will connect the GitHub repo to Vercel (Claude gives step-by-step instructions during Day 04).
+Owner approves pushing the day branch and opening a draft PR into `develop`, so CI runs for real.
 
 ## Open issues
 - Math findings F1–F13 in `docs/MIGRATION.md` are fixed during porting (Days 113–115), not in the old RoboSim.
@@ -36,4 +33,4 @@ Prep: the owner will connect the GitHub repo to Vercel (Claude gives step-by-ste
   listed in the local `E:\My Projects\robosim\IMPROVEMENTS.md`.
 - PRD open questions Q1–Q7 (§11), each with its decision Day.
 - `docs/PLAN.md` is generated from the owner's private plan source — never edit it by hand.
-- Node: shadcn's dependency prefers Node ≥ 22.22; CI (Day 04) should pin a current Node 22 LTS.
+- Node: shadcn's dependency prefers Node ≥ 22.22; CI should pin a current Node 22 LTS.
