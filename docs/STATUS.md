@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 04 — CI/CD & quality gates · Step 4/6 done, waiting for owner check
+**Current:** Day 04 — CI/CD & quality gates · Step 5/6 in progress — waiting for owner to connect Vercel
 **Branch:** `feat/day-04-ci-quality-gates` — pushed; draft PR #4 into `develop` (CI green)
 **Session:** Days 02–05 in one session (one session per 5 Days; next new session = Day 06)
 **Updated:** 2026-11-21
@@ -30,7 +30,7 @@
 - Installing packages crashes a running dev server → stop it before installs, restart after (CLAUDE.md).
 
 ## Next action
-Owner checks PR #4 (now 3 green checks incl. "Conventional Commits title"), then says "next" → Day 04 · Step 5/6 (Vercel).
+Owner follows `docs/guides/vercel.md` (import repo, root `apps/web`, Node 22.x, production branch `main`), then says "done" → Claude checks the Vercel preview on PR #4.
 
 ## Open issues
 - Math findings F1–F13 in `docs/MIGRATION.md` are fixed during porting (Days 113–115), not in the old RoboSim.

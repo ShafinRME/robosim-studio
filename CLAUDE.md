@@ -63,6 +63,7 @@ complete; always ask the owner before suggesting any paid service.
 | `docs/DEVLOG.md` | One short entry per finished Day |
 | `docs/MIGRATION.md` | What we reuse / refactor / drop from the original RoboSim (Day 01) |
 | `docs/adr/` | Architecture Decision Records |
+| `docs/guides/` | Step-by-step guides for account tasks the owner does (e.g. `vercel.md`) |
 | `docs/manual/` | User Manual source (`user-manual.md`), screenshots (`images/`) and the built PDF |
 
 ## Commands
