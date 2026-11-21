@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "@robosim/ui/components/theme-provider";
+import { TooltipProvider } from "@robosim/ui/components/tooltip";
 import "@robosim/ui/globals.css";
 
 // Self-hosted at build time by next/font: no requests to Google at runtime.
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       suppressHydrationWarning
     >
       <body className="min-h-screen font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
