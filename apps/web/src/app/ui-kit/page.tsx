@@ -183,11 +183,11 @@ export default function UiKitPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 <span className="mr-2 font-mono text-2xs tracking-widest text-brand uppercase">
-                  R-Arm
+                  Signal Arm
                 </span>
-                The letter R built as an articulated robot arm: base plate and column, shoulder
-                link, forearm and a copper end-effector, with punched pins at the joints. One stroke
-                weight, teal→blue signal gradient on a deep ink tile; readable from 16 px.
+                An industrial robot arm with copper joint bearings and a two-finger gripper holding
+                a glowing, orbiting object — the thing being simulated. Teal→blue arm on an ink tile
+                with a faint blueprint grid; recognisable from 16 px.
               </p>
             </div>
           </div>

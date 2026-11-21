@@ -2,24 +2,30 @@ import { useId, type SVGProps } from "react";
 import { cn } from "@robosim/ui/lib/utils";
 
 /**
- * RoboSim Studio logo — "R-Arm" monogram.
- * The letter R drawn as an articulated robot arm: the stem is the base column standing on a plate,
- * the bowl is the shoulder link, the leg is the forearm, and a copper end-effector closes the stroke.
- * Punched "pin" holes mark the joints. One stroke weight, round terminals, on a deep ink tile with a
- * teal→blue signal gradient. Original artwork (ADR 002). Static copy: apps/web/src/app/icon.svg.
+ * RoboSim Studio logo — "Signal Arm".
+ * An industrial robot arm (base, pedestal, shoulder, upper arm, forearm, wrist) with copper joint
+ * bearings and a two-finger gripper holding a glowing, orbiting object — the thing being simulated.
+ * Teal→blue arm on a deep ink tile with a faint blueprint dot grid. Original artwork (ADR 002).
+ * Static copy for the favicon: apps/web/src/app/icon.svg (keep both in sync).
  */
 export function LogoMark({
   title = "RoboSim Studio",
   className,
   ...props
 }: SVGProps<SVGSVGElement> & { title?: string }) {
-  const id = useId();
+  const uid = useId().replace(/:/g, "");
   const decorative = title === "";
-  const tile = `${id}-tile`;
-  const signal = `${id}-signal`;
+  const ids = {
+    tile: `${uid}tile`,
+    arm: `${uid}arm`,
+    orb: `${uid}orb`,
+    halo: `${uid}halo`,
+    grid: `${uid}grid`,
+  };
+  const url = (id: string) => `url(#${id})`;
   return (
     <svg
-      viewBox="0 0 32 32"
+      viewBox="0 0 64 64"
       role={decorative ? undefined : "img"}
       aria-label={decorative ? undefined : title}
       aria-hidden={decorative ? true : undefined}
@@ -28,44 +34,91 @@ export function LogoMark({
     >
       {decorative ? null : <title>{title}</title>}
       <defs>
-        <linearGradient id={tile} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#14223a" />
-          <stop offset="1" stopColor="#0a111d" />
+        <linearGradient id={ids.tile} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#16263f" />
+          <stop offset="1" stopColor="#080d17" />
         </linearGradient>
-        <linearGradient id={signal} x1="9" y1="7" x2="24" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#3ee6f0" />
-          <stop offset="1" stopColor="#3b7bff" />
+        <linearGradient id={ids.arm} x1="16" y1="54" x2="50" y2="10" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#2a6dff" />
+          <stop offset="1" stopColor="#40e8f2" />
         </linearGradient>
+        <radialGradient id={ids.orb} cx="0.38" cy="0.32" r="0.75">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.3" stopColor="#9ff7fb" />
+          <stop offset="1" stopColor="#11a9c4" />
+        </radialGradient>
+        <radialGradient id={ids.halo}>
+          <stop offset="0" stopColor="#40e8f2" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#40e8f2" stopOpacity="0" />
+        </radialGradient>
+        <pattern id={ids.grid} width="8" height="8" patternUnits="userSpaceOnUse">
+          <circle cx="4" cy="4" r="0.55" fill="#a8bde0" fillOpacity="0.15" />
+        </pattern>
       </defs>
-      {/* tile with a hairline edge */}
-      <rect x="1" y="1" width="30" height="30" rx="8" fill={`url(#${tile})`} />
+      {/* tile: ink, blueprint dots, hairline edge */}
+      <rect x="2" y="2" width="60" height="60" rx="15" fill={url(ids.tile)} />
+      <rect x="2" y="2" width="60" height="60" rx="15" fill={url(ids.grid)} />
       <rect
-        x="1.3"
-        y="1.3"
-        width="29.4"
-        height="29.4"
-        rx="7.7"
+        x="2.6"
+        y="2.6"
+        width="58.8"
+        height="58.8"
+        rx="14.4"
         fill="none"
         stroke="#ffffff"
-        strokeOpacity="0.14"
-        strokeWidth="0.6"
+        strokeOpacity="0.12"
+        strokeWidth="1.2"
       />
-      {/* R-Arm: base plate, base column, shoulder link (bowl), forearm */}
-      <g
-        fill="none"
-        stroke={`url(#${signal})`}
-        strokeWidth="3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M8 24.5h7M11.5 24.5V8.25h4.75a4.625 4.625 0 0 1 0 9.25H11.5M16 17.5l5.4 5.1" />
+      <g transform="translate(2.5 0)">
+        {/* floor shadow, base plate, pedestal */}
+        <ellipse cx="26" cy="55" rx="15" ry="2" fill="#000000" fillOpacity="0.4" />
+        <rect x="14" y="50.5" width="24" height="4.6" rx="2.3" fill={url(ids.arm)} />
+        <path
+          d="M20 51 22 43h8l2 8z"
+          fill={url(ids.arm)}
+          stroke={url(ids.arm)}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        {/* links and parallel two-finger gripper */}
+        <g fill="none" stroke={url(ids.arm)} strokeLinecap="round">
+          <path d="M26 41.5 19.5 22.5" strokeWidth="8.4" />
+          <path d="M19.5 22.5 40.5 14.5" strokeWidth="6.6" />
+          <path d="M40.5 14.5 45.5 20.5" strokeWidth="5" />
+          <path d="M42.4 23.4 49.3 17.6M42.4 23.4l3.2 3.8M49.3 17.6l3.2 3.8" strokeWidth="2.6" />
+        </g>
+        {/* highlights for depth */}
+        <g
+          fill="none"
+          stroke="#ffffff"
+          strokeOpacity="0.28"
+          strokeLinecap="round"
+          strokeWidth="1.1"
+        >
+          <path d="M23.4 39.2 17.9 23.4M21.6 19.9l17.2-6.6" />
+        </g>
+        {/* the simulated object: glowing orb with an orbit */}
+        <circle cx="50.6" cy="26.2" r="9" fill={url(ids.halo)} />
+        <ellipse
+          cx="50.6"
+          cy="26.2"
+          rx="7.4"
+          ry="2.6"
+          transform="rotate(-28 50.6 26.2)"
+          fill="none"
+          stroke="#40e8f2"
+          strokeOpacity="0.55"
+          strokeWidth="0.9"
+        />
+        <circle cx="50.6" cy="26.2" r="3.7" fill={url(ids.orb)} />
+        {/* copper joint bearings */}
+        <circle cx="26" cy="41.5" r="5.2" fill="#f59e4b" />
+        <circle cx="26" cy="41.5" r="1.9" fill="#0c1524" />
+        <circle cx="19.5" cy="22.5" r="4.3" fill="#f59e4b" />
+        <circle cx="19.5" cy="22.5" r="1.55" fill="#0c1524" />
+        <circle cx="40.5" cy="14.5" r="3.4" fill="#f59e4b" />
+        <circle cx="40.5" cy="14.5" r="1.2" fill="#0c1524" />
       </g>
-      {/* joint pins punched through the links */}
-      <circle cx="11.5" cy="8.25" r="1.05" fill="#0e1828" />
-      <circle cx="16" cy="17.5" r="1.05" fill="#0e1828" />
-      {/* copper end-effector */}
-      <circle cx="22.9" cy="24" r="2.45" fill="#f59e4b" />
-      <circle cx="22.9" cy="24" r="0.9" fill="#0e1828" />
     </svg>
   );
 }

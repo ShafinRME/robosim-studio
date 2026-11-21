@@ -28,9 +28,9 @@
   (shadcn CLI). Audit now: **0 known vulnerabilities**; CI fails on any new one.
 - Themes via next-themes 0.4.6 (MIT): dark default, light, system; stored as `robosim-theme`; no flash.
   Digital look: blueprint dot/line grid canvas (`bg-blueprint`), signal glow (`shadow-glow`), mono labels.
-- Logo **"R-Arm"** (redesigned on owner request): the letter R built as an articulated robot arm — base plate,
-  column, shoulder link, forearm, copper end-effector, punched joint pins; teal→blue gradient on an ink tile;
-  wordmark `RoboSim` + mono `STUDIO` tag; SVG favicon (`apps/web/src/app/icon.svg`).
+- Logo **"Signal Arm"** (3rd version, owner wanted an unmistakable robotics mark): industrial robot arm
+  with copper joint bearings and a two-finger gripper holding a glowing orbiting object (the simulation),
+  teal→blue on an ink tile with a blueprint dot grid; wordmark `RoboSim` + mono `STUDIO`; SVG favicon.
 - Icons: Lucide (ISC) for UI + 12 own electronics/robotics icons on the same 24 px grid (`@robosim/ui/icons/robotics`).
 - Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
