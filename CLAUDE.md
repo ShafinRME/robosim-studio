@@ -45,6 +45,13 @@ complete; always ask the owner before suggesting any paid service.
 - Ask the owner whenever something is unclear. Prefer small, reviewable changes.
 
 ## Quality bar
+- **Security first — zero known vulnerabilities** (owner rule, 2026-11-21). Work like a senior
+  application-security engineer: `pnpm audit` clean (CI blocks otherwise); GitHub Actions pinned to
+  commit SHAs with least-privilege permissions and `persist-credentials: false`; CodeQL + Dependabot;
+  strict security headers (`apps/web/next.config.ts`, guarded by an e2e test); no secrets in the repo;
+  validate all input; enable powerful browser APIs (camera, serial…) only deliberately, with a review.
+  Anything that cannot be fixed the same Day goes into `docs/STATUS.md` open issues with a fix Day.
+- Security beats version parity: upgrade a vulnerable dependency even if RoboSim used the old version.
 - TypeScript strict, no `any`; lint + typecheck + tests green before any merge.
 - Unit tests for all logic (solvers, emulators, kinematics); every example gets an automated test.
 - Heavy simulation runs in Web Workers; must stay usable on an 8 GB RAM laptop with
