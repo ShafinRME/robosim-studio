@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
+import { Logo, LogoMark } from "@robosim/ui/components/logo";
 import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
-import type { ReactNode } from "react";
+import { ROBOTICS_ICONS } from "@robosim/ui/icons/robotics";
+import {
+  Activity,
+  Cpu,
+  FolderOpen,
+  Hand,
+  Layers,
+  Pause,
+  Play,
+  Save,
+  Settings2,
+  StepForward,
+  Terminal,
+  Wifi,
+} from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "UI kit · RoboSim Studio",
@@ -41,6 +57,21 @@ const CHANNELS: Swatch[] = [
   { name: "CH3", token: "--ch3", className: "bg-ch3" },
   { name: "CH4", token: "--ch4", className: "bg-ch4" },
 ];
+
+const UI_ICONS = {
+  Play,
+  Pause,
+  "Step forward": StepForward,
+  Save,
+  "Open project": FolderOpen,
+  Layers,
+  Settings: Settings2,
+  Terminal,
+  Signal: Activity,
+  Chip: Cpu,
+  "Wi-Fi": Wifi,
+  Gesture: Hand,
+};
 
 const TYPE_SCALE = [
   { label: "2xs · 11", className: "text-2xs", sample: "Status bar · pin labels" },
@@ -89,6 +120,34 @@ function SwatchGrid({ swatches }: { swatches: Swatch[] }) {
   );
 }
 
+function IconGrid({
+  icons,
+  accent = false,
+}: {
+  icons: Record<string, ComponentType<{ className?: string }>>;
+  accent?: boolean;
+}) {
+  return (
+    <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+      {Object.entries(icons).map(([name, Icon]) => (
+        <li
+          key={name}
+          className="group flex flex-col items-center gap-2 rounded-md border bg-surface-2 px-2 py-4 transition-colors duration-(--duration-fast) hover:border-brand/50 hover:bg-brand-soft"
+        >
+          <Icon
+            className={
+              accent
+                ? "size-6 text-brand"
+                : "size-6 text-muted-foreground group-hover:text-foreground"
+            }
+          />
+          <span className="text-center font-mono text-2xs text-muted-foreground">{name}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function UiKitPage() {
   return (
     <div className="min-h-screen bg-blueprint">
@@ -107,6 +166,26 @@ export default function UiKitPage() {
           </div>
           <ThemeSwitcher />
         </header>
+
+        <Section id="brand-mark" title="Logo">
+          <div className="grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
+            <div className="flex items-center justify-center rounded-md border bg-canvas p-8">
+              <Logo markClassName="size-10" className="scale-125" />
+            </div>
+            <div className="flex items-center justify-center gap-4 rounded-md border bg-surface-2 p-8">
+              <LogoMark className="size-6" />
+              <LogoMark className="size-10" />
+              <LogoMark className="size-14" />
+            </div>
+            <div className="flex flex-col justify-center gap-1 rounded-md border bg-surface-2 p-5 text-xs text-muted-foreground">
+              <span className="font-mono text-2xs tracking-widest text-brand uppercase">
+                Signal arm
+              </span>
+              Grounded base, hollow elbow joint and a copper end-effector emitting a signal — drawn
+              like a trace on a teal-to-blue tile.
+            </div>
+          </div>
+        </Section>
 
         <Section id="surfaces" title="Surfaces">
           <SwatchGrid swatches={SURFACES} />
@@ -142,6 +221,13 @@ export default function UiKitPage() {
               </span>
             </li>
           </ul>
+        </Section>
+
+        <Section id="icons" title="Icons — robotics set (ours) + Lucide UI icons">
+          <div className="flex flex-col gap-6">
+            <IconGrid icons={ROBOTICS_ICONS} accent />
+            <IconGrid icons={UI_ICONS} />
+          </div>
         </Section>
 
         <Section id="shape" title="Shape & density">
