@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+import { ThemeProvider } from "@robosim/ui/components/theme-provider";
 import "@robosim/ui/globals.css";
 
 // Self-hosted at build time by next/font: no requests to Google at runtime.
@@ -24,9 +25,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    // Dark is the studio default; the theme switcher arrives in Day 05 · Step 2.
-    <html lang="en" className={`dark ${plexSans.variable} ${plexMono.variable}`}>
-      <body className="min-h-screen font-sans">{children}</body>
+    // suppressHydrationWarning: next-themes sets the theme class on <html> before React hydrates.
+    <html
+      lang="en"
+      className={`${plexSans.variable} ${plexMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen font-sans">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
@@ -90,76 +91,82 @@ function SwatchGrid({ swatches }: { swatches: Swatch[] }) {
 
 export default function UiKitPage() {
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-10 px-8 py-12">
-      <header className="flex flex-col gap-2">
-        <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">
-          Design system
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight">Signal UI kit</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Every colour, type size and component used in RoboSim Studio. Components only use these
-          tokens, so the whole studio changes together.
-        </p>
-      </header>
+    <div className="min-h-screen bg-blueprint">
+      <main className="mx-auto flex max-w-6xl flex-col gap-10 px-8 py-12">
+        <header className="flex flex-wrap items-start justify-between gap-6">
+          <div className="flex flex-col gap-2">
+            <p className="flex items-center gap-2 font-mono text-2xs tracking-[0.2em] text-brand uppercase">
+              <span className="size-1.5 rounded-full bg-brand shadow-glow" aria-hidden />
+              Design system · v0.0.0
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight">Signal UI kit</h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Every colour, type size and component used in RoboSim Studio. Components only use
+              these tokens, so the whole studio changes together.
+            </p>
+          </div>
+          <ThemeSwitcher />
+        </header>
 
-      <Section id="surfaces" title="Surfaces">
-        <SwatchGrid swatches={SURFACES} />
-      </Section>
-
-      <Section id="brand" title="Brand & highlight">
-        <SwatchGrid swatches={BRAND} />
-      </Section>
-
-      <div className="grid gap-10 md:grid-cols-2">
-        <Section id="status" title="Status">
-          <SwatchGrid swatches={STATUS} />
+        <Section id="surfaces" title="Surfaces">
+          <SwatchGrid swatches={SURFACES} />
         </Section>
-        <Section id="channels" title="Instrument channels">
-          <SwatchGrid swatches={CHANNELS} />
-        </Section>
-      </div>
 
-      <Section id="type" title="Typography — IBM Plex Sans & Mono">
-        <ul className="flex flex-col divide-y">
-          {TYPE_SCALE.map((t) => (
-            <li key={t.label} className="flex items-baseline gap-6 py-3 first:pt-0 last:pb-0">
-              <code className="w-20 shrink-0 font-mono text-2xs text-faint-foreground">
-                {t.label}
-              </code>
-              <span className={t.className}>{t.sample}</span>
+        <Section id="brand" title="Brand & highlight">
+          <SwatchGrid swatches={BRAND} />
+        </Section>
+
+        <div className="grid gap-10 md:grid-cols-2">
+          <Section id="status" title="Status">
+            <SwatchGrid swatches={STATUS} />
+          </Section>
+          <Section id="channels" title="Instrument channels">
+            <SwatchGrid swatches={CHANNELS} />
+          </Section>
+        </div>
+
+        <Section id="type" title="Typography — IBM Plex Sans & Mono">
+          <ul className="flex flex-col divide-y">
+            {TYPE_SCALE.map((t) => (
+              <li key={t.label} className="flex items-baseline gap-6 py-3 first:pt-0 last:pb-0">
+                <code className="w-20 shrink-0 font-mono text-2xs text-faint-foreground">
+                  {t.label}
+                </code>
+                <span className={t.className}>{t.sample}</span>
+              </li>
+            ))}
+            <li className="flex items-baseline gap-6 pt-3">
+              <code className="w-20 shrink-0 font-mono text-2xs text-faint-foreground">mono</code>
+              <span className="tabular font-mono text-sm">
+                V<sub>out</sub> = 3.300 V · I = 12.45 mA · f = 1.000 kHz
+              </span>
             </li>
-          ))}
-          <li className="flex items-baseline gap-6 pt-3">
-            <code className="w-20 shrink-0 font-mono text-2xs text-faint-foreground">mono</code>
-            <span className="tabular font-mono text-sm">
-              V<sub>out</sub> = 3.300 V · I = 12.45 mA · f = 1.000 kHz
-            </span>
-          </li>
-        </ul>
-      </Section>
+          </ul>
+        </Section>
 
-      <Section id="shape" title="Shape & density">
-        <div className="flex flex-wrap items-end gap-8">
-          {RADII.map((r) => (
-            <div key={r.label} className="flex flex-col items-center gap-2">
-              <div className={`size-14 border-2 border-brand bg-brand-soft ${r.className}`} />
-              <code className="font-mono text-2xs text-faint-foreground">rounded-{r.label}</code>
-            </div>
-          ))}
-          <div className="flex items-end gap-3">
-            {[
-              ["24", "h-(--control-h-sm)"],
-              ["28", "h-(--control-h)"],
-              ["36", "h-(--control-h-lg)"],
-            ].map(([px, cls]) => (
-              <div key={px} className="flex flex-col items-center gap-2">
-                <div className={`w-16 rounded-md bg-surface-3 ${cls}`} />
-                <code className="font-mono text-2xs text-faint-foreground">{px}px</code>
+        <Section id="shape" title="Shape & density">
+          <div className="flex flex-wrap items-end gap-8">
+            {RADII.map((r) => (
+              <div key={r.label} className="flex flex-col items-center gap-2">
+                <div className={`size-14 border-2 border-brand bg-brand-soft ${r.className}`} />
+                <code className="font-mono text-2xs text-faint-foreground">rounded-{r.label}</code>
               </div>
             ))}
+            <div className="flex items-end gap-3">
+              {[
+                ["24", "h-(--control-h-sm)"],
+                ["28", "h-(--control-h)"],
+                ["36", "h-(--control-h-lg)"],
+              ].map(([px, cls]) => (
+                <div key={px} className="flex flex-col items-center gap-2">
+                  <div className={`w-16 rounded-md bg-surface-3 ${cls}`} />
+                  <code className="font-mono text-2xs text-faint-foreground">{px}px</code>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </Section>
-    </main>
+        </Section>
+      </main>
+    </div>
   );
 }

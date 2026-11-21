@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 05 — Design system · Step 2/8 (security baseline) done — owner enables GitHub security settings
+**Current:** Day 05 — Design system · Step 3/8 done, waiting for owner check
 **Branch:** `feat/day-05-design-system` — draft PR into `develop` (CI runs on every push)
 **Session:** Days 02–05 in one session; Day 05 ends the block → Day 06 starts a new session
 **Updated:** 2026-11-21
@@ -10,8 +10,8 @@
 |---|---|---|
 | 1/8 | Day branch; ADR 002 "Signal" design language; design tokens (colour, type, density, motion); IBM Plex fonts; `/ui-kit` page | ✅ done |
 | 2/8 | **Security baseline** (owner request): 34 → 0 vulnerabilities (Next.js 16.4.6, overrides), SHA-pinned actions, CodeQL, Dependabot, audit in CI, security headers + e2e test, 3-day release-age guard, SECURITY.md | ✅ done |
-| 3/8 | Dark / light / system theme with a theme switcher (very digital look) | ⏳ next |
-| 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ⬜ |
+| 3/8 | Dark / light / system theme with a theme switcher (very digital look) | ✅ done |
+| 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ⏳ next |
 | 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ⬜ |
 | 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ⬜ |
 | 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ⬜ |
@@ -26,10 +26,12 @@
 - Security (owner rule): zero known vulnerabilities. Next.js 16.2.6 → **16.4.6** (25 advisories incl. 5 critical
   in 16.2.6); eslint-config-next 16.4.6; shadcn 4.23.0; overrides for zod (lint plugin) and minimatch
   (shadcn CLI). Audit now: **0 known vulnerabilities**; CI fails on any new one.
+- Themes via next-themes 0.4.6 (MIT): dark default, light, system; stored as `robosim-theme`; no flash.
+  Digital look: blueprint dot/line grid canvas (`bg-blueprint`), signal glow (`shadow-glow`), mono labels.
 - Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
 ## Next action
-Owner enables GitHub security settings (`docs/guides/github-security-settings.md`), checks PR #5 (CI + CodeQL green), then says "next" → Day 05 · Step 3/8.
+Owner checks the theme switcher on http://localhost:3100/ui-kit, then says "next" → Day 05 · Step 4/8.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

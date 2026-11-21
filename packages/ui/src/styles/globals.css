@@ -24,7 +24,8 @@
   --surface-2: oklch(1 0 0);
   --surface-3: oklch(0.948 0.006 255);
   --border-strong: oklch(0.86 0.01 255);
-  --grid-dot: oklch(0.22 0.02 255 / 12%);
+  --grid-dot: oklch(0.22 0.02 255 / 14%);
+  --grid-line: oklch(0.22 0.02 255 / 5%);
 
   /* Text */
   --foreground: oklch(0.21 0.02 255);
@@ -54,6 +55,7 @@
   /* Elevation */
   --shadow-panel: 0 1px 2px oklch(0.2 0.02 255 / 6%), 0 0 0 1px oklch(0.2 0.02 255 / 6%);
   --shadow-popover: 0 8px 24px -6px oklch(0.2 0.02 255 / 18%), 0 0 0 1px oklch(0.2 0.02 255 / 8%);
+  --shadow-glow: 0 0 0 1px oklch(0.56 0.12 205 / 35%);
 
   /* shadcn/ui mapping */
   --background: var(--canvas);
@@ -95,7 +97,8 @@
   --surface-2: oklch(0.225 0.014 255);
   --surface-3: oklch(0.265 0.015 255);
   --border-strong: oklch(0.36 0.016 255);
-  --grid-dot: oklch(1 0 0 / 7%);
+  --grid-dot: oklch(1 0 0 / 8%);
+  --grid-line: oklch(1 0 0 / 3%);
 
   --foreground: oklch(0.95 0.006 255);
   --muted-foreground: oklch(0.72 0.015 255);
@@ -120,6 +123,7 @@
 
   --shadow-panel: 0 0 0 1px oklch(1 0 0 / 6%);
   --shadow-popover: 0 12px 32px -8px oklch(0 0 0 / 55%), 0 0 0 1px oklch(1 0 0 / 8%);
+  --shadow-glow: 0 0 0 1px oklch(0.78 0.13 200 / 45%), 0 0 14px -2px oklch(0.78 0.13 200 / 45%);
 
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
@@ -180,8 +184,24 @@
 
   --shadow-panel: var(--shadow-panel);
   --shadow-popover: var(--shadow-popover);
+  --shadow-glow: var(--shadow-glow);
 
   --ease-out: var(--ease-out);
+}
+
+/* ---------- Digital surfaces ---------- */
+
+/* Blueprint canvas: fine dot grid every 16 px with a faint major line every 80 px. */
+@utility bg-blueprint {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:
+    16px 16px,
+    80px 80px,
+    80px 80px;
 }
 
 @layer base {
