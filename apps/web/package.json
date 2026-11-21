@@ -8,14 +8,15 @@
     "start": "next start --port 3100",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "manual:screenshots": "playwright test --config playwright.manual.config.ts"
   },
   "dependencies": {
     "@robosim/core": "workspace:*",
     "@robosim/ui": "workspace:*",
     "@tailwindcss/postcss": "4.3.0",
     "lucide-react": "1.16.0",
-    "next": "16.2.6",
+    "next": "16.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

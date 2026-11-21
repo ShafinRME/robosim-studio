@@ -1,46 +1,61 @@
 # Status
 
-**Current:** Day 04 — CI/CD & quality gates · ✅ complete (6/6)
-**Branch:** `feat/day-04-ci-quality-gates` → PR #4 squash-merged into `develop`
-**Session:** Days 02–05 in one session (one session per 5 Days; next new session = Day 06)
+**Current:** Day 05 — Design system · ✅ complete (8/8) — block Days 02–05 finished
+**Branch:** `feat/day-05-design-system` → PR #5 squash-merged into `develop`
+**Session:** Days 02–05 done. **Day 06 starts a NEW session** (block Days 06–10).
 **Updated:** 2026-11-21
 
-## Day 04 steps
+## Day 05 steps
 | Step | Task | State |
 |---|---|---|
-| 1/6 | Day branch; Vitest + first unit tests (`@robosim/core` labs, `@robosim/ui` `cn`); `pnpm test` | ✅ done |
-| 2/6 | Playwright smoke test of the home page; `pnpm test:e2e` | ✅ done |
-| 3/6 | GitHub Actions CI: format, lint, typecheck, unit tests, build, e2e on every PR | ✅ done (green on PR #4) |
-| 4/6 | Versioning & PR hygiene: Changesets, PR title check (Conventional Commits), PR template | ✅ done |
-| 5/6 | Vercel: owner connects the repo (step-by-step guide); preview deploy per PR | ✅ done |
-| 6/6 | Day PR = test PR: CI green + preview URL; branch protection (owner); DEVLOG; squash-merge | ✅ done |
+| 1/8 | Day branch; ADR 002 "Signal" design language; design tokens (colour, type, density, motion); IBM Plex fonts; `/ui-kit` page | ✅ done |
+| 2/8 | **Security baseline** (owner request): 34 → 0 vulnerabilities (Next.js 16.4.6, overrides), SHA-pinned actions, CodeQL, Dependabot, audit in CI, security headers + e2e test, 3-day release-age guard, SECURITY.md | ✅ done |
+| 3/8 | Dark / light / system theme with a theme switcher (very digital look) | ✅ done |
+| 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ✅ done |
+| 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ✅ done |
+| 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ✅ done |
+| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ✅ done |
+| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ✅ done |
 
-## Decisions (Day 04)
-- Vitest 5.1 at the root (`vitest.config.mts`); tests live next to the code as `*.test.ts`.
-- Playwright 1.65 (Chromium only) in `apps/web/e2e`; locally reuses the dev server on 3100, in CI runs
-  the production build (`pnpm start`). Smoke test: title, heading, no console errors, 10 labs.
-- CI (`.github/workflows/ci.yml`): two jobs on every PR/push to develop/main — quality (format, lint,
-  typecheck, unit tests, build) and e2e (Playwright on the production build). Node 22 (latest 22.x),
-  pnpm from `packageManager`, actions checkout/setup-node v7, pnpm/action-setup v6.
-- Changesets 3.0 (`pnpm changeset`, `pnpm version-packages`): base `develop`, all `@robosim/*` versioned
-  together (fixed), private (never published). Only user-visible changes need a changeset.
-- PR titles must follow Conventional Commits (`.github/workflows/pr-title.yml`) — they become the
-  squash commit message. PR template with test checklist and User Manual / changeset reminders.
-- Owner (2026-11-21): Claude may push the day branch and update a draft PR anytime to run CI.
-- Vercel project `robosim-studio` (Hobby), root `apps/web`; production domain robosim-studio-lemon.vercel.app
-  (production = `main` only); every PR gets a Preview URL (Vercel login required by default protection).
-- Rulesets `protect-develop` and `protect-main` (active): PR required (0 approvals, squash only), linear
-  history, no force push/deletion, 4 required checks (quality, Playwright, PR title, Vercel).
-- Installing packages crashes a running dev server → stop it before installs, restart after (CLAUDE.md).
+## Decisions (Day 05)
+- ADR 002: design language **Signal** — dark-first cool graphite surfaces, Signal teal brand, copper
+  highlight, oscilloscope channel colours (CH1–CH4), IBM Plex Sans/Mono, compact 28 px controls,
+  6 px radius, short ease-out motion. Original design; nothing copied from old RoboSim or other products.
+- Tokens are CSS custom properties in `packages/ui/src/styles/globals.css`, exposed to Tailwind
+  (`bg-surface-1`, `text-brand`, `bg-ch1`, …). Components use tokens only.
+- Security (owner rule): zero known vulnerabilities. Next.js 16.2.6 → **16.4.6** (25 advisories incl. 5 critical
+  in 16.2.6); eslint-config-next 16.4.6; shadcn 4.23.0; overrides for zod (lint plugin) and minimatch
+  (shadcn CLI). Audit now: **0 known vulnerabilities**; CI fails on any new one.
+- Themes via next-themes 0.4.6 (MIT): dark default, light, system; stored as `robosim-theme`; no flash.
+  Digital look: blueprint dot/line grid canvas (`bg-blueprint`), signal glow (`shadow-glow`), mono labels.
+- Logo **"Kinematic Frame"** (final, owner-approved after 4 rounds; deliberately unlike the old RoboSim arm):
+  wireframe simulation cube with joint nodes + robot XYZ coordinate frame driven by a copper servo gear and a
+  revolute-joint arrow, on an ink tile with blueprint dots; wordmark `RoboSim` + mono `STUDIO`; SVG favicon.
+- Icons: Lucide (ISC) for UI + 12 own electronics/robotics icons on the same 24 px grid (`@robosim/ui/icons/robotics`).
+- Controls rebuilt in Signal style on Radix primitives (shadcn generated, then rewritten; no 0.x `cn` package):
+  Button (6 variants, 3 sizes) + IconButton (label required), Input, Select, Switch, Slider, Tabs
+  (instrument strip), Tooltip (+ provider in layout), Badge (status LED), Kbd, Separator, and
+  **NumberField** with engineering units (`parseSI`/`formatSI`/`clampStep` in `@robosim/core`, 38 tests).
+- Workspace components: **Panel** (header with icon/meta/actions, body, footer, bezel highlight), **Toolbar**
+  (Radix roving focus — one Tab stop, ←/→ between tools; toggle groups; tooltips with shortcuts),
+  **Inspector** (collapsible property grid, label↔control linking, live read-only values). `animate-flow`
+  utility for current flow along wires. UI kit has a live LED-circuit workspace demo (12 e2e tests).
+- User Manual chapters 3–6 (home, themes, engineering number fields, workspace) with screenshots captured
+  by a repeatable Playwright script (`pnpm manual:screenshots`); UI kit got a sticky section nav.
+- Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
 
 ## Next action
-Day 05 — Design system, **in this same session** (Days 02–05). Owner says "Day 05" or "next". Day 05 ends the block:
-after it, Day 06 starts in a new session.
+Day 06 — Studio workspace shell, in a **new session**. Owner: New session → folder
+`E:\My Projects\robosim-studio` → rename `Days 06–10 – Studio core` → first message:
+`Day 06. Read CLAUDE.md and docs/STATUS.md, then show me today's steps.`
 
 ## Open issues
+- CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to
+  nonce/hash-based CSP on Day 173 (security hardening) — or earlier if Next.js static hashing lands.
+- The old RoboSim (robosim-bd.vercel.app) runs Next.js 16.2.6 with the same critical advisories. It is
+  read-only for us; the owner decides whether to upgrade it.
 - Math findings F1–F13 in `docs/MIGRATION.md` are fixed during porting (Days 113–115), not in the old RoboSim.
 - Old RoboSim stays unchanged, including its premium flow (owner decision 2026-11-20). Its issues are
   listed in the local `E:\My Projects\robosim\IMPROVEMENTS.md`.
 - PRD open questions Q1–Q7 (§11), each with its decision Day.
 - `docs/PLAN.md` is generated from the owner's private plan source — never edit it by hand.
-- Node: shadcn's dependency prefers Node ≥ 22.22; CI should pin a current Node 22 LTS.

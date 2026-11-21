@@ -45,6 +45,13 @@ complete; always ask the owner before suggesting any paid service.
 - Ask the owner whenever something is unclear. Prefer small, reviewable changes.
 
 ## Quality bar
+- **Security first — zero known vulnerabilities** (owner rule, 2026-11-21). Work like a senior
+  application-security engineer: `pnpm audit` clean (CI blocks otherwise); GitHub Actions pinned to
+  commit SHAs with least-privilege permissions and `persist-credentials: false`; CodeQL + Dependabot;
+  strict security headers (`apps/web/next.config.ts`, guarded by an e2e test); no secrets in the repo;
+  validate all input; enable powerful browser APIs (camera, serial…) only deliberately, with a review.
+  Anything that cannot be fixed the same Day goes into `docs/STATUS.md` open issues with a fix Day.
+- Security beats version parity: upgrade a vulnerable dependency even if RoboSim used the old version.
 - TypeScript strict, no `any`; lint + typecheck + tests green before any merge.
 - Unit tests for all logic (solvers, emulators, kinematics); every example gets an automated test.
 - Heavy simulation runs in Web Workers; must stay usable on an 8 GB RAM laptop with
@@ -79,6 +86,7 @@ Run from the repo root (pnpm 10 + Turborepo). Node ≥ 22.14.
 | `pnpm test` / `pnpm test:watch` | Vitest unit tests (`*.test.ts` next to the code they test) |
 | `pnpm test:e2e` | Playwright browser smoke tests (`apps/web/e2e`); reuses the dev server on 3100 |
 | `pnpm format` / `pnpm format:check` | Prettier write / check (Markdown is not formatted) |
+| `pnpm manual:screenshots` | Re-capture the User Manual screenshots (`apps/web/e2e-manual`) into `docs/manual/images` |
 | `pnpm manual` | Build `docs/manual/RoboSim-Studio-User-Manual.pdf` (needs Chrome or Edge) |
 | `pnpm --filter @robosim/web <script>` | Run one package's script |
 
