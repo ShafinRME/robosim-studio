@@ -183,11 +183,12 @@ export default function UiKitPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 <span className="mr-2 font-mono text-2xs tracking-widest text-brand uppercase">
-                  Signal Arm
+                  Kinematic Frame
                 </span>
-                An industrial robot arm with copper joint bearings and a two-finger gripper holding
-                a glowing, orbiting object — the thing being simulated. Teal→blue arm on an ink tile
-                with a faint blueprint grid; recognisable from 16 px.
+                A wireframe simulation cube with joint nodes; at its centre a robot coordinate frame
+                (X coral, Y green, Z teal) driven by a copper servo gear, with a revolute-joint
+                arrow around Z. Robotics, simulation and digital in one mark; recognisable from 16
+                px.
               </p>
             </div>
           </div>

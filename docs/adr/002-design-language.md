@@ -31,6 +31,10 @@ A design language called **Signal**: a calm, precise instrument-panel workspace 
 - **Motion:** short and purposeful (120–240 ms, ease-out); honours `prefers-reduced-motion`.
 - **Icons:** Lucide (ISC licence) for UI, plus our own robotics/electronics icons drawn on the same
   24 px grid and stroke width.
+- **Logo — "Kinematic Frame":** a wireframe simulation cube (the virtual world) with joint nodes,
+  and at its centre a robot coordinate frame (X coral, Y green, Z teal) driven by a copper servo gear with
+  a revolute-joint arrow. Robotics + simulation + digital in one mark, and deliberately different from
+  the old RoboSim robot-arm logo. Source: `packages/ui/src/components/logo.tsx`; favicon `apps/web/src/app/icon.svg`.
 - **Accessibility:** text and controls meet WCAG 2.1 AA contrast in both themes; visible focus ring.
 
 All values live as CSS custom properties (tokens) in `packages/ui/src/styles/globals.css` and are
