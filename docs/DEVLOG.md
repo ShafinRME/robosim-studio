@@ -20,7 +20,9 @@ One short entry per finished Day: what was built, what was learned, what's next.
   security settings.
 - Learned: copying RoboSim's versions brought its vulnerabilities — audit first, security beats parity;
   a logo must be unmistakable at a glance and different from RoboSim's arm; shadcn 4.7 output needs
-  restyling and import fixes; shell-escaped regexes lose backslashes — edit files directly.
+  restyling and import fixes; shell-escaped regexes lose backslashes — edit files directly; CodeQL caught a
+  ReDoS in our own SI-unit regex (ambiguous `s*`/digit groups) — fixed with an unambiguous pattern, a
+  64-character cap and a regression test.
 - Next: Day 06 — Studio workspace shell (Dockview docking, top bar, tabs, status bar, command palette),
   in a **new session** (Days 06–10).
 

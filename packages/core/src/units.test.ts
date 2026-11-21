@@ -82,3 +82,14 @@ describe("clampStep", () => {
     expect(clampStep(6, { min: 1, step: 2 })).toBe(7);
   });
 });
+
+describe("parseSI security", () => {
+  it("rejects very long input quickly (no ReDoS)", () => {
+    const evil = `.9${" ".repeat(50_000)}x`;
+    const t0 = Date.now();
+    expect(parseSI(evil)).toBeNull();
+    expect(parseSI(`1${"1".repeat(10_000)}!`)).toBeNull();
+    expect(parseSI(`.9${" ".repeat(60)}`)).toBe(0.9);
+    expect(Date.now() - t0).toBeLessThan(50);
+  });
+});

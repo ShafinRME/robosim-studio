@@ -32,8 +32,17 @@ const PARSE_PREFIX: Readonly<Record<string, number>> = {
   p: -12,
 };
 
+/** Longest text we try to parse. Real values are short; this also bounds the work per keystroke. */
+const MAX_INPUT_LENGTH = 64;
+
+/**
+ * Unambiguous on purpose (no ReDoS): every character can be matched in only one way —
+ * digits then an optional ".digits", an optional exponent, at most one space, an optional prefix,
+ * at most one space, then a unit that cannot start with a digit/sign/dot. Whitespace runs are
+ * collapsed and the length is capped before matching.
+ */
 const NUMBER_WITH_PREFIX =
-  /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)\s*(meg|MEG|[TGMkKmµμunp])?\s*(.*)$/i;
+  /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?) ?(meg|MEG|[TGMkKmµμunp])? ?([^ \d.+-][^ ]*)?$/;
 
 /**
  * Parses "4.7k", "4k7"-free plain notation, "100 nF", "-3.3", "2.2e-6", "1meg".
@@ -42,14 +51,14 @@ const NUMBER_WITH_PREFIX =
  * A trailing unit (e.g. "F", "Ω", "Hz") is allowed and ignored; pass `unit` to restrict it.
  */
 export function parseSI(input: string, unit?: string): number | null {
-  const text = input.trim();
+  if (input.length > MAX_INPUT_LENGTH) return null;
+  const text = input.trim().replace(/\s+/g, " ");
   if (text === "") return null;
   const match = NUMBER_WITH_PREFIX.exec(text);
   if (!match) return null;
   const [, numberPart = "", rawPrefix, rest = ""] = match;
 
-  // A lone "m"/"M" etc. must be case-sensitive (milli vs mega); the regex is case-insensitive only
-  // so that "e" exponents and "meg" work — re-check the prefix exactly.
+  // Prefixes are case-sensitive (m = milli, M = mega); the lookup table is the single source of truth.
   let exponent = 0;
   if (rawPrefix !== undefined) {
     const exact = PARSE_PREFIX[rawPrefix];
