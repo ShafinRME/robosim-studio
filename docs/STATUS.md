@@ -1,9 +1,9 @@
 # Status
 
-**Current:** Day 06 — Studio workspace shell · Steps 7–8/9 done
+**Current:** Day 06 — Studio workspace shell · Step 9/9 (owner review, then merge)
 **Branch:** `feat/day-06-workspace-shell` (from `develop`)
 **Session:** Days 06–10 – Studio core
-**Updated:** 2026-11-22
+**Updated:** 2026-11-23
 
 ## Day 06 steps
 | Step | Task | State |
@@ -16,7 +16,7 @@
 | 6/9 | Command palette (Ctrl+K) + command registry in core | ✅ done |
 | 7/9 | Keyboard shortcuts registry (conflict check) + shortcuts help | ✅ done |
 | 8/9 | e2e tests; User Manual "Studio workspace" chapter + screenshots; `pnpm manual` | ✅ done |
-| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | ⏳ next |
+| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | 🔄 DEVLOG done, waiting for owner approval |
 
 ## Decisions (Day 06)
 - ADR 003: **Dockview 8.9.1** (MIT, no runtime deps, 0 GitHub advisories, passes the 3-day release-age
@@ -66,7 +66,7 @@
 - Earlier decisions: ADR 001 (labs), ADR 002 (Signal design language); Day 05 details in `docs/DEVLOG.md`.
 
 ## Next action
-Day 06 · Step 9/9 — owner review of the whole Day; then DEVLOG entry, PR #7 ready, squash-merge into `develop`, note for Day 07.
+Day 06 · Step 9/9 — owner approves the whole-Day test; then PR #7 ready, squash-merge into `develop`, note for Day 07.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to
