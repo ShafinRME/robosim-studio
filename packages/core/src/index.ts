@@ -70,3 +70,30 @@ export type {
   ShortcutMap,
   ShortcutProblem,
 } from "./shortcuts";
+export {
+  MAX_COORDINATE,
+  MAX_NAME_CHARS,
+  MAX_PART_PROPS,
+  MAX_PROJECT_CHARS,
+  MAX_PROJECT_PARTS,
+  PROJECT_FORMAT,
+  PROJECT_MIGRATIONS,
+  PROJECT_VERSION,
+  createProject,
+  loadProject,
+  migrateProjectData,
+  newId,
+  parseProject,
+  partSchema,
+  projectSchema,
+  serializeProject,
+} from "./project";
+export type {
+  MigrationResult,
+  Part,
+  PartValue,
+  Project,
+  ProjectLoadResult,
+  ProjectMigration,
+  ProjectRejection,
+} from "./project";
