@@ -34,16 +34,16 @@ const partTypeSchema = z
   );
 // Keys that could reach an object's prototype are refused outright.
 const FORBIDDEN_KEYS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
-const propKeySchema = z
+export const propKeySchema = z
   .string()
   .regex(/^[A-Za-z_][A-Za-z0-9_]{0,63}$/, "must be a property name")
   .refine((key) => !FORBIDDEN_KEYS.has(key), "is a reserved name");
-const propValueSchema = z.union([
+export const propValueSchema = z.union([
   z.number().min(-1e15).max(1e15),
   z.string().max(MAX_TEXT_PROP_CHARS),
   z.boolean(),
 ]);
-const coordinateSchema = z.number().min(-MAX_COORDINATE).max(MAX_COORDINATE);
+export const coordinateSchema = z.number().min(-MAX_COORDINATE).max(MAX_COORDINATE);
 const LAB_IDS = LABS.map((lab) => lab.id) as [LabId, ...LabId[]];
 
 export const partSchema = z.strictObject({

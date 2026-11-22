@@ -97,3 +97,12 @@ export type {
   ProjectMigration,
   ProjectRejection,
 } from "./project";
+export { MAX_HISTORY, applyEdit, emptyHistory, redo, redoLabel, undo, undoLabel } from "./history";
+export type { Edit, EditResult, History, HistoryEntry, StepResult } from "./history";
+export {
+  ProjectEditError,
+  createProjectStore,
+  normalizeRotation,
+  projectEdits,
+} from "./project-store";
+export type { ProjectEdit, ProjectStore, ProjectStoreState } from "./project-store";

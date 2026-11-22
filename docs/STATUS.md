@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 07 — Project model & undo/redo · Steps 1–2/8 done
+**Current:** Day 07 — Project model & undo/redo · Steps 3–4/8 done
 **Branch:** `feat/day-07-project-model` (from `develop`) · draft PR #8
 **Session:** Days 06–10 – Studio core
 **Updated:** 2026-11-23
@@ -10,9 +10,9 @@
 |---|---|---|
 | 1/8 | Day branch; ADR 004 project model (Zod, Zustand, Immer, command-pattern undo; security check) | ✅ done |
 | 2/8 | Versioned project schema (Zod) + migration runner in core, with tests | ✅ done |
-| 3/8 | Project store (vanilla Zustand + Immer) in core | ⏳ next |
-| 4/8 | Undo/redo engine (Immer patches, history cap, labels) | ⏳ |
-| 5/8 | Acceptance test: 100 random edits undo back to the initial state | ⏳ |
+| 3/8 | Project store (vanilla Zustand + Immer) in core | ✅ done |
+| 4/8 | Undo/redo engine (Immer patches, history cap, labels) | ✅ done |
+| 5/8 | Acceptance test: 100 random edits undo back to the initial state | ⏳ next |
 | 6/8 | Studio: Edit → Undo/Redo, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, status messages | ⏳ |
 | 7/8 | e2e tests; User Manual update; `pnpm manual` | ⏳ |
 | 8/8 | Owner review → DEVLOG, merge; note for Day 08 | ⏳ |
@@ -26,11 +26,18 @@
   coordinates ±1e6, rotation 0–360, unique part ids, `constructor`/`prototype` keys refused (Zod drops
   `__proto__`; tested). Files > 5 MB refused before parsing. Migration runner: one pure step per version,
   newer versions refused, failures reported; chain empty for v1 (tested with test migrations). 44 tests.
-- Zod added to `@robosim/core` only; audit 0.
+- Zod, Zustand and Immer added to `@robosim/core` only; audit 0.
+- Undo/redo (`packages/core/src/history.ts`): `applyEdit` / `undo` / `redo` on Immer patches + inverse patches;
+  no-change edits not recorded; a new edit clears redo; history capped at 200 (oldest dropped). 10 tests.
+- Store (`packages/core/src/project-store.ts`): vanilla Zustand `createProjectStore(project)` with `apply`, `undo`,
+  `redo`, `replace` (clears history); frozen state. Validated edits in `projectEdits`: rename project, add / remove /
+  move / rotate / rename part, set / remove property (throw `ProjectEditError` on bad input, no-op on a missing
+  part). Labels name the part ("Move R1"). `updatedAt` is set on save (Day 08), not per edit, so undo restores
+  the exact project. 29 tests; 274 unit tests in total.
 - Day 06 merged into `develop` as `ec55cf5` (PR #7).
 
 ## Next action
-Day 07 · Steps 3–4/8 — project store (Zustand vanilla + Immer) and the undo/redo engine.
+Day 07 · Steps 5–6/8 — 100-random-edits acceptance test; studio Edit → Undo/Redo + shortcuts.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to
