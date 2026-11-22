@@ -58,3 +58,62 @@ test("workspace: panels, toolbar and inspector", async ({ page }) => {
   await settle(page);
   await workspace.screenshot({ path: shot("workspace") });
 });
+
+test.describe("studio workspace", () => {
+  test.beforeEach(async ({ page }) => {
+    await setTheme(page, "dark");
+    await page.goto("/studio");
+    await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
+    await settle(page);
+  });
+
+  test("overview with status bar", async ({ page }) => {
+    await page.getByRole("button", { name: "New project" }).click();
+    await page.getByTestId("studio-canvas").hover({ position: { x: 240, y: 120 } });
+    await settle(page);
+    await page.screenshot({ path: shot("studio-overview") });
+    await page.screenshot({
+      path: shot("studio-status-bar"),
+      clip: { x: 0, y: 768 - 24, width: 1366, height: 24 },
+    });
+  });
+
+  test("floating group", async ({ page }) => {
+    const inspector = page
+      .locator(".dv-groupview")
+      .filter({ has: page.locator(".dv-tab", { hasText: "Inspector" }) });
+    await inspector.getByRole("button", { name: "Float this group" }).click();
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("studio-floating") });
+  });
+
+  test("view menu", async ({ page }) => {
+    await page.getByRole("menuitem", { name: "View" }).click();
+    await expect(page.getByRole("menuitem", { name: "Reset layout" })).toBeVisible();
+    await settle(page);
+    await page.screenshot({
+      path: shot("studio-view-menu"),
+      clip: { x: 0, y: 0, width: 640, height: 260 },
+    });
+  });
+
+  test("command palette", async ({ page }) => {
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Search commands" }).fill("lay");
+    await settle(page);
+    await page.screenshot({
+      path: shot("command-palette"),
+      clip: { x: 300, y: 60, width: 766, height: 460 },
+    });
+  });
+
+  test("keyboard shortcuts window", async ({ page }) => {
+    await page.getByTestId("studio-canvas").click();
+    await page.keyboard.press("Control+Slash");
+    const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+    await expect(dialog).toBeVisible();
+    await settle(page);
+    await dialog.screenshot({ path: shot("keyboard-shortcuts") });
+  });
+});

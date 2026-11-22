@@ -242,4 +242,14 @@
       transition-duration: 0.01ms !important;
     }
   }
+  /* Low-end mode (status bar toggle): no animations, transitions or glow on slower computers. */
+  [data-low-end] *,
+  [data-low-end] *::before,
+  [data-low-end] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-low-end] {
+    --shadow-glow: none;
+  }
 }

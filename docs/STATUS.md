@@ -1,53 +1,72 @@
 # Status
 
-**Current:** Day 05 — Design system · ✅ complete (8/8) — block Days 02–05 finished
-**Branch:** `feat/day-05-design-system` → PR #5 squash-merged into `develop`
-**Session:** Days 02–05 done. **Day 06 starts a NEW session** (block Days 06–10).
-**Updated:** 2026-11-21
+**Current:** Day 06 — Studio workspace shell · Step 9/9 (owner review, then merge)
+**Branch:** `feat/day-06-workspace-shell` (from `develop`)
+**Session:** Days 06–10 – Studio core
+**Updated:** 2026-11-23
 
-## Day 05 steps
+## Day 06 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; ADR 002 "Signal" design language; design tokens (colour, type, density, motion); IBM Plex fonts; `/ui-kit` page | ✅ done |
-| 2/8 | **Security baseline** (owner request): 34 → 0 vulnerabilities (Next.js 16.4.6, overrides), SHA-pinned actions, CodeQL, Dependabot, audit in CI, security headers + e2e test, 3-day release-age guard, SECURITY.md | ✅ done |
-| 3/8 | Dark / light / system theme with a theme switcher (very digital look) | ✅ done |
-| 4/8 | Logo (mark + wordmark) and icon set (Lucide + our robotics icons) | ✅ done |
-| 5/8 | Primitives restyled to Signal: buttons, icon buttons, inputs, number field with units, switch, slider, select, tabs, tooltip, badge, kbd | ✅ done |
-| 6/8 | Workspace components: Panel, Toolbar, Inspector (property grid) | ✅ done |
-| 7/8 | UI kit page shows everything; e2e test; User Manual chapter on themes & look | ✅ done |
-| 8/8 | Owner review → DEVLOG, merge; end-of-block card for the Days 06–10 session | ✅ done |
+| 1/9 | Day branch; ADR 003 workspace shell (Dockview, licence, security check, layout saving); empty `/studio` page + e2e test | ✅ done |
+| 2/9 | Dockview in Signal style; default layout (Explorer, Canvas, Inspector, Console); dock/split/tabs/float | ✅ done |
+| 3/9 | Layout saving: localStorage, validated restore (core + tests), Reset layout | ✅ done |
+| 4/9 | Top bar (logo, menus, run controls slot, theme) + project tabs | ✅ done |
+| 5/9 | Status bar (sim state, messages, Low-end indicator, cursor/zoom) | ✅ done |
+| 6/9 | Command palette (Ctrl+K) + command registry in core | ✅ done |
+| 7/9 | Keyboard shortcuts registry (conflict check) + shortcuts help | ✅ done |
+| 8/9 | e2e tests; User Manual "Studio workspace" chapter + screenshots; `pnpm manual` | ✅ done |
+| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | 🔄 DEVLOG done, waiting for owner approval |
 
-## Decisions (Day 05)
-- ADR 002: design language **Signal** — dark-first cool graphite surfaces, Signal teal brand, copper
-  highlight, oscilloscope channel colours (CH1–CH4), IBM Plex Sans/Mono, compact 28 px controls,
-  6 px radius, short ease-out motion. Original design; nothing copied from old RoboSim or other products.
-- Tokens are CSS custom properties in `packages/ui/src/styles/globals.css`, exposed to Tailwind
-  (`bg-surface-1`, `text-brand`, `bg-ch1`, …). Components use tokens only.
-- Security (owner rule): zero known vulnerabilities. Next.js 16.2.6 → **16.4.6** (25 advisories incl. 5 critical
-  in 16.2.6); eslint-config-next 16.4.6; shadcn 4.23.0; overrides for zod (lint plugin) and minimatch
-  (shadcn CLI). Audit now: **0 known vulnerabilities**; CI fails on any new one.
-- Themes via next-themes 0.4.6 (MIT): dark default, light, system; stored as `robosim-theme`; no flash.
-  Digital look: blueprint dot/line grid canvas (`bg-blueprint`), signal glow (`shadow-glow`), mono labels.
-- Logo **"Kinematic Frame"** (final, owner-approved after 4 rounds; deliberately unlike the old RoboSim arm):
-  wireframe simulation cube with joint nodes + robot XYZ coordinate frame driven by a copper servo gear and a
-  revolute-joint arrow, on an ink tile with blueprint dots; wordmark `RoboSim` + mono `STUDIO`; SVG favicon.
-- Icons: Lucide (ISC) for UI + 12 own electronics/robotics icons on the same 24 px grid (`@robosim/ui/icons/robotics`).
-- Controls rebuilt in Signal style on Radix primitives (shadcn generated, then rewritten; no 0.x `cn` package):
-  Button (6 variants, 3 sizes) + IconButton (label required), Input, Select, Switch, Slider, Tabs
-  (instrument strip), Tooltip (+ provider in layout), Badge (status LED), Kbd, Separator, and
-  **NumberField** with engineering units (`parseSI`/`formatSI`/`clampStep` in `@robosim/core`, 38 tests).
-- Workspace components: **Panel** (header with icon/meta/actions, body, footer, bezel highlight), **Toolbar**
-  (Radix roving focus — one Tab stop, ←/→ between tools; toggle groups; tooltips with shortcuts),
-  **Inspector** (collapsible property grid, label↔control linking, live read-only values). `animate-flow`
-  utility for current flow along wires. UI kit has a live LED-circuit workspace demo (12 e2e tests).
-- User Manual chapters 3–6 (home, themes, engineering number fields, workspace) with screenshots captured
-  by a repeatable Playwright script (`pnpm manual:screenshots`); UI kit got a sticky section nav.
-- Fonts (OFL-1.1) are the one licence exception, self-hosted by `next/font`.
+## Decisions (Day 06)
+- ADR 003: **Dockview 8.9.1** (MIT, no runtime deps, 0 GitHub advisories, passes the 3-day release-age
+  guard) for the workspace. Own Signal theme over Dockview's CSS variables. Layout saved as
+  `{ version: 1, layout }` in `localStorage` (`robosim-layout`), validated in `@robosim/core` before use,
+  default layout on any failure; Reset layout command. Popout windows off until reviewed. Route `/studio`.
+- Package is **`dockview-react` 8.9.1** (React bindings; pulls `dockview` + `dockview-core`, all MIT).
+  Audit still 0. `Dock` component in `@robosim/ui/components/dock` with the Signal theme
+  (`styles/dock.css`, 4 px gaps, rounded modules, teal active-tab bar), group buttons Float / Dock back
+  and Maximize / Restore, tab right-click menu without Popout. Studio panels are placeholders with
+  honest empty states. 5 e2e tests incl. real drag-and-drop (tab join + edge split).
+- Layout saving: `packages/core/src/layout.ts` (`parseSavedLayout`, `checkLayout`, `serializeLayout`; 44 unit
+  tests with a real saved layout as fixture). Rejects: missing, > 100 000 chars, corrupt JSON, other version,
+  unknown panel component, custom tab components, panels missing or placed twice, bad sizes, grids deeper than
+  32, popout/edge groups. Saved 300 ms after a change and on page close; restore falls back to the default layout
+  (and clears the bad save) on any problem, with a console warning. **Reset layout** is a temporary button in
+  the studio header until the View menu arrives in Step 4. 10 studio e2e tests.
+- Top bar: Logo · Menubar (new `@robosim/ui/components/menubar`, Radix) — File (New / Close project), Edit
+  (Undo / Redo disabled until Day 07), View (panel show/hide checkboxes + Reset layout, header button removed),
+  Help (GitHub source + Report a problem, new tab, `noopener noreferrer`) · Run / Pause / Step / Stop (disabled,
+  "No simulation loaded") · theme switch. Project tabs: pure logic in `packages/core/src/project-tabs.ts`
+  (17 tests; max 12 tabs, "Untitled N" naming, browser-like close); tab strip with ←/→/Home/End; empty state
+  with New project when all are closed. Tabs are not saved yet (Day 08). 29 e2e tests.
+- Status bar: Idle state · latest message (`role=status`) · canvas pointer X/Y (px) · **Low-end mode** toggle
+  (stored `robosim-low-end`; default from `navigator.deviceMemory` ≤ 4 GB or ≤ 2 cores; sets `data-low-end` on
+  `<html>` → no animations/transitions/glow) · version. Message log + Low-end detection in
+  `packages/core/src/status.ts` (16 tests); Console panel now lists messages. Landmarks: top bar = banner,
+  workspace = main, status bar = contentinfo. Zoom readout waits for a zoomable canvas. 35 e2e tests.
+- Commands: `packages/core/src/commands.ts` — registry (register/unregister, duplicate-id check, cached list,
+  subscribe), `fuzzyMatch` + `searchCommands` (title first, then each word within one title/category/keyword),
+  `rememberRecent` (18 tests). Palette is our own (`@robosim/ui/components/command-palette`, Radix Dialog,
+  accessible combobox; no new dependency): Ctrl/⌘+K or the top-bar "Search commands" button; ↑/↓, Enter, Esc;
+  highlights matches; disabled commands shown dimmed; recent first. 17 studio commands in
+  `apps/web/src/app/studio/studio-commands.ts`; menus run the same command ids. `useSetTheme` added to
+  theme-provider. 43 e2e tests.
+- Shortcuts: `packages/core/src/shortcuts.ts` — parse "Mod+Shift+K", match by physical key (`event.code`),
+  Ctrl vs ⌘, display keys, browser-reserved list, conflict check, `createShortcutMap` (30 tests). Bindings in
+  `apps/web/src/app/studio/studio-shortcuts.ts` (unit test: no conflicts/reserved). Alt used where Ctrl belongs to
+  the browser. While typing, only Mod shortcuts run. Keys shown in menus, palette and a new **Keyboard shortcuts**
+  window (Ctrl+/ or ?, Help menu; new `@robosim/ui/components/dialog`).
+- Step 8: User Manual chapter 7 "The studio workspace" + 6 new screenshots (`pnpm manual:screenshots`), PDF rebuilt.
+  Home page buttons now link to `/studio` and `/ui-kit`. Fixes found while shooting: default column widths on a
+  first visit (re-applied after layout), floating a group keeps the side columns' widths, "1 command". 50 e2e.
+- Working rule changed (owner, 2026-11-22): **two steps per "next"** — CLAUDE.md updated.
+- Dev note: Turbopack did not pick up an edit to `packages/ui/src/styles/globals.css`; restart `pnpm dev` after
+  editing CSS in `packages/ui`.
+- Earlier decisions: ADR 001 (labs), ADR 002 (Signal design language); Day 05 details in `docs/DEVLOG.md`.
 
 ## Next action
-Day 06 — Studio workspace shell, in a **new session**. Owner: New session → folder
-`E:\My Projects\robosim-studio` → rename `Days 06–10 – Studio core` → first message:
-`Day 06. Read CLAUDE.md and docs/STATUS.md, then show me today's steps.`
+Day 06 · Step 9/9 — owner approves the whole-Day test; then PR #7 ready, squash-merge into `develop`, note for Day 07.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

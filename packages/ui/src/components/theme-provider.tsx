@@ -1,6 +1,6 @@
 "use client";
 
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import type { ReactNode } from "react";
 
 export type ThemeChoice = "system" | "light" | "dark";
@@ -23,4 +23,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </NextThemesProvider>
   );
+}
+
+/** Sets the studio theme from anywhere (menus, command palette). */
+export function useSetTheme(): (theme: ThemeChoice) => void {
+  return useTheme().setTheme;
 }

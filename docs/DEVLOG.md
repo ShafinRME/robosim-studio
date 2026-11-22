@@ -9,6 +9,21 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 06 — Studio workspace shell (2026-11-23)
+- Built: `/studio` workspace (ADR 003) on **Dockview 8.9.1** (MIT) in our own Signal style — dock, split,
+  tab, float, maximize; popout off. Layout saved in `localStorage`, validated in `@robosim/core` before
+  restore (default layout + a status-bar warning on any problem), Reset layout. Top bar with File / Edit /
+  View / Help menus, disabled run controls and theme switch; project tabs (max 12); status bar (state,
+  messages, canvas X/Y, Low-end mode, version) and a Console log. Command registry + fuzzy search and our
+  own Ctrl+K palette; shortcut registry with a conflict / browser-reserved check and a Keyboard shortcuts
+  window. User Manual chapter 7 with 6 screenshots. 191 unit tests, 50 e2e, audit 0.
+- Learned: `dockview` has no React bindings (`dockview-react` does); Dockview's `initialWidth` is only a
+  hint — set sizes explicitly, and again after the first layout pass; subscriptions belong in effects, not
+  `onReady`, to survive Strict Mode; many Ctrl shortcuts belong to the browser, so the studio uses Alt;
+  Turbopack can miss CSS edits in `packages/ui` — restart the dev server.
+- Next: Day 07 — Project model & undo/redo (Zod schema with migrations, Zustand + Immer store,
+  command-pattern undo/redo).
+
 ## Day 05 — Design system (2026-11-22)
 - Built: "Signal" design language (ADR 002) — tokens, IBM Plex fonts, dark/light/system themes with a
   switcher, blueprint grid and glow; final "Kinematic Frame" logo + favicon (4 design rounds); 12 own
