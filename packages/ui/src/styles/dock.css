@@ -1,0 +1,162 @@
+/*
+ * Signal theme for Dockview (ADR 003). Maps Dockview's CSS variables to our design tokens, so the
+ * docking workspace follows dark / light automatically. Groups are separate instrument modules on the
+ * blueprint canvas; the active tab is lit by a teal signal bar, like the Tabs component.
+ */
+.dockview-theme-signal {
+  color-scheme: inherit;
+  font-family: var(--font-sans);
+
+  --dv-border-radius: 6px;
+  --dv-spacing-padding: 0px;
+  --dv-tab-margin: 0;
+  --dv-tab-border-radius: 0px;
+  --dv-tab-font-size: 11px;
+  --dv-tab-close-icon-size: 14px;
+  --dv-tabs-and-actions-container-font-size: 11px;
+  --dv-tabs-and-actions-container-height: var(--panel-header-h);
+  --dv-dropdown-border-radius: 6px;
+  --dv-overlay-z-index: 40;
+
+  /* Surfaces */
+  --dv-group-view-background-color: var(--surface-1);
+  --dv-tabs-and-actions-container-background-color: var(--surface-1);
+  --dv-separator-border: transparent;
+  --dv-paneview-header-border-color: var(--border);
+  --dv-tab-divider-color: transparent;
+  --dv-scrollbar-background-color: var(--border-strong);
+  --dv-tabs-container-scrollbar-color: var(--border-strong);
+  --dv-icon-hover-background-color: var(--surface-3);
+  --dv-context-menu-background-color: var(--popover);
+  --dv-context-menu-color: var(--popover-foreground);
+
+  /* Tabs */
+  --dv-activegroup-visiblepanel-tab-background-color: transparent;
+  --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-inactivegroup-visiblepanel-tab-background-color: transparent;
+  --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-activegroup-visiblepanel-tab-color: var(--brand);
+  --dv-activegroup-hiddenpanel-tab-color: var(--muted-foreground);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--foreground);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--faint-foreground);
+
+  /* Resizing: invisible sash that lights up teal while dragging */
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--brand);
+  --dv-sash-border-radius: 2px;
+  --dv-active-sash-transition-duration: 0.12s;
+  --dv-active-sash-transition-delay: 0.3s;
+
+  /* Drag and drop: teal drop zones */
+  --dv-drag-over-background-color: var(--brand-soft);
+  --dv-drag-over-border-color: var(--brand);
+  --dv-drag-over-border: 1px solid var(--brand);
+  --dv-edge-dock-indicator-color: var(--brand);
+  --dv-edge-drop-strip-size: 6px;
+  --dv-paneview-active-outline-color: var(--brand);
+  --dv-smart-guides-color: var(--highlight);
+  --dv-smart-guides-preview-color: var(--highlight-soft);
+  --dv-dnd-compass-color: var(--brand);
+  --dv-dnd-compass-cell-color: var(--surface-2);
+  --dv-dnd-compass-active-cell-color: var(--brand-soft);
+  --dv-dnd-compass-edge-cell-color: var(--surface-3);
+
+  /* Floating groups */
+  --dv-floating-box-shadow: var(--shadow-popover);
+  --dv-floating-border: 1px solid var(--border-strong);
+  --dv-floating-group-border: 1px solid var(--border-strong);
+  --dv-floating-group-dragging-opacity: 0.7;
+  --dv-floating-titlebar-height: 20px;
+  --dv-floating-titlebar-background-color: var(--surface-2);
+  --dv-floating-titlebar-border-bottom: 1px solid var(--border);
+
+  --dv-transition-duration: var(--duration-fast);
+}
+
+/* Each group is a module: rounded, hairline border, soft panel shadow. */
+.dockview-theme-signal .dv-resize-container:has(> .dv-groupview),
+.dockview-theme-signal .dv-groupview {
+  border-radius: var(--dv-border-radius);
+}
+.dockview-theme-signal .dv-groupview {
+  overflow: hidden;
+  box-shadow: var(--shadow-panel);
+  border: 1px solid var(--border);
+}
+.dockview-theme-signal .dv-groupview.dv-active-group {
+  border-color: var(--border-strong);
+}
+
+/* Tab strip */
+.dockview-theme-signal .dv-tabs-and-actions-container {
+  border-bottom: 1px solid var(--border);
+}
+.dockview-theme-signal .dv-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 0.625rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.dockview-theme-signal .dv-tab::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0.375rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.dockview-theme-signal .dv-tab.dv-active-tab::before {
+  background: var(--border-strong);
+}
+.dockview-theme-signal .dv-groupview.dv-active-group .dv-tab.dv-active-tab::before {
+  background: var(--brand);
+  box-shadow: var(--shadow-glow);
+}
+.dockview-theme-signal .dv-tab:hover {
+  color: var(--foreground);
+}
+.dockview-theme-signal .dv-tab:focus-visible::after,
+.dockview-theme-signal .dv-tab:has(:focus-visible)::after {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.dockview-theme-signal .dv-default-tab-action {
+  border-radius: 4px;
+  color: var(--muted-foreground);
+}
+.dockview-theme-signal .dv-default-tab-action:hover {
+  color: var(--foreground);
+}
+
+/* Context menu */
+.dockview-theme-signal .dv-context-menu {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-popover);
+  font-size: 12px;
+}
+.dockview-theme-signal .dv-context-menu-item:hover {
+  background: var(--surface-3);
+}
+.dockview-theme-signal .dv-context-menu-separator {
+  background: var(--border);
+}
+
+/* Floating groups */
+.dockview-theme-signal .dv-resize-container {
+  border-radius: var(--dv-border-radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dockview-theme-signal {
+    --dv-transition-duration: 0ms;
+    --dv-active-sash-transition-duration: 0ms;
+  }
+}

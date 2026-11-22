@@ -1,0 +1,151 @@
+"use client";
+
+import { IconButton } from "@robosim/ui/components/button";
+import { Logo } from "@robosim/ui/components/logo";
+import {
+  Menubar,
+  MenubarCheckboxItem,
+  MenubarContent,
+  MenubarItem,
+  MenubarLabel,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarTrigger,
+} from "@robosim/ui/components/menubar";
+import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
+import {
+  Bug,
+  FilePlus2,
+  CodeXml,
+  Pause,
+  Play,
+  Redo2,
+  RotateCcw,
+  Search,
+  SkipForward,
+  Square,
+  Undo2,
+  X,
+} from "lucide-react";
+import { Kbd, KbdGroup } from "@robosim/ui/components/kbd";
+import { REPO_URL } from "./studio-commands";
+import { STUDIO_PANELS } from "./studio-workspace";
+
+/** Studio top bar: logo, application menus, simulation controls and theme switch. */
+export function TopBar({
+  run,
+  openPanels,
+  hasProject,
+  paletteKeys,
+}: {
+  /** Runs a studio command by id (menus use the same commands as the palette). */
+  run: (id: string) => void;
+  openPanels: ReadonlySet<string>;
+  hasProject: boolean;
+  paletteKeys: readonly string[];
+}) {
+  return (
+    <header className="flex h-10 shrink-0 items-center gap-3 border-b bg-surface-1 px-3">
+      <Logo className="shrink-0" />
+
+      <Menubar aria-label="Studio menu">
+        <MenubarMenu>
+          <MenubarTrigger>File</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onSelect={() => run("file.newProject")}>
+              <FilePlus2 /> New project
+            </MenubarItem>
+            <MenubarItem disabled={!hasProject} onSelect={() => run("file.closeProject")}>
+              <X /> Close project
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        <MenubarMenu>
+          <MenubarTrigger>Edit</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem disabled>
+              <Undo2 /> Undo
+            </MenubarItem>
+            <MenubarItem disabled>
+              <Redo2 /> Redo
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        <MenubarMenu>
+          <MenubarTrigger>View</MenubarTrigger>
+          <MenubarContent>
+            <MenubarLabel>Panels</MenubarLabel>
+            {STUDIO_PANELS.map((panel) => (
+              <MenubarCheckboxItem
+                key={panel.id}
+                checked={openPanels.has(panel.id)}
+                onCheckedChange={() => run(`view.toggle.${panel.id}`)}
+              >
+                {panel.title}
+              </MenubarCheckboxItem>
+            ))}
+            <MenubarSeparator />
+            <MenubarItem onSelect={() => run("view.resetLayout")}>
+              <RotateCcw /> Reset layout
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        <MenubarMenu>
+          <MenubarTrigger>Help</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem asChild>
+              <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+                <CodeXml /> Source code on GitHub
+              </a>
+            </MenubarItem>
+            <MenubarItem asChild>
+              <a href={`${REPO_URL}/issues/new`} target="_blank" rel="noopener noreferrer">
+                <Bug /> Report a problem
+              </a>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
+
+      {/* Simulation controls: enabled once a lab can run a simulation. */}
+      <div
+        role="group"
+        aria-label="Simulation"
+        title="No simulation loaded"
+        className="mx-auto flex items-center gap-0.5 rounded-md border bg-canvas p-0.5"
+      >
+        <IconButton label="Run" size="icon-sm" disabled>
+          <Play />
+        </IconButton>
+        <IconButton label="Pause" size="icon-sm" disabled>
+          <Pause />
+        </IconButton>
+        <IconButton label="Step" size="icon-sm" disabled>
+          <SkipForward />
+        </IconButton>
+        <IconButton label="Stop" size="icon-sm" disabled>
+          <Square />
+        </IconButton>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => run("palette.open")}
+        className="flex h-(--control-h-sm) w-56 shrink-0 items-center gap-2 rounded-md border bg-canvas px-2 text-xs text-faint-foreground outline-none hover:border-border-strong hover:text-muted-foreground focus-visible:outline-2"
+      >
+        <Search className="size-3.5" aria-hidden />
+        <span className="flex-1 text-left">Search commands…</span>
+        <KbdGroup aria-hidden>
+          {paletteKeys.map((key) => (
+            <Kbd key={key}>{key}</Kbd>
+          ))}
+        </KbdGroup>
+      </button>
+
+      <ThemeSwitcher className="shrink-0" />
+    </header>
+  );
+}
