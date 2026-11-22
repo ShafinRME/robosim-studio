@@ -27,6 +27,10 @@ test.describe("studio workspace", () => {
     }
     // Four panels, each in its own group.
     await expect(page.locator(".dv-groupview")).toHaveCount(4);
+    // Side columns open at their default widths, also on a first visit.
+    const width = async (name: string) => (await groupOf(page, name).boundingBox())?.width ?? 0;
+    await expect.poll(() => width("Explorer")).toBeLessThan(260);
+    await expect.poll(() => width("Inspector")).toBeLessThan(300);
     await expect(page.getByTestId("studio-canvas")).toBeVisible();
     expect(errors).toEqual([]);
   });
@@ -102,11 +106,16 @@ test.describe("studio workspace", () => {
   ];
   for (const [name, value] of badLayouts) {
     test(`a saved layout with ${name} is ignored`, async ({ page }) => {
+      // Leave the studio first: it saves its layout when the page closes.
+      await page.goto("/");
       await page.evaluate((v) => localStorage.setItem("robosim-layout", v), value);
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
 
-      await page.reload();
+      await page.goto("/studio");
+      await expect(
+        page.getByRole("contentinfo", { name: "Status bar" }).getByRole("status"),
+      ).toContainText("so the default layout is shown");
       await expect(page.locator(".dv-groupview")).toHaveCount(4);
       for (const panel of ["Explorer", "Canvas", "Inspector", "Console"]) {
         await expect(tab(page, panel)).toBeVisible();

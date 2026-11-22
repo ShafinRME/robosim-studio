@@ -193,6 +193,16 @@ function addDefaultLayout(api: DockviewApi) {
     addPanelAtHome(api, id);
   }
   api.getPanel("canvas")?.api.setActive();
+  applyHomeSizes(api);
+  // On first load the workspace may not be measured yet, so sizes set now can be lost: set them
+  // again once the browser has laid the page out.
+  requestAnimationFrame(() => applyHomeSizes(api));
+}
+
+function applyHomeSizes(api: DockviewApi) {
+  api.getPanel("explorer")?.group.api.setSize({ width: SIDE_WIDTH.explorer });
+  api.getPanel("inspector")?.group.api.setSize({ width: SIDE_WIDTH.inspector });
+  api.getPanel("console")?.group.api.setSize({ height: CONSOLE_HEIGHT });
 }
 
 // localStorage can be missing or blocked (private mode, site data disabled): never let it throw.

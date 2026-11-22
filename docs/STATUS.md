@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 06 — Studio workspace shell · Step 6/9 done
+**Current:** Day 06 — Studio workspace shell · Steps 7–8/9 done
 **Branch:** `feat/day-06-workspace-shell` (from `develop`)
 **Session:** Days 06–10 – Studio core
 **Updated:** 2026-11-22
@@ -14,9 +14,9 @@
 | 4/9 | Top bar (logo, menus, run controls slot, theme) + project tabs | ✅ done |
 | 5/9 | Status bar (sim state, messages, Low-end indicator, cursor/zoom) | ✅ done |
 | 6/9 | Command palette (Ctrl+K) + command registry in core | ✅ done |
-| 7/9 | Keyboard shortcuts registry (conflict check) + shortcuts help | ⏳ next |
-| 8/9 | e2e tests; User Manual "Studio workspace" chapter + screenshots; `pnpm manual` | ☐ |
-| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | ☐ |
+| 7/9 | Keyboard shortcuts registry (conflict check) + shortcuts help | ✅ done |
+| 8/9 | e2e tests; User Manual "Studio workspace" chapter + screenshots; `pnpm manual` | ✅ done |
+| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | ⏳ next |
 
 ## Decisions (Day 06)
 - ADR 003: **Dockview 8.9.1** (MIT, no runtime deps, 0 GitHub advisories, passes the 3-day release-age
@@ -52,12 +52,21 @@
   highlights matches; disabled commands shown dimmed; recent first. 17 studio commands in
   `apps/web/src/app/studio/studio-commands.ts`; menus run the same command ids. `useSetTheme` added to
   theme-provider. 43 e2e tests.
+- Shortcuts: `packages/core/src/shortcuts.ts` — parse "Mod+Shift+K", match by physical key (`event.code`),
+  Ctrl vs ⌘, display keys, browser-reserved list, conflict check, `createShortcutMap` (30 tests). Bindings in
+  `apps/web/src/app/studio/studio-shortcuts.ts` (unit test: no conflicts/reserved). Alt used where Ctrl belongs to
+  the browser. While typing, only Mod shortcuts run. Keys shown in menus, palette and a new **Keyboard shortcuts**
+  window (Ctrl+/ or ?, Help menu; new `@robosim/ui/components/dialog`).
+- Step 8: User Manual chapter 7 "The studio workspace" + 6 new screenshots (`pnpm manual:screenshots`), PDF rebuilt.
+  Home page buttons now link to `/studio` and `/ui-kit`. Fixes found while shooting: default column widths on a
+  first visit (re-applied after layout), floating a group keeps the side columns' widths, "1 command". 50 e2e.
+- Working rule changed (owner, 2026-11-22): **two steps per "next"** — CLAUDE.md updated.
 - Dev note: Turbopack did not pick up an edit to `packages/ui/src/styles/globals.css`; restart `pnpm dev` after
   editing CSS in `packages/ui`.
 - Earlier decisions: ADR 001 (labs), ADR 002 (Signal design language); Day 05 details in `docs/DEVLOG.md`.
 
 ## Next action
-Day 06 · Step 7/9 — keyboard-shortcut registry in core (conflict check), shortcuts on commands, a "Keyboard shortcuts" help window.
+Day 06 · Step 9/9 — owner review of the whole Day; then DEVLOG entry, PR #7 ready, squash-merge into `develop`, note for Day 07.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to

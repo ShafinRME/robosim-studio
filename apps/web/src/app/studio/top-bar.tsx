@@ -6,6 +6,7 @@ import {
   Menubar,
   MenubarCheckboxItem,
   MenubarContent,
+  MenubarHint,
   MenubarItem,
   MenubarLabel,
   MenubarMenu,
@@ -15,8 +16,9 @@ import {
 import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import {
   Bug,
-  FilePlus2,
   CodeXml,
+  FilePlus2,
+  Keyboard,
   Pause,
   Play,
   Redo2,
@@ -36,14 +38,20 @@ export function TopBar({
   run,
   openPanels,
   hasProject,
-  paletteKeys,
+  keysById,
 }: {
   /** Runs a studio command by id (menus use the same commands as the palette). */
   run: (id: string) => void;
   openPanels: ReadonlySet<string>;
   hasProject: boolean;
-  paletteKeys: readonly string[];
+  /** Display keys per command id, for menu hints. */
+  keysById: Readonly<Record<string, readonly string[]>>;
 }) {
+  const hint = (id: string) => {
+    const keys = keysById[id];
+    return keys ? <MenubarHint>{keys.join("+")}</MenubarHint> : null;
+  };
+  const paletteKeys = keysById["palette.open"] ?? [];
   return (
     <header className="flex h-10 shrink-0 items-center gap-3 border-b bg-surface-1 px-3">
       <Logo className="shrink-0" />
@@ -54,9 +62,11 @@ export function TopBar({
           <MenubarContent>
             <MenubarItem onSelect={() => run("file.newProject")}>
               <FilePlus2 /> New project
+              {hint("file.newProject")}
             </MenubarItem>
             <MenubarItem disabled={!hasProject} onSelect={() => run("file.closeProject")}>
               <X /> Close project
+              {hint("file.closeProject")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
@@ -84,11 +94,13 @@ export function TopBar({
                 onCheckedChange={() => run(`view.toggle.${panel.id}`)}
               >
                 {panel.title}
+                {hint(`view.toggle.${panel.id}`)}
               </MenubarCheckboxItem>
             ))}
             <MenubarSeparator />
             <MenubarItem onSelect={() => run("view.resetLayout")}>
               <RotateCcw /> Reset layout
+              {hint("view.resetLayout")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
@@ -96,6 +108,11 @@ export function TopBar({
         <MenubarMenu>
           <MenubarTrigger>Help</MenubarTrigger>
           <MenubarContent>
+            <MenubarItem onSelect={() => run("help.shortcuts")}>
+              <Keyboard /> Keyboard shortcuts
+              {hint("help.shortcuts")}
+            </MenubarItem>
+            <MenubarSeparator />
             <MenubarItem asChild>
               <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
                 <CodeXml /> Source code on GitHub

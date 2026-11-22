@@ -51,3 +51,22 @@ export {
   searchCommands,
 } from "./commands";
 export type { Command, CommandRegistry, CommandResult, FuzzyMatch } from "./commands";
+export {
+  RESERVED_SHORTCUTS,
+  checkShortcuts,
+  createShortcutMap,
+  detectPlatform,
+  formatShortcut,
+  isReservedShortcut,
+  matchesShortcut,
+  parseShortcut,
+  shortcutId,
+} from "./shortcuts";
+export type {
+  KeyInput,
+  Platform,
+  Shortcut,
+  ShortcutBindings,
+  ShortcutMap,
+  ShortcutProblem,
+} from "./shortcuts";

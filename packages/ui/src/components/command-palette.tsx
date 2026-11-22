@@ -204,7 +204,9 @@ function PaletteBody({
         <span className="flex items-center gap-1">
           <Kbd>Enter</Kbd> run
         </span>
-        <span className="ml-auto">{results.length} commands</span>
+        <span className="ml-auto">
+          {results.length} {results.length === 1 ? "command" : "commands"}
+        </span>
       </div>
     </>
   );

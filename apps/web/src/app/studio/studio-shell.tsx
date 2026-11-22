@@ -18,12 +18,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
+import { isTypingTarget, useShortcutMap } from "./studio-shortcuts";
+import { ShortcutsDialog } from "./shortcuts-dialog";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
 import { TopBar } from "./top-bar";
 import { StudioWorkspace, type StudioWorkspaceControls } from "./studio-workspace";
-
-/** Keys shown in the palette and menus. Step 7 turns this into a full shortcut registry. */
-const SHORTCUTS: Record<string, readonly string[]> = { "palette.open": ["Ctrl", "K"] };
 
 /** Studio window: top bar, project tabs, the docking workspace and the status bar. */
 export function StudioShell() {
@@ -44,7 +43,9 @@ function StudioWindow() {
   );
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
+  const shortcuts = useShortcutMap();
 
   const newProject = () => {
     const next = openProjectTab(projects, `project-${nextId.current++}`);
@@ -70,38 +71,44 @@ function StudioWindow() {
     lowEnd,
     setLowEnd,
     setTheme,
-    openPalette: () => setPaletteOpen(true),
+    togglePalette: () => setPaletteOpen((open) => !open),
+    openShortcuts: () => {
+      setPaletteOpen(false);
+      setShortcutsOpen(true);
+    },
   });
   const commands = useSyncExternalStore(registry.subscribe, registry.list, registry.list);
   const run = (id: string) => {
     if (registry.run(id)) setRecent((r) => (id === "palette.open" ? r : rememberRecent(r, id)));
   };
+  const keysById = Object.fromEntries(
+    commands.flatMap((c: Command) => {
+      const keys = shortcuts.keysFor(c.id);
+      return keys ? [[c.id, keys]] : [];
+    }),
+  ) as Record<string, string[]>;
 
-  // Ctrl+K (⌘K on a Mac) opens and closes the palette from anywhere.
+  // Global keyboard shortcuts (see studio-shortcuts.ts). While typing, only Ctrl/⌘ ones work.
+  const latestRun = useRef(run);
+  useEffect(() => {
+    latestRun.current = run;
+  });
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        !event.altKey &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === "k"
-      ) {
-        event.preventDefault();
-        setPaletteOpen((open) => !open);
-      }
+      if (event.isComposing || event.defaultPrevented) return;
+      const hit = shortcuts.find(event);
+      if (!hit) return;
+      if (isTypingTarget(event.target) && !hit.shortcut.mod) return;
+      event.preventDefault();
+      latestRun.current(hit.commandId);
     };
     window.addEventListener("keydown", onKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
-  }, []);
+  }, [shortcuts]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <TopBar
-        run={run}
-        openPanels={openPanels}
-        hasProject={hasProject}
-        paletteKeys={SHORTCUTS["palette.open"] ?? []}
-      />
+      <TopBar run={run} openPanels={openPanels} hasProject={hasProject} keysById={keysById} />
       <ProjectTabStrip
         state={projects}
         onActivate={(id) => setProjects((s) => activateProjectTab(s, id))}
@@ -134,8 +141,14 @@ function StudioWindow() {
         onOpenChange={setPaletteOpen}
         commands={commands.filter((c: Command) => c.id !== "palette.open")}
         recent={recent}
-        shortcuts={SHORTCUTS}
+        shortcuts={keysById}
         onRun={run}
+      />
+      <ShortcutsDialog
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
+        commands={commands}
+        shortcuts={shortcuts}
       />
     </div>
   );

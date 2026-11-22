@@ -15,6 +15,13 @@ test.describe("home page", () => {
     expect(errors).toEqual([]);
   });
 
+  test("Open the studio goes to the studio workspace", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Open the studio" }).click();
+    await expect(page).toHaveURL(/\/studio$/);
+    await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
+  });
+
   test("lists all 10 labs", async ({ page }) => {
     await page.goto("/");
     const labs = page.getByRole("listitem");

@@ -18,7 +18,8 @@ export type StudioCommandContext = {
   lowEnd: boolean;
   setLowEnd: (on: boolean) => void;
   setTheme: (theme: "system" | "light" | "dark") => void;
-  openPalette: () => void;
+  togglePalette: () => void;
+  openShortcuts: () => void;
 };
 
 function openExternal(url: string) {
@@ -32,7 +33,14 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       title: "Show all commands",
       category: "Help",
       keywords: ["command palette", "search"],
-      run: () => ctx().openPalette(),
+      run: () => ctx().togglePalette(),
+    },
+    {
+      id: "help.shortcuts",
+      title: "Keyboard shortcuts",
+      category: "Help",
+      keywords: ["keys", "hotkeys"],
+      run: () => ctx().openShortcuts(),
     },
     {
       id: "file.newProject",

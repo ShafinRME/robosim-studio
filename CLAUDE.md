@@ -15,9 +15,10 @@ complete; always ask the owner before suggesting any paid service.
 - **One session = 5 Days.** Days 1–5, 6–10, 11–15, … share one conversation in this folder. A new
   session starts only after Day 5, 10, 15, … is complete (so Day 6, 11, 16, … open a new session).
   Each Day still has its own branch and PR.
-- **One step per prompt.** Label every step `Day NN · Step X/N`. Do exactly one step, then stop and
-  give clear **manual test instructions** (what to run, what to click, what the owner should see).
-  Wait for the owner to say "next" (or report a problem — fix it first) before the next step.
+- **Two steps per prompt** (owner rule, 2026-11-22). Label every step `Day NN · Step X/N`. Each "next"
+  does the next two steps of the Day (only the last step if just one is left), then stop and give one
+  short combined report and **manual test instructions** for both (what to run, what to click, what
+  the owner should see). Wait for the owner to say "next" (or report a problem — fix it first).
 - After each step, update `docs/STATUS.md` (current Day/step, done, next, open issues).
 - **Git flow:**
   - `main` = production releases only. **Never commit to, push to, or merge into `main`**

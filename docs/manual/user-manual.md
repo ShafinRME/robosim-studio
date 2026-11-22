@@ -10,7 +10,7 @@ This manual explains **what every screen, button and tool in RoboSim Studio does
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
 - **Software version covered:** v0.0.0 (Phase 0 — Foundation)
-- **Last updated:** 2026-11-22 (Day 05)
+- **Last updated:** 2026-11-22 (Day 06)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
 # 1. What is RoboSim Studio?
@@ -59,13 +59,14 @@ The public website address will be added here when the first version is online (
 ![The home page (dark theme)](images/home-page.png)
 
 The home page is the first screen you see. In v0.0.0 it is a **preview page** that confirms the
-software is running. It will be replaced by the full studio workspace on Day 06.
+software is running and leads you to the studio.
 
 | Part of the screen | What it does |
 |---|---|
 | **Logo** (cube with X/Y/Z arrows and a copper gear) | The RoboSim Studio logo — a robot's coordinate frame and servo joint inside a 3D simulation world. The same picture is the icon in your browser tab. |
 | **RoboSim Studio** title | Shows the name of the software. |
-| **Primary button**, **Outline button** | Style preview only — they do not perform any action yet. |
+| **Open the studio** | Opens the studio workspace (chapter 7). |
+| **UI kit** | Opens the design preview page with all controls (chapters 4–6). |
 | Grid of 10 labs | Lists the labs in release order (P1 = phase 1, and so on). Not clickable yet. |
 | Footer line | Shows the software version and the current development phase. |
 
@@ -140,7 +141,8 @@ old value is kept, so a wrong entry can never break a simulation. Correct the te
 ![A workspace preview: Parts panel, canvas with toolbar, and Inspector](images/workspace.png)
 
 RoboSim Studio's labs are built from three kinds of building blocks. In v0.0.0 you can try them in a
-small LED-circuit preview on the UI kit page (`/ui-kit` → **Workspace**); the full studio arrives on Day 06.
+small LED-circuit preview on the UI kit page (`/ui-kit` → **Workspace**). The studio itself is described
+in chapter 7.
 
 **Panels** are the boxes that hold each tool (parts list, inspector, oscilloscope…).
 
@@ -173,15 +175,121 @@ small LED-circuit preview on the UI kit page (`/ui-kit` → **Workspace**); the 
    dangerous — for example a resistor's power is above its rating — it turns **red** and the canvas
    status line shows a **warning**. This teaches the safe limits of real parts.
 
+# 7. The studio workspace
+
+![The studio: top bar, project tabs, four panels and the status bar](images/studio-overview.png)
+
+The studio is where you will build and simulate. Open it with **Open the studio** on the home page
+(or go to `/studio`). In v0.0.0 the panels are still empty — each lab fills them in later versions —
+but you can already arrange the workspace the way you like.
+
+## 7.1 Parts of the window
+
+| Part | What it does |
+|---|---|
+| **Top bar** | Logo, the **File · Edit · View · Help** menus, the simulation buttons, **Search commands…** and the theme switch. |
+| **Simulation buttons** (▶ ⏸ ⏭ ■) | Run, Pause, Step and Stop. Greyed out until a lab can run a simulation. |
+| **Project tabs** | One tab per open project. **+** adds a new one. |
+| **Explorer** (left) | Will list the files and parts of your project. |
+| **Canvas** (middle) | The drawing area with a blueprint grid. |
+| **Console** (under the canvas) | A log of everything the studio tells you, with the time. |
+| **Inspector** (right) | Will show the properties of the selected part. |
+| **Status bar** (bottom) | State, latest message, pointer position, Low-end mode and version. |
+
+## 7.2 Arranging panels
+
+Every panel has a **tab** (its name in capitals) and two buttons on the right of its title row.
+
+| To… | Do this |
+|---|---|
+| Put two panels in one place as tabs | Drag a tab onto another panel's tab row. |
+| Split a panel | Drag a tab onto the **edge** of another panel. A teal area shows where it will land. |
+| Resize | Drag the thin gap between two panels. It lights up teal while you drag. |
+| Float a panel as a window | Click the **window** button (▭) in its title row. Drag the window by its top strip. |
+| Put a floating panel back | Click the **dock** button in the floating window's title row. |
+| Fill the whole workspace with one panel | Click the **expand** button (⤢). Click it again to restore. |
+| Close a panel | Click the **×** on its tab. |
+| More options | **Right-click** a tab: Close, Close others, Close all, Float, Maximize. |
+
+![A floating Inspector window above the canvas](images/studio-floating.png)
+
+**Show or hide panels** with the **View** menu: a tick means the panel is open. A closed panel comes
+back in its usual place.
+
+![The View menu with panel ticks and their shortcuts](images/studio-view-menu.png)
+
+**Your layout is saved.** The studio remembers how you arranged the panels on this computer and
+browser and restores it next time. If the saved layout cannot be used, the studio opens the default
+layout and says so in the status bar. To go back to the default at any time, choose
+**View → Reset layout**.
+
+## 7.3 Projects
+
+- **New project:** click **+** next to the tabs, or **File → New project**. Projects are named
+  *Untitled*, *Untitled 2*, … (up to 12 at once).
+- **Switch:** click a tab, or use **←** / **→** when a tab has keyboard focus.
+- **Close:** click the **×** on a tab, or **File → Close project**. The next tab opens.
+- With no project open, the workspace shows **New project**.
+
+Projects are empty for now and are not saved yet — saving arrives in a later version.
+
+## 7.4 Status bar and Low-end mode
+
+![The status bar](images/studio-status-bar.png)
+
+| Part | What it shows |
+|---|---|
+| **Idle** | Simulation state (no simulation is loaded yet). |
+| Message | The latest message, e.g. *Saved layout restored.* All messages are in the **Console**. |
+| **X … Y …** | Mouse pointer position on the canvas, in pixels. |
+| **Low-end off / on** | Click to switch **Low-end mode**: all animations are turned off, which helps slower computers. The choice is remembered. On computers with 4 GB of memory or less it starts switched on. |
+| **v0.0.0** | Software version. |
+
+## 7.5 Command palette
+
+![The command palette, searching for "lay"](images/command-palette.png)
+
+Every action in the studio can be found and run from one search box.
+
+1. Press **Ctrl + K** (**⌘ + K** on a Mac) or click **Search commands…** in the top bar.
+2. Type a few letters — for example `lay` finds **Reset layout**. Matching letters light up in teal.
+3. Use **↑** / **↓** to choose and **Enter** to run, or click a command. **Esc** closes the palette.
+
+- Commands you used recently are listed first.
+- A command that cannot run right now (for example *Next project tab* with only one project) is shown
+  dimmed.
+- The keys on the right of a command are its keyboard shortcut.
+
+## 7.6 Keyboard shortcuts
+
+Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this list in the studio.
+
+![The Keyboard shortcuts window](images/keyboard-shortcuts.png)
+
+| Keys | Action |
+|---|---|
+| **Ctrl + K** | Command palette (open / close) |
+| **Ctrl + /** or **?** | Keyboard shortcuts window |
+| **Alt + N** | New project |
+| **Alt + W** | Close project |
+| **Alt + ]** / **Alt + [** | Next / previous project tab |
+| **Alt + 1 … 4** | Show or hide Explorer, Canvas, Inspector, Console |
+| **Alt + Shift + R** | Reset layout |
+| **Alt + Shift + L** | Low-end mode on / off |
+
+- On a Mac use **⌘** instead of **Ctrl** and **⌥ Option** instead of **Alt**.
+- While you type in a text box (such as the palette search), only **Ctrl** shortcuts work, so your
+  typing is never interrupted.
+- The browser keeps some keys for itself (Ctrl + N, Ctrl + W, Ctrl + Tab…), so the studio uses
+  **Alt** for those actions instead.
+
 # Coming soon
 
 These parts of the manual will be written as each feature is finished:
 
-- Studio workspace: docking panels, project tabs, command palette (**Ctrl + K**) and all keyboard
-  shortcuts (Day 06)
 - Saving, opening, exporting and sharing projects (Days 07–08)
 - Simulation controls in the real studio: play, pause, step and speed (Day 09)
-- Low-end mode for slower computers (Day 10)
+- More Low-end mode options and automatic graphics detection (Day 10)
 - One chapter for each of the 10 labs
 
 # Version history of this manual
@@ -190,3 +298,4 @@ These parts of the manual will be written as each feature is finished:
 |---|---|---|
 | 0.0.0 | 2026-11-21 | First edition: about RoboSim Studio, requirements, home page preview. |
 | 0.0.0 · Day 05 | 2026-11-22 | New logo on the home page; chapters on themes, engineering number fields and the workspace (panels, toolbar, inspector). |
+| 0.0.0 · Day 06 | 2026-11-22 | New chapter 7, the studio workspace: docking panels, saved layout, menus, project tabs, status bar, Low-end mode, command palette and keyboard shortcuts. Home page links to the studio. |

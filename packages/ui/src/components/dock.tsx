@@ -2,6 +2,8 @@
 
 import {
   DockviewReact,
+  type DockviewApi,
+  type DockviewGroupPanel,
   type DockviewTheme,
   type IDockviewHeaderActionsProps,
   type IDockviewReactProps,
@@ -52,6 +54,18 @@ function useGroupState({ api, containerApi }: IDockviewHeaderActionsProps) {
   return { floating, maximized };
 }
 
+/**
+ * Widths of the docked groups beside the widest one (the canvas column). After a group floats,
+ * these are set again so the freed space goes to the widest group instead of being shared out.
+ */
+function sideWidths(containerApi: DockviewApi, leaving: DockviewGroupPanel) {
+  const docked = containerApi.groups.filter((g) => g !== leaving && g.api.location.type === "grid");
+  const widest = Math.max(0, ...docked.map((g) => g.api.width));
+  return docked
+    .filter((g) => Math.abs(g.api.width - widest) > 1)
+    .map((g) => ({ target: g, width: g.api.width }));
+}
+
 /** Group header actions: float / dock back, and maximize / restore. */
 function DockGroupActions(props: IDockviewHeaderActionsProps) {
   const { api, containerApi, group } = props;
@@ -76,11 +90,13 @@ function DockGroupActions(props: IDockviewHeaderActionsProps) {
             label="Float this group"
             size="icon-sm"
             onClick={() => {
+              const keep = sideWidths(containerApi, group);
               containerApi.addFloatingGroup(group, {
                 ...FLOAT_SIZE,
                 x: Math.max(16, (containerApi.width - FLOAT_SIZE.width) / 2),
                 y: Math.max(16, (containerApi.height - FLOAT_SIZE.height) / 3),
               });
+              for (const { target, width } of keep) target.api.setSize({ width });
             }}
           >
             <PictureInPicture2 />

@@ -43,8 +43,10 @@ test.describe("studio status bar", () => {
   });
 
   test("warns when a saved layout cannot be used", async ({ page }) => {
+    // Leave the studio first: it saves its layout when the page closes.
+    await page.goto("/");
     await page.evaluate(() => localStorage.setItem("robosim-layout", "{broken"));
-    await page.reload();
+    await page.goto("/studio");
     await expect(statusBar(page).getByRole("status")).toHaveText(
       "The saved layout was damaged, so the default layout is shown.",
     );
