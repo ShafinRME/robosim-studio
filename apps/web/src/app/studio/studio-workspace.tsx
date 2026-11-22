@@ -1,14 +1,27 @@
 "use client";
 
 import {
+  LABS,
   LAYOUT_STORAGE_KEY,
+  MAX_NAME_CHARS,
+  ProjectEditError,
+  projectEdits,
   formatClock,
   parseSavedLayout,
   serializeLayout,
   type DockLayout,
   type LayoutRejection,
   type MessageLevel,
+  type ProjectStore,
 } from "@robosim/core";
+import { Input } from "@robosim/ui/components/input";
+import {
+  Inspector,
+  InspectorRow,
+  InspectorSection,
+  InspectorValue,
+} from "@robosim/ui/components/inspector";
+import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
 import { useCanvasCursor, useStudioStatus } from "./studio-status";
 import {
@@ -72,13 +85,84 @@ function CanvasPanel() {
   );
 }
 
-function InspectorPanel() {
+/**
+ * Project name field. Typing is local; the rename is one undoable edit, made on Enter or when the
+ * field loses focus. Esc puts the current name back.
+ */
+function ProjectNameField({ id, store, name }: { id: string; store: ProjectStore; name: string }) {
+  const { post } = useStudioStatus();
+  const [draft, setDraft] = useState(name);
+  const commit = () => {
+    if (draft.trim() === name) return setDraft(name);
+    try {
+      store.getState().apply(projectEdits.renameProject(draft));
+    } catch (error) {
+      if (!(error instanceof ProjectEditError)) throw error;
+      post("warning", `A project name must be 1–${MAX_NAME_CHARS} characters.`);
+      setDraft(name);
+    }
+  };
   return (
-    <EmptyPanel
-      icon={SlidersHorizontal}
-      title="Nothing selected"
-      text="Select a part to see and edit its properties."
+    <Input
+      id={id}
+      value={draft}
+      maxLength={MAX_NAME_CHARS}
+      spellCheck={false}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Escape") {
+          const input = event.currentTarget;
+          setDraft(name);
+          // Blur after React has put the old name back, so the blur commits nothing.
+          requestAnimationFrame(() => input.blur());
+        }
+      }}
     />
+  );
+}
+
+function InspectorPanel() {
+  const { store, state } = useActiveProject();
+  if (!store || !state) {
+    return (
+      <EmptyPanel
+        icon={SlidersHorizontal}
+        title="No project"
+        text="Open or create a project to see its properties."
+      />
+    );
+  }
+  const { project } = state;
+  const lab = LABS.find((l) => l.id === project.lab)?.name ?? "None yet";
+  return (
+    <div className="h-full overflow-auto">
+      <Inspector defaultOpen={["project"]}>
+        <InspectorSection id="project" title="Project">
+          <InspectorRow label="Name">
+            {(id) => (
+              // A new key resets the field when the name changes elsewhere (Undo, another tab).
+              <ProjectNameField
+                key={`${project.id}:${project.name}`}
+                id={id}
+                store={store}
+                name={project.name}
+              />
+            )}
+          </InspectorRow>
+          <InspectorRow label="Lab">
+            <InspectorValue tone="muted">{lab}</InspectorValue>
+          </InspectorRow>
+          <InspectorRow label="Parts">
+            <InspectorValue tone="muted">{project.parts.length}</InspectorValue>
+          </InspectorRow>
+        </InspectorSection>
+      </Inspector>
+      <p className="px-2.5 py-3 text-2xs text-faint-foreground">
+        Select a part to see and edit its properties.
+      </p>
+    </div>
   );
 }
 

@@ -7,6 +7,7 @@ import {
   emptyProjectTabs,
   nextUntitledName,
   openProjectTab,
+  renameProjectTab,
   type ProjectTabsState,
 } from "./project-tabs";
 
@@ -111,5 +112,20 @@ describe("cycleProjectTab", () => {
   it("does nothing with fewer than two tabs", () => {
     const state = withTabs("a");
     expect(cycleProjectTab(state, 1)).toBe(state);
+  });
+});
+
+describe("renameProjectTab", () => {
+  const state = openProjectTab(openProjectTab(emptyProjectTabs, "a"), "b");
+
+  it("renames one tab and keeps the active tab", () => {
+    const next = renameProjectTab(state, "a", "Line follower");
+    expect(next.tabs.map((t) => t.name)).toEqual(["Line follower", "Untitled 2"]);
+    expect(next.activeId).toBe("b");
+  });
+
+  it("returns the same state for unknown ids or unchanged names", () => {
+    expect(renameProjectTab(state, "x", "Name")).toBe(state);
+    expect(renameProjectTab(state, "a", "Untitled")).toBe(state);
   });
 });

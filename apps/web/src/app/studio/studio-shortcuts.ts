@@ -17,6 +17,8 @@ import { useMemo, useSyncExternalStore } from "react";
 export const STUDIO_SHORTCUTS: ShortcutBindings = {
   "palette.open": ["Mod+K"],
   "help.shortcuts": ["Mod+/", "Shift+/"],
+  "edit.undo": ["Mod+Z"],
+  "edit.redo": ["Mod+Shift+Z", "Mod+Y"],
   "file.newProject": ["Alt+N"],
   "file.closeProject": ["Alt+W"],
   "project.next": ["Alt+]"],
@@ -38,6 +40,9 @@ export function useShortcutMap(): ShortcutMap {
   const platform = useSyncExternalStore(noopSubscribe, clientPlatform, serverPlatform);
   return useMemo(() => createShortcutMap(STUDIO_SHORTCUTS, platform), [platform]);
 }
+
+/** Commands that text boxes handle themselves (undo / redo of typing). */
+export const TEXT_EDITING_COMMANDS: ReadonlySet<string> = new Set(["edit.undo", "edit.redo"]);
 
 /** Text boxes keep their keys: only Ctrl/⌘ shortcuts work while typing. */
 export function isTypingTarget(target: EventTarget | null): boolean {

@@ -31,6 +31,7 @@ export {
   emptyProjectTabs,
   nextUntitledName,
   openProjectTab,
+  renameProjectTab,
 } from "./project-tabs";
 export type { ProjectTab, ProjectTabsState } from "./project-tabs";
 export {

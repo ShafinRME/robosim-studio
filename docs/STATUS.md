@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 07 — Project model & undo/redo · Steps 3–4/8 done
+**Current:** Day 07 — Project model & undo/redo · Steps 5–6/8 done
 **Branch:** `feat/day-07-project-model` (from `develop`) · draft PR #8
 **Session:** Days 06–10 – Studio core
 **Updated:** 2026-11-23
@@ -12,9 +12,9 @@
 | 2/8 | Versioned project schema (Zod) + migration runner in core, with tests | ✅ done |
 | 3/8 | Project store (vanilla Zustand + Immer) in core | ✅ done |
 | 4/8 | Undo/redo engine (Immer patches, history cap, labels) | ✅ done |
-| 5/8 | Acceptance test: 100 random edits undo back to the initial state | ⏳ next |
-| 6/8 | Studio: Edit → Undo/Redo, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, status messages | ⏳ |
-| 7/8 | e2e tests; User Manual update; `pnpm manual` | ⏳ |
+| 5/8 | Acceptance test: 100 random edits undo back to the initial state | ✅ done |
+| 6/8 | Studio: Edit → Undo/Redo, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, status messages | ✅ done |
+| 7/8 | e2e tests; User Manual update; `pnpm manual` | ⏳ next |
 | 8/8 | Owner review → DEVLOG, merge; note for Day 08 | ⏳ |
 
 ## Decisions (Day 07)
@@ -34,10 +34,18 @@
   move / rotate / rename part, set / remove property (throw `ProjectEditError` on bad input, no-op on a missing
   part). Labels name the part ("Move R1"). `updatedAt` is set on save (Day 08), not per edit, so undo restores
   the exact project. 29 tests; 274 unit tests in total.
+- Acceptance (`packages/core/src/undo-acceptance.test.ts`): 5 fixed seeds × exactly 100 recorded random edits (add /
+  remove / move / rotate / rename part, set / remove property, rename project); every undo step matches the state
+  recorded on the way, undo all = initial, redo all = final. ✅ Day 07 "done when" met.
+- Studio: one project store per tab (`studio-project.tsx`, own history per tab; tab name follows the project name,
+  also on Undo). Inspector shows **Project**: Name (edit; Enter/blur = one undoable rename, Esc reverts, empty name
+  refused with a warning), Lab, Parts. Edit menu "Undo Rename project" / "Redo …"; commands `edit.undo` /
+  `edit.redo` (off when nothing to undo); shortcuts Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y — inside a text box they undo the
+  typing, not the project. Status: "Undo: Rename project.". `renameProjectTab` in core. 281 unit, 56 e2e (6 new).
 - Day 06 merged into `develop` as `ec55cf5` (PR #7).
 
 ## Next action
-Day 07 · Steps 5–6/8 — 100-random-edits acceptance test; studio Edit → Undo/Redo + shortcuts.
+Day 07 · Step 7/8 — User Manual (project name, Undo/Redo, shortcuts), screenshots, `pnpm manual`; then Step 8 owner review.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to
