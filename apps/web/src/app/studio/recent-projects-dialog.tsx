@@ -101,7 +101,7 @@ export function RecentProjectsDialog({
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-foreground">{project.name}</p>
-                      <p className="truncate font-mono text-2xs text-faint-foreground">
+                      <p className="font-mono text-2xs text-faint-foreground">
                         {labName(project.lab)} · {project.partCount}{" "}
                         {project.partCount === 1 ? "part" : "parts"} · changed{" "}
                         {dateFormat.format(new Date(project.updatedAt))}
