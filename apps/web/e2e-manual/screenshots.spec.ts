@@ -143,6 +143,19 @@ test.describe("studio workspace", () => {
     await dialog.screenshot({ path: shot("recent-projects") });
   });
 
+  test("simulation running", async ({ page }) => {
+    const group = page.getByRole("group", { name: "Simulation" });
+    await group.getByRole("button", { name: "Run" }).click();
+    await expect(page.getByTestId("sim-status")).toContainText("steps/s");
+    await page.waitForTimeout(1800);
+    await group.getByRole("button", { name: "Pause" }).click(); // a still frame for the picture
+    await expect(page.getByTestId("sim-status")).toContainText("Paused");
+    await group.getByRole("button", { name: "Run" }).click();
+    await page.waitForTimeout(400);
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: shot("simulation-running") });
+  });
+
   test("keyboard shortcuts window", async ({ page }) => {
     await page.getByTestId("studio-canvas").click();
     await page.keyboard.press("Control+Slash");

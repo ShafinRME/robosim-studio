@@ -9,6 +9,20 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 09 — Simulation kernel (2026-11-24)
+- Built: ADR 006. In `@robosim/core`: fixed-step scheduler (1 ms steps, integer step count, real-time factor
+  0.1–10×, per-frame step budget with a "behind" signal instead of freezing), typed double-buffered **Signal Bus**
+  (model order never changes results), `createSimulation` (models + bus + scheduler) and a spring/driver demo.
+  In the web app: Web Worker host with **Comlink 4.4.2** (snapshots at ~30/s, every argument checked, models only
+  by id), studio Run/Pause, Step, Stop, speed, status-bar time and steps/s, live values on the canvas, shortcuts.
+  User Manual §7.6. 436 unit tests, 70 e2e.
+- Learned: the "done when" check works — 1005 steps/s with 121 of 122 frames kept on the main thread; but timing
+  tests are meaningless with 4 parallel browsers on one CPU (17 frames), so they run in their own Playwright
+  project, alone and after the rest, against an idle baseline; send display-rate snapshots, never per-step
+  messages; keep fast-changing state out of React's main tree (external store).
+- Next: Day 10 — Low-end mode & v0.0.1 (capability detection, error boundary, landing page, Vercel deploy,
+  phase review); last Day of this session block.
+
 ## Day 08 — Persistence & sharing (2026-11-23)
 - Built: ADR 005; **Dexie 4.4.7**, **fflate 0.8.3**, fake-indexeddb (dev) — audit 0. Browser project database
   (validated reads, recent list, open tabs); autosave 1 s after an edit, same tabs back after a reload;
