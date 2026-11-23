@@ -133,3 +133,37 @@ export {
   toBase64Url,
 } from "./share";
 export type { ShareTokenResult } from "./share";
+export {
+  DEFAULT_MAX_STEPS_PER_FRAME,
+  DEFAULT_STEP_SECONDS,
+  MAX_MANUAL_STEPS,
+  MAX_RATE,
+  MIN_RATE,
+  RATE_PRESETS,
+  SchedulerError,
+  createScheduler,
+} from "./sim/scheduler";
+export type {
+  Scheduler,
+  SchedulerOptions,
+  SchedulerSnapshot,
+  SimState,
+  StepFunction,
+} from "./sim/scheduler";
+export {
+  MAX_SIGNALS,
+  MAX_SIGNAL_NAME_CHARS,
+  SignalBusError,
+  createSignalBus,
+} from "./sim/signal-bus";
+export type {
+  BooleanSignal,
+  NumberSignal,
+  SignalBus,
+  SignalDefinition,
+  SignalValue,
+} from "./sim/signal-bus";
+export { createSimulation } from "./sim/simulation";
+export type { SimModel, Simulation, SimulationSnapshot } from "./sim/simulation";
+export { DEMO_SIGNALS, createDemoModels } from "./sim/demo-models";
+export type { DemoOptions } from "./sim/demo-models";

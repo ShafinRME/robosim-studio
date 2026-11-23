@@ -278,13 +278,15 @@ export function useOpenProjects(post: Post): OpenProjects {
     restored,
     activeStore: engine.get(tabs.activeId),
     newProject() {
-      if (tooMany()) return;
+      // Until the saved tabs are back, a new tab would be replaced by them.
+      if (!restored || tooMany()) return;
       const project = createProject({ name: nextUntitledName(tabs.tabs) });
       engine.adopt(project, true);
       setTabs(openProjectTab(tabs, project.id, project.name));
       post("info", `New project “${project.name}”.`);
     },
     openProject(project) {
+      if (!restored) return false;
       if (engine.get(project.id)) {
         setTabs(activateProjectTab(tabs, project.id));
         return true;

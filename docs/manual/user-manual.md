@@ -10,7 +10,7 @@ This manual explains **what every screen, button and tool in RoboSim Studio does
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
 - **Software version covered:** v0.0.0 (Phase 0 — Foundation)
-- **Last updated:** 2026-11-23 (Day 08)
+- **Last updated:** 2026-11-24 (Day 09)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
 # 1. What is RoboSim Studio?
@@ -188,7 +188,7 @@ but you can already arrange the workspace the way you like.
 | Part | What it does |
 |---|---|
 | **Top bar** | Logo, the **File · Edit · View · Help** menus, the simulation buttons, **Search commands…** and the theme switch. |
-| **Simulation buttons** (▶ ⏸ ⏭ ■) | Run, Pause, Step and Stop. Greyed out until a lab can run a simulation. |
+| **Simulation controls** (▶ ⏭ ■ 1×) | Run / Pause, Step, Stop and the simulation speed (see 7.6). |
 | **Project tabs** | One tab per open project. **+** adds a new one. |
 | **Explorer** (left) | Will list the files and parts of your project. |
 | **Canvas** (middle) | The drawing area with a blueprint grid. |
@@ -296,19 +296,47 @@ their own **copy** of the project in their browser.
 - Opening a share link adds the project as a new tab and then removes the link from the address bar,
   so reloading does not add it twice. A damaged link is refused with a message.
 
-## 7.6 Status bar and Low-end mode
+## 7.6 Running a simulation
+
+![A simulation running: controls in the top bar, live values on the canvas, time in the status bar](images/simulation-running.png)
+
+Until the first lab arrives, the studio runs a small **demo simulation**: a weight on a spring with
+a damper, pushed by a force that switches on and off every second. It shows how every simulation in
+RoboSim Studio will be controlled.
+
+| Control | What it does |
+|---|---|
+| **▶ Run** | Starts the simulation, or continues it after a pause. While it runs, the button becomes **⏸ Pause**. Keys: **Ctrl + Enter** (run / pause). |
+| **⏭ Step** | Moves the simulation forward by one step of **1 ms**, then stops. Use it to look at what happens step by step. Works when the simulation is paused or stopped. Keys: **Alt + .** |
+| **■ Stop** | Stops and goes back to **0 s**: everything starts again from the beginning. Keys: **Ctrl + Shift + Enter**. |
+| **Speed** (1×) | How fast simulated time runs compared with real time: from **0.1×** (ten times slower, to watch fast events) to **10×** (ten times faster). |
+
+While a simulation is loaded:
+
+- The **status bar** shows its state (**Idle**, **Running**, **Paused**), the simulated time (for
+  example *t 2.919 s*) and, while running, how many steps per second the computer manages (about
+  **1000 steps/s** at 1×).
+- The **canvas** shows the live values in its top-right corner — here the force (*on* / *off*), the
+  position (m) and the speed (m/s) of the weight.
+- If your computer cannot keep up, the status bar shows **⚠ Behind**: the simulation then runs slower
+  than real time instead of freezing the studio. Lower the speed or close other programs.
+
+> The simulation runs in the background (in its own *worker*), so the studio stays smooth while it
+> runs: you can move panels, edit and type as usual.
+
+## 7.7 Status bar and Low-end mode
 
 ![The status bar](images/studio-status-bar.png)
 
 | Part | What it shows |
 |---|---|
-| **Idle** | Simulation state (no simulation is loaded yet). |
+| **Idle / Running / Paused** | Simulation state, with the simulated time and steps per second (see 7.6). |
 | Message | The latest message, e.g. *Saved layout restored.* All messages are in the **Console**. |
 | **X … Y …** | Mouse pointer position on the canvas, in pixels. |
 | **Low-end off / on** | Click to switch **Low-end mode**: all animations are turned off, which helps slower computers. The choice is remembered. On computers with 4 GB of memory or less it starts switched on. |
 | **v0.0.0** | Software version. |
 
-## 7.7 Command palette
+## 7.8 Command palette
 
 ![The command palette, searching for "lay"](images/command-palette.png)
 
@@ -323,7 +351,7 @@ Every action in the studio can be found and run from one search box.
   dimmed.
 - The keys on the right of a command are its keyboard shortcut.
 
-## 7.8 Keyboard shortcuts
+## 7.9 Keyboard shortcuts
 
 Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this list in the studio.
 
@@ -335,6 +363,9 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 | **Ctrl + /** or **?** | Keyboard shortcuts window |
 | **Ctrl + Z** | Undo |
 | **Ctrl + Y** or **Ctrl + Shift + Z** | Redo |
+| **Ctrl + Enter** | Run / pause the simulation |
+| **Alt + .** | Step the simulation (1 ms) |
+| **Ctrl + Shift + Enter** | Stop the simulation (back to 0 s) |
 | **Alt + N** | New project |
 | **Alt + O** | Recent projects |
 | **Alt + W** | Close project |
@@ -353,7 +384,6 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 These parts of the manual will be written as each feature is finished:
 
-- Simulation controls in the real studio: play, pause, step and speed (Day 09)
 - More Low-end mode options and automatic graphics detection (Day 10)
 - One chapter for each of the 10 labs
 
@@ -366,3 +396,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.0 · Day 06 | 2026-11-22 | New chapter 7, the studio workspace: docking panels, saved layout, menus, project tabs, status bar, Low-end mode, command palette and keyboard shortcuts. Home page links to the studio. |
 | 0.0.0 · Day 07 | 2026-11-23 | New section 7.4: project name in the Inspector, Undo / Redo (Edit menu, Ctrl + Z, Ctrl + Y). Shortcut table updated. |
 | 0.0.0 · Day 08 | 2026-11-23 | New section 7.5: automatic saving, Recent projects, `.rsim` export / import and share links. Sections 7.6–7.8 renumbered; Alt + O added. |
+| 0.0.0 · Day 09 | 2026-11-24 | New section 7.6: running a simulation (Run / Pause, Step, Stop, speed, live values, "Behind"). Sections 7.7–7.9 renumbered; simulation shortcuts added. |

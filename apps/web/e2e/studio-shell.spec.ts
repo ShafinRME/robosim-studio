@@ -11,6 +11,7 @@ test.describe("studio top bar and project tabs", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/studio");
     await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
+    await expect(projectTabs(page)).toHaveCount(1); // saved projects are open
   });
 
   test("shows menus, simulation controls and the theme switch", async ({ page }) => {
@@ -18,9 +19,11 @@ test.describe("studio top bar and project tabs", () => {
       await expect(menu(page, name)).toBeVisible();
     }
     const simulation = page.getByRole("group", { name: "Simulation" });
-    for (const name of ["Run", "Pause", "Step", "Stop"]) {
-      await expect(simulation.getByRole("button", { name })).toBeDisabled();
-    }
+    // Before anything ran: Run and Step work, Stop has nothing to stop. (Details: simulation tests.)
+    await expect(simulation.getByRole("button", { name: "Run" })).toBeEnabled();
+    await expect(simulation.getByRole("button", { name: "Step" })).toBeEnabled();
+    await expect(simulation.getByRole("button", { name: "Stop" })).toBeDisabled();
+    await expect(simulation.getByRole("combobox", { name: "Simulation speed" })).toHaveText("1×");
     await expect(page.getByRole("radiogroup", { name: /theme/i })).toBeVisible();
   });
 

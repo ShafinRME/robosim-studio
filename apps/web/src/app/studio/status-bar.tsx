@@ -11,6 +11,7 @@ import {
   MousePointer2,
   type LucideIcon,
 } from "lucide-react";
+import { SimStatus } from "./sim-controls";
 import { useCanvasCursor, useStudioStatus } from "./studio-status";
 
 const LEVEL: Record<MessageLevel, { icon: LucideIcon; className: string }> = {
@@ -43,12 +44,11 @@ export function StatusBar() {
   return (
     <footer
       aria-label="Status bar"
-      className="flex h-6 shrink-0 items-center gap-4 border-t bg-surface-1 px-3 font-mono text-2xs text-muted-foreground"
+      // Containment: the readouts here change many times a second; this keeps each change from
+      // making the browser lay out and repaint the rest of the page.
+      className="flex h-6 shrink-0 items-center gap-4 border-t bg-surface-1 px-3 font-mono text-2xs text-muted-foreground [contain:strict]"
     >
-      <span className="flex items-center gap-1.5" title="No simulation loaded">
-        <span aria-hidden className="size-1.5 rounded-full bg-faint-foreground" />
-        Idle
-      </span>
+      <SimStatus />
 
       <span role="status" className="flex min-w-0 flex-1 items-center gap-1.5">
         {latest && level && (
