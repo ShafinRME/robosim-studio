@@ -17,7 +17,9 @@ import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import {
   Bug,
   CodeXml,
+  Download,
   FilePlus2,
+  FolderOpen,
   Keyboard,
   Pause,
   Play,
@@ -72,6 +74,15 @@ export function TopBar({
             <MenubarItem disabled={!hasProject} onSelect={() => run("file.closeProject")}>
               <X /> Close project
               {hint("file.closeProject")}
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onSelect={() => run("file.import")}>
+              <FolderOpen /> Import project…
+              {hint("file.import")}
+            </MenubarItem>
+            <MenubarItem disabled={!hasProject} onSelect={() => run("file.export")}>
+              <Download /> Export project
+              {hint("file.export")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>

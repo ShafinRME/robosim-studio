@@ -1,55 +1,7 @@
 "use client";
 
-import {
-  createProject,
-  createProjectStore,
-  type ProjectStore,
-  type ProjectStoreState,
-  type ProjectTab,
-} from "@robosim/core";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
-
-/**
- * One project store per open project tab (ADR 004). Each store keeps its own undo history, so
- * Undo in one tab never touches another project.
- */
-export function useProjectStores(onRename: (tabId: string, name: string) => void) {
-  const [stores] = useState(() => new Map<string, ProjectStore>());
-  const latestOnRename = useRef(onRename);
-  useEffect(() => {
-    latestOnRename.current = onRename;
-  });
-
-  return {
-    /** The store of a tab, created (with an empty project named like the tab) on first use. */
-    storeFor(tab: ProjectTab): ProjectStore {
-      let store = stores.get(tab.id);
-      if (!store) {
-        store = createProjectStore(createProject({ name: tab.name, id: tab.id }));
-        // The tab follows its project's name, also after Undo / Redo.
-        store.subscribe((next, previous) => {
-          if (next.project.name !== previous.project.name) {
-            latestOnRename.current(tab.id, next.project.name);
-          }
-        });
-        stores.set(tab.id, store);
-      }
-      return store;
-    },
-    /** Forgets a closed tab's project and its history. */
-    remove(tabId: string) {
-      stores.delete(tabId);
-    },
-  };
-}
+import type { ProjectStore, ProjectStoreState } from "@robosim/core";
+import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 
 const ActiveProjectContext = createContext<ProjectStore | null>(null);
 

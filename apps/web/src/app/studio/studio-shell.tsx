@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  activateProjectTab,
-  closeProjectTab,
-  cycleProjectTab,
-  emptyProjectTabs,
-  openProjectTab,
-  redoLabel,
-  rememberRecent,
-  renameProjectTab,
-  undoLabel,
-  type Command,
-  type ProjectTabsState,
-} from "@robosim/core";
+import { redoLabel, rememberRecent, undoLabel, type Command } from "@robosim/core";
 import { Button } from "@robosim/ui/components/button";
 import { CommandPalette } from "@robosim/ui/components/command-palette";
 import { FilePlus2 } from "lucide-react";
@@ -23,7 +11,9 @@ import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
 import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
 import { ShortcutsDialog } from "./shortcuts-dialog";
-import { ActiveProjectProvider, useProjectState, useProjectStores } from "./studio-project";
+import { useOpenProjects } from "./open-projects";
+import { exportProject, useProjectImport } from "./project-files";
+import { ActiveProjectProvider, useProjectState } from "./studio-project";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
 import { TopBar } from "./top-bar";
 import { StudioWorkspace, type StudioWorkspaceControls } from "./studio-workspace";
@@ -41,18 +31,14 @@ function StudioWindow() {
   const { post, lowEnd, setLowEnd } = useStudioStatus();
   const setTheme = useSetTheme();
   const controls = useRef<StudioWorkspaceControls | null>(null);
-  const nextId = useRef(2);
-  const [projects, setProjects] = useState<ProjectTabsState>(() =>
-    openProjectTab(emptyProjectTabs, "project-1"),
-  );
+  const open = useOpenProjects(post);
+  const projects = open.tabs;
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const shortcuts = useShortcutMap();
-  const stores = useProjectStores((id, name) => setProjects((s) => renameProjectTab(s, id, name)));
-  const activeTab = projects.tabs.find((t) => t.id === projects.activeId);
-  const activeStore = activeTab ? stores.storeFor(activeTab) : null;
+  const activeStore = open.activeStore;
   const activeState = useProjectState(activeStore);
   const history = activeState?.history;
 
@@ -65,29 +51,24 @@ function StudioWindow() {
     post("info", label ? `Redo: ${label}.` : "Nothing to redo.");
   };
 
-  const newProject = () => {
-    const next = openProjectTab(projects, `project-${nextId.current++}`);
-    if (next === projects) return post("warning", "Too many projects open. Close one first.");
-    setProjects(next);
-    post("info", `New project “${next.tabs.at(-1)?.name}”.`);
-  };
-  const closeProject = (id: string) => {
-    const name = projects.tabs.find((t) => t.id === id)?.name;
-    setProjects(closeProjectTab(projects, id));
-    stores.remove(id);
-    if (name) post("info", `Closed “${name}”.`);
-  };
+  const importer = useProjectImport(open.openProject, post);
+  const newProject = open.newProject;
+  const closeProject = open.closeProject;
   const hasProject = projects.activeId !== null;
 
   const registry = useStudioCommands({
     newProject,
     closeProject: () => projects.activeId && closeProject(projects.activeId),
     hasProject,
+    exportProject: () => {
+      if (activeStore) exportProject(activeStore.getState().project, post);
+    },
+    importProject: importer.pick,
     undo: undoEdit,
     redo: redoEdit,
     undoLabel: history ? undoLabel(history) : null,
     redoLabel: history ? redoLabel(history) : null,
-    cycleProject: (step) => setProjects((s) => cycleProjectTab(s, step)),
+    cycleProject: open.cycle,
     projectCount: projects.tabs.length,
     togglePanel: (id) => controls.current?.togglePanel(id),
     resetLayout: () => controls.current?.resetLayout(),
@@ -147,7 +128,7 @@ function StudioWindow() {
       />
       <ProjectTabStrip
         state={projects}
-        onActivate={(id) => setProjects((s) => activateProjectTab(s, id))}
+        onActivate={open.activate}
         onClose={closeProject}
         onNew={newProject}
       />
@@ -164,16 +145,23 @@ function StudioWindow() {
             onOpenPanelsChange={(ids) => setOpenPanels(new Set(ids))}
           />
         </ActiveProjectProvider>
-        {!hasProject && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blueprint">
-            <p className="text-sm text-muted-foreground">No project open</p>
-            <Button onClick={newProject}>
-              <FilePlus2 /> New project
-            </Button>
+        {!open.restored ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-blueprint">
+            <p className="text-sm text-muted-foreground">Opening your projects…</p>
           </div>
+        ) : (
+          !hasProject && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blueprint">
+              <p className="text-sm text-muted-foreground">No project open</p>
+              <Button onClick={newProject}>
+                <FilePlus2 /> New project
+              </Button>
+            </div>
+          )
         )}
       </main>
       <StatusBar />
+      {importer.input}
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}

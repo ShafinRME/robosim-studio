@@ -1,5 +1,4 @@
-export const APP_NAME = "RoboSim Studio";
-export const APP_VERSION = "0.0.0";
+export { APP_NAME, APP_VERSION } from "./app";
 
 export { LABS } from "./labs";
 export type { LabId, LabInfo } from "./labs";
@@ -80,6 +79,7 @@ export {
   PROJECT_FORMAT,
   PROJECT_MIGRATIONS,
   PROJECT_VERSION,
+  copyProject,
   createProject,
   loadProject,
   migrateProjectData,
@@ -107,3 +107,17 @@ export {
   projectEdits,
 } from "./project-store";
 export type { ProjectEdit, ProjectStore, ProjectStoreState } from "./project-store";
+export {
+  ARCHIVE_EXTENSION,
+  ARCHIVE_FORMAT,
+  ARCHIVE_MIME_TYPE,
+  ARCHIVE_VERSION,
+  MAX_ARCHIVE_BYTES,
+  MAX_ARCHIVE_ENTRIES,
+  MAX_ARCHIVE_TOTAL_BYTES,
+  MAX_ENTRY_BYTES,
+  archiveFileName,
+  readArchive,
+  writeArchive,
+} from "./archive";
+export type { ArchiveReadResult, ArchiveRejection } from "./archive";
