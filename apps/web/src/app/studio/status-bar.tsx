@@ -44,7 +44,9 @@ export function StatusBar() {
   return (
     <footer
       aria-label="Status bar"
-      className="flex h-6 shrink-0 items-center gap-4 border-t bg-surface-1 px-3 font-mono text-2xs text-muted-foreground"
+      // Containment: the readouts here change many times a second; this keeps each change from
+      // making the browser lay out and repaint the rest of the page.
+      className="flex h-6 shrink-0 items-center gap-4 border-t bg-surface-1 px-3 font-mono text-2xs text-muted-foreground [contain:strict]"
     >
       <SimStatus />
 

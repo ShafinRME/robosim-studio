@@ -155,6 +155,7 @@ function StudioWindow() {
       <ProjectTabStrip
         state={projects}
         onActivate={open.activate}
+        ready={open.restored}
         onClose={closeProject}
         onNew={newProject}
       />

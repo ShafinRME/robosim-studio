@@ -11,6 +11,7 @@ test.describe("studio top bar and project tabs", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/studio");
     await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
+    await expect(projectTabs(page)).toHaveCount(1); // saved projects are open
   });
 
   test("shows menus, simulation controls and the theme switch", async ({ page }) => {

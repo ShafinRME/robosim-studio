@@ -50,6 +50,11 @@
   121 running in 2 s; worst frame gap 17 ms; no long tasks. **Found:** with 4 parallel browsers on the dev server the
   numbers collapse (17 frames) from CPU contention, so timing tests run in a separate Playwright project
   `isolated` (after all others, one at a time) and compare against an idle baseline. 436 unit, 70 e2e.
+- **Jank fix (found by repeating the test):** running sometimes dropped to 41–88 of 122 frames. Cause: status-bar
+  text changing ~30×/s forced page-wide layout/paint. Fix: `[contain:strict]` on the status bar, contained
+  readout, fixed-width numbers, text readouts at most 10 updates/s (`VIEW_UPDATE_MS`; run/pause/stop instant).
+  Now 120–121 of 122 frames in 4/4 runs. **Race fix:** New project / open during the restore after a reload was
+  overwritten by the restored tabs → disabled until restored (+ button greyed out). 70 e2e passed twice in a row.
 - Step 7: User Manual §7.6 "Running a simulation" (controls, speed, live values, Behind, worker note) + screenshot
   `simulation-running.png`; 7.1 / status-bar rows updated; 7.7–7.9 renumbered; simulation shortcuts; PDF rebuilt.
 - Day 08 merged into `develop` as `ad828f6` (PR #9).

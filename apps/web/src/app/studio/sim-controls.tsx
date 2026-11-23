@@ -98,11 +98,11 @@ export function SimStatus() {
       </span>
       {snapshot && label !== "Idle" && (
         <>
-          <span className="tabular" title="Simulated time" data-testid="sim-time">
+          <span className="tabular min-w-20" title="Simulated time" data-testid="sim-time">
             t {formatSimTime(snapshot.time)}
           </span>
           {running && (
-            <span className="tabular" title="Simulation steps per second of real time">
+            <span className="tabular min-w-20" title="Simulation steps per second of real time">
               {snapshot.stepsPerSecond} steps/s
             </span>
           )}
@@ -134,7 +134,7 @@ export function SimReadout() {
   return (
     <dl
       aria-label="Simulation signals"
-      className="absolute top-2 right-2 rounded-md border bg-surface-1/90 px-2.5 py-1.5 font-mono text-2xs"
+      className="absolute top-2 right-2 rounded-md border bg-surface-1 px-2.5 py-1.5 font-mono text-2xs [contain:layout_paint]"
     >
       {Object.entries(snapshot.signals).map(([name, value]) => (
         <div key={name} className="flex justify-between gap-4">

@@ -19,7 +19,10 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Learned: the "done when" check works — 1005 steps/s with 121 of 122 frames kept on the main thread; but timing
   tests are meaningless with 4 parallel browsers on one CPU (17 frames), so they run in their own Playwright
   project, alone and after the rest, against an idle baseline; send display-rate snapshots, never per-step
-  messages; keep fast-changing state out of React's main tree (external store).
+  messages; keep fast-changing state out of React's main tree (external store). Repeating the jank test found
+  real jank (41–88 of 122 frames): 30 text updates per second in the status bar made the browser lay out the
+  whole page — fixed with CSS containment and 10 Hz text readouts (state changes still instant): now 120–121.
+  Also fixed: "New project" clicked while saved projects were still opening was lost (now waits).
 - Next: Day 10 — Low-end mode & v0.0.1 (capability detection, error boundary, landing page, Vercel deploy,
   phase review); last Day of this session block.
 

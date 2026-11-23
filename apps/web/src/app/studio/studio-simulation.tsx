@@ -21,14 +21,51 @@ import type { HostSnapshot } from "../../sim/sim-host";
  */
 type SimView = { snapshot: HostSnapshot | null; signals: readonly SignalDefinition[] };
 
+/**
+ * Text readouts change at most this often while running. People cannot read numbers that change
+ * faster, and each update costs the page layout and paint work (measured on Day 09: 30 text
+ * updates per second cost up to half the frames). State changes (run, pause, stop) show at once.
+ */
+export const VIEW_UPDATE_MS = 100;
+
 function createSimStore() {
   let view: SimView = { snapshot: null, signals: [] };
+  let latest: HostSnapshot | null = null;
+  let lastUpdate = 0;
+  let trailing: ReturnType<typeof setTimeout> | null = null;
   const listeners = new Set<() => void>();
+  const publish = (next: Partial<SimView>) => {
+    view = { ...view, ...next };
+    lastUpdate = performance.now();
+    for (const listener of listeners) listener();
+  };
   return {
     get: () => view,
     set(next: Partial<SimView>) {
-      view = { ...view, ...next };
-      for (const listener of listeners) listener();
+      publish(next);
+    },
+    /** A new snapshot from the worker: shown at once if something important changed. */
+    receive(snapshot: HostSnapshot) {
+      latest = snapshot;
+      const shown = view.snapshot;
+      const important =
+        !shown ||
+        shown.state !== snapshot.state ||
+        shown.model !== snapshot.model ||
+        shown.rate !== snapshot.rate ||
+        shown.behind !== snapshot.behind ||
+        snapshot.state !== "running";
+      const wait = VIEW_UPDATE_MS - (performance.now() - lastUpdate);
+      if (important || wait <= 0) {
+        if (trailing) clearTimeout(trailing);
+        trailing = null;
+        publish({ snapshot });
+      } else if (!trailing) {
+        trailing = setTimeout(() => {
+          trailing = null;
+          publish({ snapshot: latest });
+        }, wait);
+      }
     },
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -80,7 +117,7 @@ export function SimulationProvider({
     const ensure = (): Promise<SimWorker> => {
       worker.current ??= (async () => {
         const w = startSimWorker();
-        await w.subscribe((snapshot) => store.set({ snapshot }));
+        await w.subscribe((snapshot) => store.receive(snapshot));
         store.set({ signals: await w.api.load(DEFAULT_SIM_MODEL) });
         postRef.current("info", "Demo simulation loaded: a spring with a switching force.");
         return w;

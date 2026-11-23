@@ -15,11 +15,14 @@ export function ProjectTabStrip({
   onActivate,
   onClose,
   onNew,
+  ready = true,
 }: {
   state: ProjectTabsState;
   onActivate: (id: string) => void;
   onClose: (id: string) => void;
   onNew: () => void;
+  /** False while the saved projects are still being opened. */
+  ready?: boolean;
 }) {
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -98,7 +101,7 @@ export function ProjectTabStrip({
         label="New project"
         size="icon-sm"
         className="mb-0.5"
-        disabled={state.tabs.length >= MAX_PROJECT_TABS}
+        disabled={!ready || state.tabs.length >= MAX_PROJECT_TABS}
         onClick={onNew}
       >
         <Plus />
