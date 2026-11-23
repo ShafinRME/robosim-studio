@@ -133,3 +133,20 @@ export {
   toBase64Url,
 } from "./share";
 export type { ShareTokenResult } from "./share";
+export {
+  DEFAULT_MAX_STEPS_PER_FRAME,
+  DEFAULT_STEP_SECONDS,
+  MAX_MANUAL_STEPS,
+  MAX_RATE,
+  MIN_RATE,
+  RATE_PRESETS,
+  SchedulerError,
+  createScheduler,
+} from "./sim/scheduler";
+export type {
+  Scheduler,
+  SchedulerOptions,
+  SchedulerSnapshot,
+  SimState,
+  StepFunction,
+} from "./sim/scheduler";

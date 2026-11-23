@@ -1,60 +1,36 @@
 # Status
 
-**Current:** Day 08 — Persistence & sharing · Step 8/8 (owner review, then merge)
-**Branch:** `feat/day-08-persistence` (from `develop`) · draft PR #9
+**Current:** Day 09 — Simulation kernel · Steps 1–2/8 done
+**Branch:** `feat/day-09-simulation-kernel` (from `develop`)
 **Session:** Days 06–10 – Studio core
 **Updated:** 2026-11-23
 
-## Day 08 steps
+## Day 09 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; ADR 005 (Dexie, fflate, share links; security check) | ✅ done |
-| 2/8 | Browser project database (Dexie/IndexedDB): save, load + validate, recent list, open tabs; tests | ✅ done |
-| 3/8 | Autosave + restore open projects after a reload; storage messages | ✅ done |
-| 4/8 | `.rsim` export / import (zip via fflate, size limits) + round-trip test | ✅ done |
-| 5/8 | Share by link (compressed project in the URL fragment) | ✅ done |
-| 6/8 | Recent-projects screen (open, delete) | ✅ done |
-| 7/8 | e2e tests; User Manual; `pnpm manual` | ✅ done |
-| 8/8 | Owner review → DEVLOG, merge; note for Day 09 | 🔄 DEVLOG done, waiting for owner approval |
+| 1/8 | Day branch; ADR 006 simulation kernel (scheduler, worker host + Comlink, Signal Bus) | ✅ done |
+| 2/8 | Fixed-step scheduler in core (run / pause / step / reset / rate, step budget) + tests | ✅ done |
+| 3/8 | Signal Bus in core (typed, double-buffered) + tests | ⏳ next |
+| 4/8 | Web Worker host with Comlink; CSP `worker-src 'self'` | ⏳ |
+| 5/8 | 1 kHz dummy model; jank check (main thread stays smooth) | ⏳ |
+| 6/8 | Studio: Run / Pause / Step / Stop, rate, status bar time | ⏳ |
+| 7/8 | e2e tests; User Manual; `pnpm manual` | ⏳ |
+| 8/8 | Owner review → DEVLOG, merge; note for Day 10 | ⏳ |
 
-## Decisions (Day 08)
-- ADR 005: **Dexie 4.4.7** (Apache-2.0, `apps/web`), **fflate 0.8.3** (MIT, core; 0.8.3 fixes GHSA-px8p ZIP64 loop),
-  **fake-indexeddb 6.2.8** (Apache-2.0, dev). No runtime deps; audit 0. `.rsim` = zip of `manifest.json` +
-  `project.json` with real-size limits while inflating; share link in the URL `#` fragment (never sent to a
-  server), ≤ 8 000 chars; imported/shared projects get a new id.
-- `apps/web/src/lib/project-db.ts`: database `robosim-studio`, tables `projects` (id, updatedAt index, summary +
-  project) and `settings` (open tabs). `saveProject` sets `updatedAt` in the saved copy; `loadProject` always
-  migrates + validates and checks the id matches its key; `listRecent` newest first (summaries only); session
-  cleaned (valid ids, no duplicates, ≤ 12, active must be open). Errors → `StorageError` kind quota / unavailable /
-  unknown (Dexie's wrapped errors checked). 12 tests with fake-indexeddb, incl. tampered records. 293 unit tests.
-- Autosave (`apps/web/src/app/studio/open-projects.ts`): one store per open project; saved 1 s after the last edit;
-  open tabs + active tab saved and restored after a reload ("Opening your projects…" meanwhile); bad saved
-  projects skipped with a warning; storage problems reported once. Project ids are now random (`newId`).
-  **Found while testing:** an IndexedDB write started while the page closes never finishes → on `pagehide`
-  unsaved projects are also written synchronously to localStorage (`lib/unsaved-backup.ts`, ≤ 2 MB, validated
-  on load, cleared after each successful database save). Undo history starts fresh after a reload.
-- `.rsim` (`packages/core/src/archive.ts`): `writeArchive` (deterministic zip: manifest + project) /
-  `readArchive` (≤ 10 MB, zip signature, only known entries, ≤ 16 entries, streaming inflate with real-size
-  limits 5 MB/entry, 20 MB total, manifest format/version check, then `parseProject`); `archiveFileName`
-  (safe name); `copyProject` gives imports a new id. 27 tests incl. round trip and a 30 MB zip bomb.
-  Studio: File → Import project… / Export project (palette commands too). `APP_VERSION` moved to `core/src/app.ts`.
-  325 unit tests, 62 e2e (6 new).
-- Share links (`packages/core/src/share.ts`): deflate + own base64url; `/studio#share=…` (fragment, never sent to
-  a server); ≤ 8 000-char token (bigger → "export a .rsim instead"); reading caps unpacked JSON at 1 MB (streaming
-  inflate) and validates with `parseProject`. 20 tests incl. a bomb hidden in a short link. Studio: File → Copy
-  share link (clipboard); opening a link (also pasted into an open studio) opens a copy (new id) and removes the
-  link from the address bar.
-- Recent projects window (`recent-projects-dialog.tsx`): File → Recent projects… / Alt+O / button on the empty
-  workspace; lists saved projects newest first (lab, parts, changed time, "open"); Open (or switch to its tab);
-  Delete needs a second click ("Delete for good?") and closes its tab. Pending edits are saved before listing.
-  345 unit tests, 66 e2e (4 new).
-- Step 7: User Manual §7.5 "Saving, files and sharing" (autosave, browser-only storage warning, Recent projects,
-  .rsim export/import, share links) + 2 screenshots; §7.3 updated; 7.6–7.8 renumbered; Alt+O in the shortcut table;
-  version history order fixed. Recent-projects rows now wrap instead of cutting the date. PDF rebuilt.
-- Day 07 merged into `develop` as `752012f` (PR #8).
+## Decisions (Day 09)
+- ADR 006: fixed steps (default 1 ms), simulated time = steps × dt; scheduler pure with injected real time;
+  per-frame step budget, drops time and reports "behind" instead of freezing; one module Web Worker per
+  simulation, **Comlink 4.4.2** (Apache-2.0, no deps, 0 advisories; installed in Step 4), snapshots at ~30 Hz;
+  Signal Bus = typed named signals (number with unit / boolean), double-buffered (writes visible next step →
+  deterministic), checked names, values and counts. (PLAN.md calls this "ADR-001"; ours is ADR 006.)
+- Scheduler (`packages/core/src/sim/scheduler.ts`): run / pause (drops leftover time) / step(n ≤ 100 000, only when
+  not running) / reset / setRate (0.1–10×, presets 0.1…10); `advance(realSeconds)` caps one frame at 0.25 s (no
+  catch-up after a hidden tab), budget 200 steps/frame by default, tracks `behind` and `droppedTime`; integer
+  step count → exact time over 900 000 steps. 31 tests. 376 unit tests.
+- Day 08 merged into `develop` as `ad828f6` (PR #9).
 
 ## Next action
-Day 08 · Step 8/8 — owner approves the whole-Day test; then PR #9 ready, squash-merge into `develop`, note for Day 09.
+Day 09 · Steps 3–4/8 — Signal Bus; Web Worker host with Comlink.
 
 ## Open issues
 - `apps/web/AGENTS.md` is generated by `next dev` (Next.js agent notes) and left uncommitted — owner to decide:
