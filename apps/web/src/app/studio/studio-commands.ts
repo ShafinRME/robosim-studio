@@ -2,6 +2,7 @@
 
 import { createCommandRegistry, type Command, type CommandRegistry } from "@robosim/core";
 import { useEffect, useRef, useState } from "react";
+import type { SimController } from "./studio-simulation";
 import { STUDIO_PANELS, type StudioPanelId } from "./studio-workspace";
 
 export const REPO_URL = "https://github.com/ShafinRME/robosim-studio";
@@ -15,6 +16,7 @@ export type StudioCommandContext = {
   importProject: () => void;
   openRecent: () => void;
   shareProject: () => void;
+  sim: SimController;
   undo: () => void;
   redo: () => void;
   /** Label of the edit Undo / Redo would act on, or null. */
@@ -111,6 +113,27 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       keywords: ["again", "forward"],
       enabled: () => ctx().redoLabel !== null,
       run: () => ctx().redo(),
+    },
+    {
+      id: "sim.toggle",
+      title: "Run / pause simulation",
+      category: "Simulation",
+      keywords: ["start", "play", "stop", "pause"],
+      run: () => ctx().sim.toggle(),
+    },
+    {
+      id: "sim.step",
+      title: "Step simulation (1 ms)",
+      category: "Simulation",
+      keywords: ["single step", "advance"],
+      run: () => ctx().sim.step(),
+    },
+    {
+      id: "sim.stop",
+      title: "Stop simulation (back to 0 s)",
+      category: "Simulation",
+      keywords: ["reset", "restart"],
+      run: () => ctx().sim.stop(),
     },
     {
       id: "project.next",

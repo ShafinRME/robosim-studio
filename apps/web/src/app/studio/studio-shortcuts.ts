@@ -17,6 +17,9 @@ import { useMemo, useSyncExternalStore } from "react";
 export const STUDIO_SHORTCUTS: ShortcutBindings = {
   "palette.open": ["Mod+K"],
   "help.shortcuts": ["Mod+/", "Shift+/"],
+  "sim.toggle": ["Mod+Enter"],
+  "sim.step": ["Alt+."],
+  "sim.stop": ["Mod+Shift+Enter"],
   "edit.undo": ["Mod+Z"],
   "edit.redo": ["Mod+Shift+Z", "Mod+Y"],
   "file.newProject": ["Alt+N"],

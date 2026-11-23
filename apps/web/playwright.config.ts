@@ -15,7 +15,22 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /.isolated.spec.ts$/,
+    },
+    {
+      // Tests that measure real time (simulation speed, frame rate) run alone, after all the
+      // others, one at a time: parallel browsers would compete for the CPU and skew the numbers.
+      name: "isolated",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /.isolated.spec.ts$/,
+      dependencies: ["chromium"],
+      fullyParallel: false,
+    },
+  ],
   webServer: {
     command: isCI ? "pnpm start" : "pnpm dev",
     url: `http://localhost:${PORT}`,

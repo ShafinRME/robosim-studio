@@ -1,6 +1,5 @@
 "use client";
 
-import { IconButton } from "@robosim/ui/components/button";
 import { Logo } from "@robosim/ui/components/logo";
 import {
   Menubar,
@@ -23,17 +22,14 @@ import {
   History,
   Keyboard,
   Link2,
-  Pause,
-  Play,
   Redo2,
   RotateCcw,
   Search,
-  SkipForward,
-  Square,
   Undo2,
   X,
 } from "lucide-react";
 import { Kbd, KbdGroup } from "@robosim/ui/components/kbd";
+import { SimControls } from "./sim-controls";
 import { REPO_URL } from "./studio-commands";
 import { STUDIO_PANELS } from "./studio-workspace";
 
@@ -155,26 +151,7 @@ export function TopBar({
         </MenubarMenu>
       </Menubar>
 
-      {/* Simulation controls: enabled once a lab can run a simulation. */}
-      <div
-        role="group"
-        aria-label="Simulation"
-        title="No simulation loaded"
-        className="mx-auto flex items-center gap-0.5 rounded-md border bg-canvas p-0.5"
-      >
-        <IconButton label="Run" size="icon-sm" disabled>
-          <Play />
-        </IconButton>
-        <IconButton label="Pause" size="icon-sm" disabled>
-          <Pause />
-        </IconButton>
-        <IconButton label="Step" size="icon-sm" disabled>
-          <SkipForward />
-        </IconButton>
-        <IconButton label="Stop" size="icon-sm" disabled>
-          <Square />
-        </IconButton>
-      </div>
+      <SimControls keysById={keysById} />
 
       <button
         type="button"

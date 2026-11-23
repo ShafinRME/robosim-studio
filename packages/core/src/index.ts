@@ -165,3 +165,5 @@ export type {
 } from "./sim/signal-bus";
 export { createSimulation } from "./sim/simulation";
 export type { SimModel, Simulation, SimulationSnapshot } from "./sim/simulation";
+export { DEMO_SIGNALS, createDemoModels } from "./sim/demo-models";
+export type { DemoOptions } from "./sim/demo-models";

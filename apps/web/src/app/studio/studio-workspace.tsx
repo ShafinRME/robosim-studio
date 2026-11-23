@@ -21,6 +21,7 @@ import {
   InspectorSection,
   InspectorValue,
 } from "@robosim/ui/components/inspector";
+import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
 import { useCanvasCursor, useStudioStatus } from "./studio-status";
@@ -81,6 +82,7 @@ function CanvasPanel() {
       <span className="absolute top-2 left-2 font-mono text-2xs text-faint-foreground">
         CANVAS · empty
       </span>
+      <SimReadout />
     </div>
   );
 }

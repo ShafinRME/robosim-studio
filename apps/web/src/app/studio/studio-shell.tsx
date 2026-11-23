@@ -5,7 +5,7 @@ import { Button } from "@robosim/ui/components/button";
 import { CommandPalette } from "@robosim/ui/components/command-palette";
 import { FilePlus2, History } from "lucide-react";
 import { useSetTheme } from "@robosim/ui/components/theme-provider";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
@@ -20,6 +20,7 @@ import {
   useShareLinkOpener,
 } from "./project-files";
 import { ActiveProjectProvider, useProjectState } from "./studio-project";
+import { SimulationProvider, useSimController } from "./studio-simulation";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
 import { TopBar } from "./top-bar";
 import { StudioWorkspace, type StudioWorkspaceControls } from "./studio-workspace";
@@ -28,9 +29,17 @@ import { StudioWorkspace, type StudioWorkspaceControls } from "./studio-workspac
 export function StudioShell() {
   return (
     <StudioStatusProvider>
-      <StudioWindow />
+      <StudioSimulation>
+        <StudioWindow />
+      </StudioSimulation>
     </StudioStatusProvider>
   );
+}
+
+/** The simulation reports to the status bar and Console. */
+function StudioSimulation({ children }: { children: ReactNode }) {
+  const { post } = useStudioStatus();
+  return <SimulationProvider post={post}>{children}</SimulationProvider>;
 }
 
 function StudioWindow() {
@@ -38,6 +47,7 @@ function StudioWindow() {
   const setTheme = useSetTheme();
   const controls = useRef<StudioWorkspaceControls | null>(null);
   const open = useOpenProjects(post);
+  const sim = useSimController();
   const projects = open.tabs;
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -79,6 +89,7 @@ function StudioWindow() {
     shareProject: () => {
       if (activeStore) copyShareLink(activeStore.getState().project, post);
     },
+    sim,
     undo: undoEdit,
     redo: redoEdit,
     undoLabel: history ? undoLabel(history) : null,
