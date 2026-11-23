@@ -31,6 +31,7 @@ export {
   emptyProjectTabs,
   nextUntitledName,
   openProjectTab,
+  renameProjectTab,
 } from "./project-tabs";
 export type { ProjectTab, ProjectTabsState } from "./project-tabs";
 export {
@@ -70,3 +71,39 @@ export type {
   ShortcutMap,
   ShortcutProblem,
 } from "./shortcuts";
+export {
+  MAX_COORDINATE,
+  MAX_NAME_CHARS,
+  MAX_PART_PROPS,
+  MAX_PROJECT_CHARS,
+  MAX_PROJECT_PARTS,
+  PROJECT_FORMAT,
+  PROJECT_MIGRATIONS,
+  PROJECT_VERSION,
+  createProject,
+  loadProject,
+  migrateProjectData,
+  newId,
+  parseProject,
+  partSchema,
+  projectSchema,
+  serializeProject,
+} from "./project";
+export type {
+  MigrationResult,
+  Part,
+  PartValue,
+  Project,
+  ProjectLoadResult,
+  ProjectMigration,
+  ProjectRejection,
+} from "./project";
+export { MAX_HISTORY, applyEdit, emptyHistory, redo, redoLabel, undo, undoLabel } from "./history";
+export type { Edit, EditResult, History, HistoryEntry, StepResult } from "./history";
+export {
+  ProjectEditError,
+  createProjectStore,
+  normalizeRotation,
+  projectEdits,
+} from "./project-store";
+export type { ProjectEdit, ProjectStore, ProjectStoreState } from "./project-store";

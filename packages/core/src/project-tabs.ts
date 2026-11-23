@@ -1,6 +1,6 @@
 /**
  * Open-project tabs in the studio top bar. Pure state + actions so the rules (which tab becomes
- * active after a close, how new tabs are named) are unit-tested. Project contents arrive on Day 07.
+ * active after a close, how new tabs are named) are unit-tested. Each tab shows its project's name.
  */
 
 export const MAX_PROJECT_TABS = 12;
@@ -57,4 +57,15 @@ export function cycleProjectTab(state: ProjectTabsState, step: 1 | -1): ProjectT
   const index = state.tabs.findIndex((t) => t.id === state.activeId);
   const next = state.tabs[(((index + step) % count) + count) % count];
   return next ? { ...state, activeId: next.id } : state;
+}
+
+/** Renames a tab (when its project is renamed). Unknown ids and unchanged names are ignored. */
+export function renameProjectTab(
+  state: ProjectTabsState,
+  id: string,
+  name: string,
+): ProjectTabsState {
+  const tab = state.tabs.find((t) => t.id === id);
+  if (!tab || tab.name === name) return state;
+  return { ...state, tabs: state.tabs.map((t) => (t.id === id ? { ...t, name } : t)) };
 }

@@ -6,7 +6,10 @@ import {
   cycleProjectTab,
   emptyProjectTabs,
   openProjectTab,
+  redoLabel,
   rememberRecent,
+  renameProjectTab,
+  undoLabel,
   type Command,
   type ProjectTabsState,
 } from "@robosim/core";
@@ -18,8 +21,9 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
-import { isTypingTarget, useShortcutMap } from "./studio-shortcuts";
+import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
 import { ShortcutsDialog } from "./shortcuts-dialog";
+import { ActiveProjectProvider, useProjectState, useProjectStores } from "./studio-project";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
 import { TopBar } from "./top-bar";
 import { StudioWorkspace, type StudioWorkspaceControls } from "./studio-workspace";
@@ -46,6 +50,20 @@ function StudioWindow() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const shortcuts = useShortcutMap();
+  const stores = useProjectStores((id, name) => setProjects((s) => renameProjectTab(s, id, name)));
+  const activeTab = projects.tabs.find((t) => t.id === projects.activeId);
+  const activeStore = activeTab ? stores.storeFor(activeTab) : null;
+  const activeState = useProjectState(activeStore);
+  const history = activeState?.history;
+
+  const undoEdit = () => {
+    const label = activeStore?.getState().undo();
+    post("info", label ? `Undo: ${label}.` : "Nothing to undo.");
+  };
+  const redoEdit = () => {
+    const label = activeStore?.getState().redo();
+    post("info", label ? `Redo: ${label}.` : "Nothing to redo.");
+  };
 
   const newProject = () => {
     const next = openProjectTab(projects, `project-${nextId.current++}`);
@@ -56,6 +74,7 @@ function StudioWindow() {
   const closeProject = (id: string) => {
     const name = projects.tabs.find((t) => t.id === id)?.name;
     setProjects(closeProjectTab(projects, id));
+    stores.remove(id);
     if (name) post("info", `Closed “${name}”.`);
   };
   const hasProject = projects.activeId !== null;
@@ -64,6 +83,10 @@ function StudioWindow() {
     newProject,
     closeProject: () => projects.activeId && closeProject(projects.activeId),
     hasProject,
+    undo: undoEdit,
+    redo: redoEdit,
+    undoLabel: history ? undoLabel(history) : null,
+    redoLabel: history ? redoLabel(history) : null,
     cycleProject: (step) => setProjects((s) => cycleProjectTab(s, step)),
     projectCount: projects.tabs.length,
     togglePanel: (id) => controls.current?.togglePanel(id),
@@ -98,7 +121,13 @@ function StudioWindow() {
       if (event.isComposing || event.defaultPrevented) return;
       const hit = shortcuts.find(event);
       if (!hit) return;
-      if (isTypingTarget(event.target) && !hit.shortcut.mod) return;
+      // In a text box, plain keys type and Ctrl+Z / Ctrl+Y undo the typing, not the project.
+      if (
+        isTypingTarget(event.target) &&
+        (!hit.shortcut.mod || TEXT_EDITING_COMMANDS.has(hit.commandId))
+      ) {
+        return;
+      }
       event.preventDefault();
       latestRun.current(hit.commandId);
     };
@@ -108,7 +137,14 @@ function StudioWindow() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <TopBar run={run} openPanels={openPanels} hasProject={hasProject} keysById={keysById} />
+      <TopBar
+        run={run}
+        openPanels={openPanels}
+        hasProject={hasProject}
+        undoLabel={history ? undoLabel(history) : null}
+        redoLabel={history ? redoLabel(history) : null}
+        keysById={keysById}
+      />
       <ProjectTabStrip
         state={projects}
         onActivate={(id) => setProjects((s) => activateProjectTab(s, id))}
@@ -122,10 +158,12 @@ function StudioWindow() {
       >
         <h1 className="sr-only">RoboSim Studio workspace</h1>
         {/* The workspace stays mounted with no project open, so the layout is kept. */}
-        <StudioWorkspace
-          onControls={(c) => (controls.current = c)}
-          onOpenPanelsChange={(ids) => setOpenPanels(new Set(ids))}
-        />
+        <ActiveProjectProvider store={activeStore}>
+          <StudioWorkspace
+            onControls={(c) => (controls.current = c)}
+            onOpenPanelsChange={(ids) => setOpenPanels(new Set(ids))}
+          />
+        </ActiveProjectProvider>
         {!hasProject && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blueprint">
             <p className="text-sm text-muted-foreground">No project open</p>

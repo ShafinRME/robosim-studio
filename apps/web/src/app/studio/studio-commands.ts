@@ -11,6 +11,11 @@ export type StudioCommandContext = {
   newProject: () => void;
   closeProject: () => void;
   hasProject: boolean;
+  undo: () => void;
+  redo: () => void;
+  /** Label of the edit Undo / Redo would act on, or null. */
+  undoLabel: string | null;
+  redoLabel: string | null;
   cycleProject: (step: 1 | -1) => void;
   projectCount: number;
   togglePanel: (id: StudioPanelId) => void;
@@ -56,6 +61,22 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       keywords: ["tab"],
       enabled: () => ctx().hasProject,
       run: () => ctx().closeProject(),
+    },
+    {
+      id: "edit.undo",
+      title: "Undo",
+      category: "Edit",
+      keywords: ["revert", "back"],
+      enabled: () => ctx().undoLabel !== null,
+      run: () => ctx().undo(),
+    },
+    {
+      id: "edit.redo",
+      title: "Redo",
+      category: "Edit",
+      keywords: ["again", "forward"],
+      enabled: () => ctx().redoLabel !== null,
+      run: () => ctx().redo(),
     },
     {
       id: "project.next",

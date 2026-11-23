@@ -1,72 +1,53 @@
 # Status
 
-**Current:** Day 06 — Studio workspace shell · Step 9/9 (owner review, then merge)
-**Branch:** `feat/day-06-workspace-shell` (from `develop`)
+**Current:** Day 07 — Project model & undo/redo · Step 8/8 (owner review, then merge)
+**Branch:** `feat/day-07-project-model` (from `develop`) · draft PR #8
 **Session:** Days 06–10 – Studio core
 **Updated:** 2026-11-23
 
-## Day 06 steps
+## Day 07 steps
 | Step | Task | State |
 |---|---|---|
-| 1/9 | Day branch; ADR 003 workspace shell (Dockview, licence, security check, layout saving); empty `/studio` page + e2e test | ✅ done |
-| 2/9 | Dockview in Signal style; default layout (Explorer, Canvas, Inspector, Console); dock/split/tabs/float | ✅ done |
-| 3/9 | Layout saving: localStorage, validated restore (core + tests), Reset layout | ✅ done |
-| 4/9 | Top bar (logo, menus, run controls slot, theme) + project tabs | ✅ done |
-| 5/9 | Status bar (sim state, messages, Low-end indicator, cursor/zoom) | ✅ done |
-| 6/9 | Command palette (Ctrl+K) + command registry in core | ✅ done |
-| 7/9 | Keyboard shortcuts registry (conflict check) + shortcuts help | ✅ done |
-| 8/9 | e2e tests; User Manual "Studio workspace" chapter + screenshots; `pnpm manual` | ✅ done |
-| 9/9 | Owner review → DEVLOG, merge; note for Day 07 | 🔄 DEVLOG done, waiting for owner approval |
+| 1/8 | Day branch; ADR 004 project model (Zod, Zustand, Immer, command-pattern undo; security check) | ✅ done |
+| 2/8 | Versioned project schema (Zod) + migration runner in core, with tests | ✅ done |
+| 3/8 | Project store (vanilla Zustand + Immer) in core | ✅ done |
+| 4/8 | Undo/redo engine (Immer patches, history cap, labels) | ✅ done |
+| 5/8 | Acceptance test: 100 random edits undo back to the initial state | ✅ done |
+| 6/8 | Studio: Edit → Undo/Redo, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, status messages | ✅ done |
+| 7/8 | e2e tests; User Manual update; `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, merge; note for Day 08 | 🔄 DEVLOG done, waiting for owner approval |
 
-## Decisions (Day 06)
-- ADR 003: **Dockview 8.9.1** (MIT, no runtime deps, 0 GitHub advisories, passes the 3-day release-age
-  guard) for the workspace. Own Signal theme over Dockview's CSS variables. Layout saved as
-  `{ version: 1, layout }` in `localStorage` (`robosim-layout`), validated in `@robosim/core` before use,
-  default layout on any failure; Reset layout command. Popout windows off until reviewed. Route `/studio`.
-- Package is **`dockview-react` 8.9.1** (React bindings; pulls `dockview` + `dockview-core`, all MIT).
-  Audit still 0. `Dock` component in `@robosim/ui/components/dock` with the Signal theme
-  (`styles/dock.css`, 4 px gaps, rounded modules, teal active-tab bar), group buttons Float / Dock back
-  and Maximize / Restore, tab right-click menu without Popout. Studio panels are placeholders with
-  honest empty states. 5 e2e tests incl. real drag-and-drop (tab join + edge split).
-- Layout saving: `packages/core/src/layout.ts` (`parseSavedLayout`, `checkLayout`, `serializeLayout`; 44 unit
-  tests with a real saved layout as fixture). Rejects: missing, > 100 000 chars, corrupt JSON, other version,
-  unknown panel component, custom tab components, panels missing or placed twice, bad sizes, grids deeper than
-  32, popout/edge groups. Saved 300 ms after a change and on page close; restore falls back to the default layout
-  (and clears the bad save) on any problem, with a console warning. **Reset layout** is a temporary button in
-  the studio header until the View menu arrives in Step 4. 10 studio e2e tests.
-- Top bar: Logo · Menubar (new `@robosim/ui/components/menubar`, Radix) — File (New / Close project), Edit
-  (Undo / Redo disabled until Day 07), View (panel show/hide checkboxes + Reset layout, header button removed),
-  Help (GitHub source + Report a problem, new tab, `noopener noreferrer`) · Run / Pause / Step / Stop (disabled,
-  "No simulation loaded") · theme switch. Project tabs: pure logic in `packages/core/src/project-tabs.ts`
-  (17 tests; max 12 tabs, "Untitled N" naming, browser-like close); tab strip with ←/→/Home/End; empty state
-  with New project when all are closed. Tabs are not saved yet (Day 08). 29 e2e tests.
-- Status bar: Idle state · latest message (`role=status`) · canvas pointer X/Y (px) · **Low-end mode** toggle
-  (stored `robosim-low-end`; default from `navigator.deviceMemory` ≤ 4 GB or ≤ 2 cores; sets `data-low-end` on
-  `<html>` → no animations/transitions/glow) · version. Message log + Low-end detection in
-  `packages/core/src/status.ts` (16 tests); Console panel now lists messages. Landmarks: top bar = banner,
-  workspace = main, status bar = contentinfo. Zoom readout waits for a zoomable canvas. 35 e2e tests.
-- Commands: `packages/core/src/commands.ts` — registry (register/unregister, duplicate-id check, cached list,
-  subscribe), `fuzzyMatch` + `searchCommands` (title first, then each word within one title/category/keyword),
-  `rememberRecent` (18 tests). Palette is our own (`@robosim/ui/components/command-palette`, Radix Dialog,
-  accessible combobox; no new dependency): Ctrl/⌘+K or the top-bar "Search commands" button; ↑/↓, Enter, Esc;
-  highlights matches; disabled commands shown dimmed; recent first. 17 studio commands in
-  `apps/web/src/app/studio/studio-commands.ts`; menus run the same command ids. `useSetTheme` added to
-  theme-provider. 43 e2e tests.
-- Shortcuts: `packages/core/src/shortcuts.ts` — parse "Mod+Shift+K", match by physical key (`event.code`),
-  Ctrl vs ⌘, display keys, browser-reserved list, conflict check, `createShortcutMap` (30 tests). Bindings in
-  `apps/web/src/app/studio/studio-shortcuts.ts` (unit test: no conflicts/reserved). Alt used where Ctrl belongs to
-  the browser. While typing, only Mod shortcuts run. Keys shown in menus, palette and a new **Keyboard shortcuts**
-  window (Ctrl+/ or ?, Help menu; new `@robosim/ui/components/dialog`).
-- Step 8: User Manual chapter 7 "The studio workspace" + 6 new screenshots (`pnpm manual:screenshots`), PDF rebuilt.
-  Home page buttons now link to `/studio` and `/ui-kit`. Fixes found while shooting: default column widths on a
-  first visit (re-applied after layout), floating a group keeps the side columns' widths, "1 command". 50 e2e.
-- Working rule changed (owner, 2026-11-22): **two steps per "next"** — CLAUDE.md updated.
-- Dev note: Turbopack did not pick up an edit to `packages/ui/src/styles/globals.css`; restart `pnpm dev` after
-  editing CSS in `packages/ui`.
-- Earlier decisions: ADR 001 (labs), ADR 002 (Signal design language); Day 05 details in `docs/DEVLOG.md`.
+## Decisions (Day 07)
+- ADR 004: **Zod 4.6.7**, **Zustand 5.1.0**, **Immer 11.2.10** (all MIT, no runtime deps; advisories only affect
+  older versions; pass the 3-day guard). Undo/redo = named commands on Immer patches (no snapshots).
+- Project format v1 (`packages/core/src/project.ts`): `{ format: "robosim-project", version: 1, id, name, lab,
+  createdAt, updatedAt, parts[] }`; part = `{ id, type, name, x, y, rotation, props }`. Strict schema: unknown
+  keys rejected, ids/types by bounded regex, ≤ 2 000 parts, ≤ 64 flat props (number / text ≤ 1 000 / boolean),
+  coordinates ±1e6, rotation 0–360, unique part ids, `constructor`/`prototype` keys refused (Zod drops
+  `__proto__`; tested). Files > 5 MB refused before parsing. Migration runner: one pure step per version,
+  newer versions refused, failures reported; chain empty for v1 (tested with test migrations). 44 tests.
+- Zod, Zustand and Immer added to `@robosim/core` only; audit 0.
+- Undo/redo (`packages/core/src/history.ts`): `applyEdit` / `undo` / `redo` on Immer patches + inverse patches;
+  no-change edits not recorded; a new edit clears redo; history capped at 200 (oldest dropped). 10 tests.
+- Store (`packages/core/src/project-store.ts`): vanilla Zustand `createProjectStore(project)` with `apply`, `undo`,
+  `redo`, `replace` (clears history); frozen state. Validated edits in `projectEdits`: rename project, add / remove /
+  move / rotate / rename part, set / remove property (throw `ProjectEditError` on bad input, no-op on a missing
+  part). Labels name the part ("Move R1"). `updatedAt` is set on save (Day 08), not per edit, so undo restores
+  the exact project. 29 tests; 274 unit tests in total.
+- Acceptance (`packages/core/src/undo-acceptance.test.ts`): 5 fixed seeds × exactly 100 recorded random edits (add /
+  remove / move / rotate / rename part, set / remove property, rename project); every undo step matches the state
+  recorded on the way, undo all = initial, redo all = final. ✅ Day 07 "done when" met.
+- Studio: one project store per tab (`studio-project.tsx`, own history per tab; tab name follows the project name,
+  also on Undo). Inspector shows **Project**: Name (edit; Enter/blur = one undoable rename, Esc reverts, empty name
+  refused with a warning), Lab, Parts. Edit menu "Undo Rename project" / "Redo …"; commands `edit.undo` /
+  `edit.redo` (off when nothing to undo); shortcuts Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y — inside a text box they undo the
+  typing, not the project. Status: "Undo: Rename project.". `renameProjectTab` in core. 281 unit, 56 e2e (6 new).
+- Step 7: User Manual §7.4 "Project name and Undo / Redo" (+ screenshot `studio-undo.png`), shortcut table, sections
+  renumbered; PDF rebuilt. `apps/web/AGENTS.md` is generated by `next dev` — not committed (owner to decide).
+- Day 06 merged into `develop` as `ec55cf5` (PR #7).
 
 ## Next action
-Day 06 · Step 9/9 — owner approves the whole-Day test; then PR #7 ready, squash-merge into `develop`, note for Day 07.
+Day 07 · Step 8/8 — owner approves the whole-Day test; then PR #8 ready, squash-merge into `develop`, note for Day 08.
 
 ## Open issues
 - CSP still allows `script-src 'unsafe-inline'` (Next.js inline bootstrap on static pages). Move to
@@ -78,3 +59,4 @@ Day 06 · Step 9/9 — owner approves the whole-Day test; then PR #7 ready, squa
   listed in the local `E:\My Projects\robosim\IMPROVEMENTS.md`.
 - PRD open questions Q1–Q7 (§11), each with its decision Day.
 - `docs/PLAN.md` is generated from the owner's private plan source — never edit it by hand.
+- Dev note: Turbopack can miss CSS edits in `packages/ui`; restart `pnpm dev` after editing them.

@@ -10,7 +10,7 @@ This manual explains **what every screen, button and tool in RoboSim Studio does
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
 - **Software version covered:** v0.0.0 (Phase 0 — Foundation)
-- **Last updated:** 2026-11-22 (Day 06)
+- **Last updated:** 2026-11-23 (Day 07)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
 # 1. What is RoboSim Studio?
@@ -193,7 +193,7 @@ but you can already arrange the workspace the way you like.
 | **Explorer** (left) | Will list the files and parts of your project. |
 | **Canvas** (middle) | The drawing area with a blueprint grid. |
 | **Console** (under the canvas) | A log of everything the studio tells you, with the time. |
-| **Inspector** (right) | Will show the properties of the selected part. |
+| **Inspector** (right) | Shows the open project (name, lab, parts). Will also show the properties of the selected part. |
 | **Status bar** (bottom) | State, latest message, pointer position, Low-end mode and version. |
 
 ## 7.2 Arranging panels
@@ -231,9 +231,33 @@ layout and says so in the status bar. To go back to the default at any time, cho
 - **Close:** click the **×** on a tab, or **File → Close project**. The next tab opens.
 - With no project open, the workspace shows **New project**.
 
-Projects are empty for now and are not saved yet — saving arrives in a later version.
+Projects have no parts yet and are not saved yet — parts arrive with the labs, saving in a later
+version.
 
-## 7.4 Status bar and Low-end mode
+## 7.4 Project name and Undo / Redo
+
+![The Inspector with the project name, and the Edit menu offering "Undo Rename project"](images/studio-undo.png)
+
+When no part is selected, the **Inspector** shows the **Project** section:
+
+| Row | What it does |
+|---|---|
+| **Name** | The project's name. Click it, type a new name and press **Enter** (or click elsewhere). The project tab shows the new name. **Esc** cancels your typing. A name must have 1–100 characters. |
+| **Lab** | The lab the project belongs to (*None yet* until labs arrive). |
+| **Parts** | How many parts the project has. |
+
+**Undo and Redo.** Every change to a project can be undone:
+
+- **Undo:** press **Ctrl + Z** or choose **Edit → Undo**. The menu says what will be undone, for
+  example **Undo Rename project**, and the status bar confirms it (*Undo: Rename project.*).
+- **Redo:** press **Ctrl + Y** or **Ctrl + Shift + Z**, or choose **Edit → Redo**.
+- When there is nothing to undo (or redo), the menu item is greyed out.
+- Each project tab has its **own** undo history: Undo never changes another project.
+- The studio remembers the last 200 changes of each project.
+- Inside a text box (such as the project name while you type), **Ctrl + Z** undoes your typing, not
+  the project.
+
+## 7.5 Status bar and Low-end mode
 
 ![The status bar](images/studio-status-bar.png)
 
@@ -245,7 +269,7 @@ Projects are empty for now and are not saved yet — saving arrives in a later v
 | **Low-end off / on** | Click to switch **Low-end mode**: all animations are turned off, which helps slower computers. The choice is remembered. On computers with 4 GB of memory or less it starts switched on. |
 | **v0.0.0** | Software version. |
 
-## 7.5 Command palette
+## 7.6 Command palette
 
 ![The command palette, searching for "lay"](images/command-palette.png)
 
@@ -260,7 +284,7 @@ Every action in the studio can be found and run from one search box.
   dimmed.
 - The keys on the right of a command are its keyboard shortcut.
 
-## 7.6 Keyboard shortcuts
+## 7.7 Keyboard shortcuts
 
 Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this list in the studio.
 
@@ -270,6 +294,8 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 |---|---|
 | **Ctrl + K** | Command palette (open / close) |
 | **Ctrl + /** or **?** | Keyboard shortcuts window |
+| **Ctrl + Z** | Undo |
+| **Ctrl + Y** or **Ctrl + Shift + Z** | Redo |
 | **Alt + N** | New project |
 | **Alt + W** | Close project |
 | **Alt + ]** / **Alt + [** | Next / previous project tab |
@@ -279,7 +305,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 - On a Mac use **⌘** instead of **Ctrl** and **⌥ Option** instead of **Alt**.
 - While you type in a text box (such as the palette search), only **Ctrl** shortcuts work, so your
-  typing is never interrupted.
+  typing is never interrupted. **Ctrl + Z** and **Ctrl + Y** then undo and redo your typing.
 - The browser keeps some keys for itself (Ctrl + N, Ctrl + W, Ctrl + Tab…), so the studio uses
   **Alt** for those actions instead.
 
@@ -287,7 +313,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 These parts of the manual will be written as each feature is finished:
 
-- Saving, opening, exporting and sharing projects (Days 07–08)
+- Saving, opening, exporting and sharing projects (Day 08)
 - Simulation controls in the real studio: play, pause, step and speed (Day 09)
 - More Low-end mode options and automatic graphics detection (Day 10)
 - One chapter for each of the 10 labs
@@ -298,4 +324,5 @@ These parts of the manual will be written as each feature is finished:
 |---|---|---|
 | 0.0.0 | 2026-11-21 | First edition: about RoboSim Studio, requirements, home page preview. |
 | 0.0.0 · Day 05 | 2026-11-22 | New logo on the home page; chapters on themes, engineering number fields and the workspace (panels, toolbar, inspector). |
+| 0.0.0 · Day 07 | 2026-11-23 | New section 7.4: project name in the Inspector, Undo / Redo (Edit menu, Ctrl + Z, Ctrl + Y). Shortcut table updated. |
 | 0.0.0 · Day 06 | 2026-11-22 | New chapter 7, the studio workspace: docking panels, saved layout, menus, project tabs, status bar, Low-end mode, command palette and keyboard shortcuts. Home page links to the studio. |

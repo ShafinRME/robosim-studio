@@ -38,12 +38,17 @@ export function TopBar({
   run,
   openPanels,
   hasProject,
+  undoLabel,
+  redoLabel,
   keysById,
 }: {
   /** Runs a studio command by id (menus use the same commands as the palette). */
   run: (id: string) => void;
   openPanels: ReadonlySet<string>;
   hasProject: boolean;
+  /** Label of the edit Undo / Redo would act on (null: nothing to undo / redo). */
+  undoLabel: string | null;
+  redoLabel: string | null;
   /** Display keys per command id, for menu hints. */
   keysById: Readonly<Record<string, readonly string[]>>;
 }) {
@@ -74,11 +79,13 @@ export function TopBar({
         <MenubarMenu>
           <MenubarTrigger>Edit</MenubarTrigger>
           <MenubarContent>
-            <MenubarItem disabled>
-              <Undo2 /> Undo
+            <MenubarItem disabled={undoLabel === null} onSelect={() => run("edit.undo")}>
+              <Undo2 /> {undoLabel ? `Undo ${undoLabel}` : "Undo"}
+              {hint("edit.undo")}
             </MenubarItem>
-            <MenubarItem disabled>
-              <Redo2 /> Redo
+            <MenubarItem disabled={redoLabel === null} onSelect={() => run("edit.redo")}>
+              <Redo2 /> {redoLabel ? `Redo ${redoLabel}` : "Redo"}
+              {hint("edit.redo")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
