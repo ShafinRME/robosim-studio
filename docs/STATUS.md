@@ -49,7 +49,7 @@
 - **Jank check ✅ ("done when" met):** `e2e/simulation.isolated.spec.ts` — 1005 steps/s; main thread 122 frames idle →
   121 running in 2 s; worst frame gap 17 ms; no long tasks. **Found:** with 4 parallel browsers on the dev server the
   numbers collapse (17 frames) from CPU contention, so timing tests run in a separate Playwright project
-  `isolated` (after all others, one at a time) and compare against an idle baseline. 455 unit, 70 e2e.
+  `isolated` (after all others, one at a time) and compare against an idle baseline. 436 unit, 70 e2e.
 - Day 08 merged into `develop` as `ad828f6` (PR #9).
 
 ## Next action
