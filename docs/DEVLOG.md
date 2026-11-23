@@ -9,6 +9,18 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 07 — Project model & undo/redo (2026-11-23)
+- Built: ADR 004; **Zod 4.6.7**, **Zustand 5.1.0**, **Immer 11.2.10** in `@robosim/core` (MIT, audit 0). Versioned
+  project format v1 with a strict schema (size, count, range and key limits) and a migration runner that refuses
+  newer versions. Patch-based undo/redo (`history.ts`, 200 steps, no snapshots) and a vanilla Zustand project store
+  with validated, named edits. Acceptance test: 100 random edits undo back to the initial project (5 seeds). Studio:
+  one store per project tab, project name in the Inspector, Edit → Undo/Redo, Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z.
+  User Manual §7.4. 281 unit tests, 56 e2e.
+- Learned: Zod 4 silently drops `__proto__` keys from records (safe, now tested); random-edit tests must count
+  recorded edits, not attempts (no-op edits are not history); in a text box Ctrl+Z belongs to the text box;
+  `next dev` writes an `apps/web/AGENTS.md` file (left uncommitted).
+- Next: Day 08 — saving and opening projects.
+
 ## Day 06 — Studio workspace shell (2026-11-23)
 - Built: `/studio` workspace (ADR 003) on **Dockview 8.9.1** (MIT) in our own Signal style — dock, split,
   tab, float, maximize; popout off. Layout saved in `localStorage`, validated in `@robosim/core` before

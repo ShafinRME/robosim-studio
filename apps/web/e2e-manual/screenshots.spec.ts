@@ -108,6 +108,17 @@ test.describe("studio workspace", () => {
     });
   });
 
+  test("project name and undo", async ({ page }) => {
+    const name = page.locator(".dv-groupview").getByRole("textbox", { name: "Name" });
+    await name.fill("Line follower");
+    await name.press("Enter");
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await expect(page.getByRole("menuitem", { name: /Undo Rename project/ })).toBeVisible();
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("studio-undo") });
+  });
+
   test("keyboard shortcuts window", async ({ page }) => {
     await page.getByTestId("studio-canvas").click();
     await page.keyboard.press("Control+Slash");
