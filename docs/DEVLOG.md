@@ -9,6 +9,19 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 08 — Persistence & sharing (2026-11-23)
+- Built: ADR 005; **Dexie 4.4.7**, **fflate 0.8.3**, fake-indexeddb (dev) — audit 0. Browser project database
+  (validated reads, recent list, open tabs); autosave 1 s after an edit, same tabs back after a reload;
+  `.rsim` files (zip: manifest + project) with File → Export / Import; share links with the project packed in
+  the URL fragment; Recent projects window (open, delete with confirm, Alt+O). Imports and shared links always
+  open as a copy with a new id. User Manual §7.5. 345 unit tests, 66 e2e.
+- Learned: an IndexedDB write started while the page closes never finishes — unsaved edits are also written
+  synchronously to localStorage on `pagehide` and put back on load; never trust sizes written inside a zip —
+  count the real inflated bytes (tested with 30 MB and 5 MB bombs); fflate < 0.8.3 could loop forever on a crafted
+  ZIP64; lists built from the database must save pending edits first; a modal dialog hides the page from
+  assistive tech (and from role-based tests).
+- Next: Day 09 — Simulation kernel (fixed-step scheduler, Web Worker host, signal bus).
+
 ## Day 07 — Project model & undo/redo (2026-11-23)
 - Built: ADR 004; **Zod 4.6.7**, **Zustand 5.1.0**, **Immer 11.2.10** in `@robosim/core` (MIT, audit 0). Versioned
   project format v1 with a strict schema (size, count, range and key limits) and a migration runner that refuses

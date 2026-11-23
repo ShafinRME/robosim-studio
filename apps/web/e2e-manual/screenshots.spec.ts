@@ -119,6 +119,30 @@ test.describe("studio workspace", () => {
     await page.screenshot({ path: shot("studio-undo") });
   });
 
+  test("file menu", async ({ page }) => {
+    await page.getByRole("menuitem", { name: "File" }).click();
+    await expect(page.getByRole("menuitem", { name: "Copy share link" })).toBeVisible();
+    await settle(page);
+    await page.screenshot({
+      path: shot("studio-file-menu"),
+      clip: { x: 0, y: 0, width: 640, height: 300 },
+    });
+  });
+
+  test("recent projects window", async ({ page }) => {
+    const name = page.locator(".dv-groupview").getByRole("textbox", { name: "Name" });
+    await name.fill("Line follower");
+    await name.press("Enter");
+    await page.getByRole("button", { name: "New project" }).click();
+    await name.fill("Robot arm");
+    await name.press("Enter");
+    await page.keyboard.press("Alt+O");
+    const dialog = page.getByRole("dialog", { name: "Recent projects" });
+    await expect(dialog.getByRole("listitem")).toHaveCount(2);
+    await settle(page);
+    await dialog.screenshot({ path: shot("recent-projects") });
+  });
+
   test("keyboard shortcuts window", async ({ page }) => {
     await page.getByTestId("studio-canvas").click();
     await page.keyboard.press("Control+Slash");

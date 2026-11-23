@@ -10,7 +10,7 @@ This manual explains **what every screen, button and tool in RoboSim Studio does
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
 - **Software version covered:** v0.0.0 (Phase 0 — Foundation)
-- **Last updated:** 2026-11-23 (Day 07)
+- **Last updated:** 2026-11-23 (Day 08)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
 # 1. What is RoboSim Studio?
@@ -229,10 +229,9 @@ layout and says so in the status bar. To go back to the default at any time, cho
   *Untitled*, *Untitled 2*, … (up to 12 at once).
 - **Switch:** click a tab, or use **←** / **→** when a tab has keyboard focus.
 - **Close:** click the **×** on a tab, or **File → Close project**. The next tab opens.
-- With no project open, the workspace shows **New project**.
+- With no project open, the workspace shows **New project** and **Recent projects**.
 
-Projects have no parts yet and are not saved yet — parts arrive with the labs, saving in a later
-version.
+Projects are saved automatically (see 7.5). They have no parts yet — parts arrive with the labs.
 
 ## 7.4 Project name and Undo / Redo
 
@@ -257,7 +256,47 @@ When no part is selected, the **Inspector** shows the **Project** section:
 - Inside a text box (such as the project name while you type), **Ctrl + Z** undoes your typing, not
   the project.
 
-## 7.5 Status bar and Low-end mode
+## 7.5 Saving, files and sharing
+
+![The File menu: recent projects, import, export and share link](images/studio-file-menu.png)
+
+**Automatic saving.** You never need to press Save. Every change is saved in your browser about one
+second after you make it, and also when you close or reload the page. When you open the studio again,
+the same project tabs come back, with the same tab active. (Undo history starts fresh after a reload.)
+
+> Projects are stored **in this browser on this computer only**. Clearing the browser's site data
+> deletes them, and another browser or computer does not see them. To keep a backup or move a
+> project, **export** it (below). If the browser does not allow saving (for example in some private
+> windows), the status bar says *Your projects are not being saved.*
+
+**Recent projects.** Choose **File → Recent projects…** (or press **Alt + O**) to see every project
+saved in this browser, newest first, with its lab, number of parts and when it last changed.
+
+![The Recent projects window](images/recent-projects.png)
+
+| Button | What it does |
+|---|---|
+| **Open** | Opens the project in a new tab (or switches to its tab if it is already open). |
+| **Delete** | Click once: the button turns red and says **Delete for good?** Click again to delete the project from this browser. If it is open, its tab closes. This cannot be undone — export the project first if you may need it again. |
+
+**Export and import (.rsim files).** A `.rsim` file contains one whole project.
+
+- **File → Export project** downloads the active project, for example `line-follower.rsim`.
+- **File → Import project…** opens a `.rsim` file as a **new** project tab. It never replaces a
+  project you already have, even one with the same name.
+- Files that are not RoboSim Studio projects, are damaged, larger than 10 MB, or come from a newer
+  version of RoboSim Studio are refused, and the status bar says why.
+
+**Share links.** **File → Copy share link** copies a link to the clipboard. Anyone who opens it gets
+their own **copy** of the project in their browser.
+
+- The project is packed inside the link itself (after `#share=`). It is **not uploaded anywhere**.
+- Only small projects fit in a link. For a larger one the studio says so — send a `.rsim` file
+  instead.
+- Opening a share link adds the project as a new tab and then removes the link from the address bar,
+  so reloading does not add it twice. A damaged link is refused with a message.
+
+## 7.6 Status bar and Low-end mode
 
 ![The status bar](images/studio-status-bar.png)
 
@@ -269,7 +308,7 @@ When no part is selected, the **Inspector** shows the **Project** section:
 | **Low-end off / on** | Click to switch **Low-end mode**: all animations are turned off, which helps slower computers. The choice is remembered. On computers with 4 GB of memory or less it starts switched on. |
 | **v0.0.0** | Software version. |
 
-## 7.6 Command palette
+## 7.7 Command palette
 
 ![The command palette, searching for "lay"](images/command-palette.png)
 
@@ -284,7 +323,7 @@ Every action in the studio can be found and run from one search box.
   dimmed.
 - The keys on the right of a command are its keyboard shortcut.
 
-## 7.7 Keyboard shortcuts
+## 7.8 Keyboard shortcuts
 
 Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this list in the studio.
 
@@ -297,6 +336,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 | **Ctrl + Z** | Undo |
 | **Ctrl + Y** or **Ctrl + Shift + Z** | Redo |
 | **Alt + N** | New project |
+| **Alt + O** | Recent projects |
 | **Alt + W** | Close project |
 | **Alt + ]** / **Alt + [** | Next / previous project tab |
 | **Alt + 1 … 4** | Show or hide Explorer, Canvas, Inspector, Console |
@@ -313,7 +353,6 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 These parts of the manual will be written as each feature is finished:
 
-- Saving, opening, exporting and sharing projects (Day 08)
 - Simulation controls in the real studio: play, pause, step and speed (Day 09)
 - More Low-end mode options and automatic graphics detection (Day 10)
 - One chapter for each of the 10 labs
@@ -324,5 +363,6 @@ These parts of the manual will be written as each feature is finished:
 |---|---|---|
 | 0.0.0 | 2026-11-21 | First edition: about RoboSim Studio, requirements, home page preview. |
 | 0.0.0 · Day 05 | 2026-11-22 | New logo on the home page; chapters on themes, engineering number fields and the workspace (panels, toolbar, inspector). |
-| 0.0.0 · Day 07 | 2026-11-23 | New section 7.4: project name in the Inspector, Undo / Redo (Edit menu, Ctrl + Z, Ctrl + Y). Shortcut table updated. |
 | 0.0.0 · Day 06 | 2026-11-22 | New chapter 7, the studio workspace: docking panels, saved layout, menus, project tabs, status bar, Low-end mode, command palette and keyboard shortcuts. Home page links to the studio. |
+| 0.0.0 · Day 07 | 2026-11-23 | New section 7.4: project name in the Inspector, Undo / Redo (Edit menu, Ctrl + Z, Ctrl + Y). Shortcut table updated. |
+| 0.0.0 · Day 08 | 2026-11-23 | New section 7.5: automatic saving, Recent projects, `.rsim` export / import and share links. Sections 7.6–7.8 renumbered; Alt + O added. |

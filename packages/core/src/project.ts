@@ -233,3 +233,11 @@ export function createProject(options: {
     parts: [],
   });
 }
+
+/**
+ * The same project under a new id, for imported files and shared links: an import never
+ * overwrites a project that is already saved.
+ */
+export function copyProject(project: Project, id: string = newId()): Project {
+  return projectSchema.parse({ ...project, id });
+}

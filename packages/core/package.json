@@ -16,6 +16,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
+    "fflate": "0.8.3",
     "immer": "11.2.10",
     "zod": "4.6.7",
     "zustand": "5.1.0"
