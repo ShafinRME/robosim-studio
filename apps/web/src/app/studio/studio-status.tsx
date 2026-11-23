@@ -2,11 +2,13 @@
 
 import {
   appendMessage,
+  assessCapabilities,
+  describeLowEndReason,
   resolveLowEnd,
-  type DeviceHints,
   type MessageLevel,
   type StatusMessage,
 } from "@robosim/core";
+import { readCapabilityHints } from "../../lib/device-capabilities";
 import {
   createContext,
   useCallback,
@@ -25,6 +27,10 @@ type StudioStatus = {
   post: (level: MessageLevel, text: string) => void;
   lowEnd: boolean;
   setLowEnd: (on: boolean) => void;
+  /** Why this computer gets Low-end mode by default (empty: it does not). */
+  lowEndReasons: readonly string[];
+  /** True when Low-end mode follows the automatic choice (the user never switched it). */
+  lowEndAuto: boolean;
 };
 
 /** Canvas pointer position in canvas pixels, or null when the pointer is outside. */
@@ -36,9 +42,10 @@ const CursorContext = createContext<{ cursor: Cursor; setCursor: (c: Cursor) => 
   null,
 );
 
-function deviceHints(): DeviceHints {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  return { deviceMemory: nav.deviceMemory, hardwareConcurrency: nav.hardwareConcurrency };
+/** Plain-language reasons this computer gets Low-end mode by default. */
+function lowEndReasons(): string[] {
+  const report = assessCapabilities(readCapabilityHints());
+  return report.lowEndReasons.map((reason) => describeLowEndReason(reason, report));
 }
 
 // Low-end mode is a small external store: the stored choice (or device hints) in the browser,
@@ -71,12 +78,21 @@ function subscribeLowEnd(listener: () => void) {
   return () => lowEndListeners.delete(listener);
 }
 
-const lowEndSnapshot = () => resolveLowEnd(readLowEndChoice(), deviceHints());
+const lowEndSnapshot = () => resolveLowEnd(readLowEndChoice(), readCapabilityHints());
 const lowEndServerSnapshot = () => false;
+const choiceSnapshot = () => readLowEndChoice();
+const choiceServerSnapshot = () => "off";
+/** The automatic Low-end notice is shown once per page. */
+let autoNoticeShown = false;
 
 export function StudioStatusProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<StatusMessage[]>([]);
   const lowEnd = useSyncExternalStore(subscribeLowEnd, lowEndSnapshot, lowEndServerSnapshot);
+  const choice = useSyncExternalStore(subscribeLowEnd, choiceSnapshot, choiceServerSnapshot);
+  const lowEndAuto = choice !== "on" && choice !== "off";
+  const [reasons] = useState<string[]>(() =>
+    typeof window === "undefined" ? [] : lowEndReasons(),
+  );
   const [cursor, setCursor] = useState<Cursor>(null);
 
   const post = useCallback((level: MessageLevel, text: string) => {
@@ -93,17 +109,31 @@ export function StudioStatusProvider({ children }: { children: ReactNode }) {
     };
   }, [lowEnd]);
 
+  // Say once why Low-end mode switched itself on, and how to turn it off.
+  useEffect(() => {
+    if (!lowEnd || !lowEndAuto || autoNoticeShown) return;
+    autoNoticeShown = true;
+    const why = reasons.join(", ") || "limited hardware";
+    // After this render, not during the effect (avoids a cascading render).
+    queueMicrotask(() =>
+      post(
+        "info",
+        `Low-end mode is on for this computer (${why}). You can turn it off in the status bar.`,
+      ),
+    );
+  }, [lowEnd, lowEndAuto, reasons, post]);
+
   const setLowEnd = useCallback(
     (on: boolean) => {
       writeLowEndChoice(on);
-      post("info", on ? "Low-end mode on: animations off." : "Low-end mode off.");
+      post("info", on ? "Low-end mode on: animations off, lighter updates." : "Low-end mode off.");
     },
     [post],
   );
 
   const status = useMemo(
-    () => ({ messages, post, lowEnd, setLowEnd }),
-    [messages, post, lowEnd, setLowEnd],
+    () => ({ messages, post, lowEnd, setLowEnd, lowEndReasons: reasons, lowEndAuto }),
+    [messages, post, lowEnd, setLowEnd, reasons, lowEndAuto],
   );
   const cursorValue = useMemo(() => ({ cursor, setCursor }), [cursor]);
 

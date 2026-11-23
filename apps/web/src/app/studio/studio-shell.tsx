@@ -12,6 +12,7 @@ import { useStudioCommands } from "./studio-commands";
 import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
 import { RecentProjectsDialog } from "./recent-projects-dialog";
 import { ShortcutsDialog } from "./shortcuts-dialog";
+import { SystemInfoDialog } from "./system-info-dialog";
 import { useOpenProjects } from "./open-projects";
 import {
   copyShareLink,
@@ -38,8 +39,12 @@ export function StudioShell() {
 
 /** The simulation reports to the status bar and Console. */
 function StudioSimulation({ children }: { children: ReactNode }) {
-  const { post } = useStudioStatus();
-  return <SimulationProvider post={post}>{children}</SimulationProvider>;
+  const { post, lowEnd } = useStudioStatus();
+  return (
+    <SimulationProvider post={post} lowEnd={lowEnd}>
+      {children}
+    </SimulationProvider>
+  );
 }
 
 function StudioWindow() {
@@ -52,6 +57,7 @@ function StudioWindow() {
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [systemOpen, setSystemOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const shortcuts = useShortcutMap();
@@ -102,6 +108,10 @@ function StudioWindow() {
     setLowEnd,
     setTheme,
     togglePalette: () => setPaletteOpen((open) => !open),
+    openSystemInfo: () => {
+      setPaletteOpen(false);
+      setSystemOpen(true);
+    },
     openShortcuts: () => {
       setPaletteOpen(false);
       setShortcutsOpen(true);
@@ -211,6 +221,7 @@ function StudioWindow() {
         deleteSaved={open.deleteSaved}
         post={post}
       />
+      <SystemInfoDialog open={systemOpen} onOpenChange={setSystemOpen} />
       <ShortcutsDialog
         open={shortcutsOpen}
         onOpenChange={setShortcutsOpen}

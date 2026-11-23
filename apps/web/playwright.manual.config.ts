@@ -11,6 +11,9 @@ export default defineConfig({
     baseURL: "http://localhost:3100",
     viewport: { width: 1366, height: 768 },
     deviceScaleFactor: 1.5,
+    // Test browsers draw graphics without a GPU, so the studio would switch Low-end mode on by
+    // itself. Start like a normal computer (Low-end off); low-end-auto tests clear this.
+    storageState: "e2e/fixtures/low-end-off.json",
   },
   webServer: {
     command: "pnpm dev",

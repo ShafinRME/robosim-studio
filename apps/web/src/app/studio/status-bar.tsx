@@ -37,7 +37,8 @@ function CursorReadout() {
 
 /** Bottom status bar: simulation state, latest message, canvas cursor, Low-end mode, version. */
 export function StatusBar() {
-  const { messages, lowEnd, setLowEnd } = useStudioStatus();
+  const { messages, lowEnd, setLowEnd, lowEndAuto, lowEndReasons } = useStudioStatus();
+  const autoWhy = lowEndAuto && lowEndReasons.length ? ` (${lowEndReasons.join(", ")})` : "";
   const latest = messages.at(-1);
   const level = latest ? LEVEL[latest.level] : null;
 
@@ -68,8 +69,8 @@ export function StatusBar() {
         aria-pressed={lowEnd}
         title={
           lowEnd
-            ? "Low-end mode is on: animations are off. Click to turn it off."
-            : "Turn on Low-end mode for slower computers (turns animations off)."
+            ? `Low-end mode is on${autoWhy}: animations off, lighter updates. Click to turn it off.`
+            : "Turn on Low-end mode for slower computers (animations off, lighter updates)."
         }
         onClick={() => setLowEnd(!lowEnd)}
         className={cn(
@@ -79,6 +80,7 @@ export function StatusBar() {
       >
         <Gauge className="size-3" aria-hidden />
         Low-end {lowEnd ? "on" : "off"}
+        {lowEnd && lowEndAuto && <span className="text-faint-foreground">· auto</span>}
       </button>
 
       <span className="text-faint-foreground">v{APP_VERSION}</span>

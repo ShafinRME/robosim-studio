@@ -1,6 +1,6 @@
 "use client";
 
-import type { MessageLevel, SignalDefinition } from "@robosim/core";
+import { performanceProfile, type MessageLevel, type SignalDefinition } from "@robosim/core";
 import {
   createContext,
   useContext,
@@ -22,17 +22,17 @@ import type { HostSnapshot } from "../../sim/sim-host";
 type SimView = { snapshot: HostSnapshot | null; signals: readonly SignalDefinition[] };
 
 /**
- * Text readouts change at most this often while running. People cannot read numbers that change
- * faster, and each update costs the page layout and paint work (measured on Day 09: 30 text
- * updates per second cost up to half the frames). State changes (run, pause, stop) show at once.
+ * Text readouts change at most every `readoutMs` (performance profile: 100 ms, 250 ms in Low-end
+ * mode) while running. People cannot read numbers that change faster, and each update costs the
+ * page layout and paint work (measured on Day 09: 30 text updates per second cost up to half the
+ * frames). State changes (run, pause, stop) show at once.
  */
-export const VIEW_UPDATE_MS = 100;
-
 function createSimStore() {
   let view: SimView = { snapshot: null, signals: [] };
   let latest: HostSnapshot | null = null;
   let lastUpdate = 0;
   let trailing: ReturnType<typeof setTimeout> | null = null;
+  let readoutMs = performanceProfile(false).readoutMs;
   const listeners = new Set<() => void>();
   const publish = (next: Partial<SimView>) => {
     view = { ...view, ...next };
@@ -41,6 +41,9 @@ function createSimStore() {
   };
   return {
     get: () => view,
+    setReadoutMs(ms: number) {
+      readoutMs = ms;
+    },
     set(next: Partial<SimView>) {
       publish(next);
     },
@@ -55,7 +58,7 @@ function createSimStore() {
         shown.rate !== snapshot.rate ||
         shown.behind !== snapshot.behind ||
         snapshot.state !== "running";
-      const wait = VIEW_UPDATE_MS - (performance.now() - lastUpdate);
+      const wait = readoutMs - (performance.now() - lastUpdate);
       if (important || wait <= 0) {
         if (trailing) clearTimeout(trailing);
         trailing = null;
@@ -92,13 +95,22 @@ const SimContext = createContext<SimContextValue | null>(null);
 
 export function SimulationProvider({
   post,
+  lowEnd,
   children,
 }: {
   post: (level: MessageLevel, text: string) => void;
+  /** Low-end mode: slower readouts and fewer snapshots from the worker. */
+  lowEnd: boolean;
   children: ReactNode;
 }) {
   const [store] = useState(createSimStore);
   const worker = useRef<Promise<SimWorker> | null>(null);
+  const profile = useRef(performanceProfile(lowEnd));
+  useEffect(() => {
+    profile.current = performanceProfile(lowEnd);
+    store.setReadoutMs(profile.current.readoutMs);
+    void worker.current?.then((w) => w.api.setSnapshotInterval(profile.current.snapshotMs));
+  }, [lowEnd, store]);
   const postRef = useRef(post);
   useEffect(() => {
     postRef.current = post;
@@ -117,6 +129,7 @@ export function SimulationProvider({
     const ensure = (): Promise<SimWorker> => {
       worker.current ??= (async () => {
         const w = startSimWorker();
+        await w.api.setSnapshotInterval(profile.current.snapshotMs);
         await w.subscribe((snapshot) => store.receive(snapshot));
         store.set({ signals: await w.api.load(DEFAULT_SIM_MODEL) });
         postRef.current("info", "Demo simulation loaded: a spring with a switching force.");

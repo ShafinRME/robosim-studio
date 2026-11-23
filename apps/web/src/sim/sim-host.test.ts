@@ -131,6 +131,19 @@ describe("simulation host", () => {
     expect(Object.keys(host.snapshot().signals)).toEqual(["count"]);
   });
 
+  it("sends fewer snapshots with a longer interval, and checks the interval", () => {
+    const { host, snapshots, advance } = setup();
+    host.load("counter");
+    host.setSnapshotInterval(100);
+    const before = snapshots.length;
+    host.run();
+    advance(1000);
+    expect(snapshots.length - before).toBeLessThanOrEqual(12);
+    for (const bad of [5, 5000, Number.NaN, "33"]) {
+      expect(() => host.setSnapshotInterval(bad)).toThrow(SimHostError);
+    }
+  });
+
   it("stops everything on dispose", () => {
     const { host, advance, pending } = setup();
     host.load("counter");

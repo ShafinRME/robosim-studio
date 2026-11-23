@@ -31,6 +31,7 @@ export type StudioCommandContext = {
   setTheme: (theme: "system" | "light" | "dark") => void;
   togglePalette: () => void;
   openShortcuts: () => void;
+  openSystemInfo: () => void;
 };
 
 function openExternal(url: string) {
@@ -192,6 +193,13 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       category: "View",
       keywords: ["colour", "color", "appearance", "auto"],
       run: () => ctx().setTheme("system"),
+    },
+    {
+      id: "help.system",
+      title: "System information",
+      category: "Help",
+      keywords: ["computer", "graphics", "webgl", "memory", "low-end", "performance"],
+      run: () => ctx().openSystemInfo(),
     },
     {
       id: "help.source",

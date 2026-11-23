@@ -1,66 +1,41 @@
 # Status
 
-**Current:** Day 09 — Simulation kernel · Step 8/8 (owner review, then merge)
-**Branch:** `feat/day-09-simulation-kernel` (from `develop`)
-**Session:** Days 06–10 – Studio core
+**Current:** Day 10 — Low-end mode & v0.0.1 · Steps 1–2/8 done
+**Branch:** `feat/day-10-low-end-release` (from `develop`)
+**Session:** Days 06–10 – Studio core (last Day of the block)
 **Updated:** 2026-11-24
 
-## Day 09 steps
+## Day 10 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; ADR 006 simulation kernel (scheduler, worker host + Comlink, Signal Bus) | ✅ done |
-| 2/8 | Fixed-step scheduler in core (run / pause / step / reset / rate, step budget) + tests | ✅ done |
-| 3/8 | Signal Bus in core (typed, double-buffered) + tests | ✅ done |
-| 4/8 | Web Worker host with Comlink; CSP `worker-src 'self'` | ✅ done |
-| 5/8 | 1 kHz dummy model; jank check (main thread stays smooth) | ✅ done |
-| 6/8 | Studio: Run / Pause / Step / Stop, rate, status bar time | ✅ done |
-| 7/8 | e2e tests; User Manual; `pnpm manual` | ✅ done |
-| 8/8 | Owner review → DEVLOG, merge; note for Day 10 | 🔄 DEVLOG done, waiting for owner approval |
+| 1/8 | Day branch; capability detection in core (memory, cores, WebGL2, software graphics) + tests | ✅ done |
+| 2/8 | Improved Low-end mode (performance profile, auto notice + reasons) + Help → System information | ✅ done |
+| 3/8 | Global error boundary (studio + app), friendly error screen | ⏳ next |
+| 4/8 | Landing page v0 | ⏳ |
+| 5/8 | Lighthouse check (≥ 90) and fixes | ⏳ |
+| 6/8 | e2e tests; User Manual; `pnpm manual` | ⏳ |
+| 7/8 | Owner review → DEVLOG, merge into `develop` | ⏳ |
+| 8/8 | Release v0.0.1 to `main` (only with owner's explicit OK), Vercel check, phase review; next-session instructions | ⏳ |
 
-## Decisions (Day 09)
-- ADR 006: fixed steps (default 1 ms), simulated time = steps × dt; scheduler pure with injected real time;
-  per-frame step budget, drops time and reports "behind" instead of freezing; one module Web Worker per
-  simulation, **Comlink 4.4.2** (Apache-2.0, no deps, 0 advisories; installed in Step 4), snapshots at ~30 Hz;
-  Signal Bus = typed named signals (number with unit / boolean), double-buffered (writes visible next step →
-  deterministic), checked names, values and counts. (PLAN.md calls this "ADR-001"; ours is ADR 006.)
-- Scheduler (`packages/core/src/sim/scheduler.ts`): run / pause (drops leftover time) / step(n ≤ 100 000, only when
-  not running) / reset / setRate (0.1–10×, presets 0.1…10); `advance(realSeconds)` caps one frame at 0.25 s (no
-  catch-up after a hidden tab), budget 200 steps/frame by default, tracks `behind` and `droppedTime`; integer
-  step count → exact time over 900 000 steps. 31 tests. 376 unit tests.
-- Signal Bus (`packages/core/src/sim/signal-bus.ts`): declare number (unit, min/max clamp, initial) / boolean signals;
-  names `a-z0-9` words joined by `. _ -` (≤ 64), ≤ 10 000 signals; writes go to a pending buffer, `commit()` makes
-  them visible (order of models never matters — tested); one write per signal per step; finite numbers only;
-  typed reads; reset; snapshot. 35 tests.
-- Simulation (`sim/simulation.ts`): `SimModel { id, signals, reset(bus), step(t, dt, bus) }`; models + bus + scheduler,
-  bus committed after every step; watched signals in snapshots; duplicate models/signals refused. 6 tests.
-- Worker host (`apps/web/src/sim/`): `sim-host.ts` (injected clock; ticks every 4 ms, snapshots every 33 ms to one
-  listener, steps-per-second meter; every argument from the main thread checked; models only by id from
-  `models.ts` — the page never sends code), `sim-worker.ts` (Comlink `expose`), `sim-client.ts` (module worker +
-  `wrap`, `proxy` listener, terminate). **Comlink 4.4.2** added (audit 0). CSP already had `worker-src 'self' blob:`.
-  14 host tests. Worker not started in the browser yet (no model until Step 5). 431 unit tests.
-- Demo model (`packages/core/src/sim/demo-models.ts`): `demo.driver` switches `demo.drive` every 1 s; `demo.spring`
-  (m 0.5 kg, k 20 N/m, c 1 N·s/m, F 2 N, semi-implicit Euler) writes `demo.position` / `demo.velocity`. Tests: settles
-  at F/k, drive timing, bounded over 60 s, deterministic + reset, 10 000 steps fast. Worker registry `demo`.
-- Studio (`studio-simulation.tsx`, `sim-controls.tsx`): worker starts on first Run/Step (opening the studio costs
-  nothing), snapshots go to an external store so only sim widgets re-render; top bar Run/Pause, Step (1 ms),
-  Stop (back to 0 s), speed 0.1×–10×; status bar Idle/Running/Paused, `t … s`, steps/s, "Behind" warning; live
-  signal readout on the canvas; commands + shortcuts Ctrl+Enter (run/pause), Alt+. (step), Ctrl+Shift+Enter (stop);
-  worker terminated when the studio closes; errors go to the status bar.
-- **Jank check ✅ ("done when" met):** `e2e/simulation.isolated.spec.ts` — 1005 steps/s; main thread 122 frames idle →
-  121 running in 2 s; worst frame gap 17 ms; no long tasks. **Found:** with 4 parallel browsers on the dev server the
-  numbers collapse (17 frames) from CPU contention, so timing tests run in a separate Playwright project
-  `isolated` (after all others, one at a time) and compare against an idle baseline. 436 unit, 70 e2e.
-- **Jank fix (found by repeating the test):** running sometimes dropped to 41–88 of 122 frames. Cause: status-bar
-  text changing ~30×/s forced page-wide layout/paint. Fix: `[contain:strict]` on the status bar, contained
-  readout, fixed-width numbers, text readouts at most 10 updates/s (`VIEW_UPDATE_MS`; run/pause/stop instant).
-  Now 120–121 of 122 frames in 4/4 runs. **Race fix:** New project / open during the restore after a reload was
-  overwritten by the restored tabs → disabled until restored (+ button greyed out). 70 e2e passed twice in a row.
-- Step 7: User Manual §7.6 "Running a simulation" (controls, speed, live values, Behind, worker note) + screenshot
-  `simulation-running.png`; 7.1 / status-bar rows updated; 7.7–7.9 renumbered; simulation shortcuts; PDF rebuilt.
-- Day 08 merged into `develop` as `ad828f6` (PR #9).
+## Decisions (Day 10)
+- `packages/core/src/capabilities.ts`: `assessCapabilities(hints)` → memory, cores, WebGL2, renderer (≤ 200 chars),
+  software graphics (SwiftShader / llvmpipe / softpipe / Microsoft Basic Render …), Low-end reasons (memory ≤ 4 GB,
+  ≤ 2 cores, no WebGL2, software graphics); unknown hints never count as weak. `performanceProfile(lowEnd)`: animations,
+  readout 100 / 250 ms, worker snapshots 33 / 66 ms, max pixel ratio 2 / 1, antialias, shadows — one switch for every
+  heavy feature. `detectLowEnd` / `resolveLowEnd` in status.ts now use it. 30 tests.
+- Web: `lib/device-capabilities.ts` probes once (WebGL2 context, renderer name, then `loseContext`); hints stay on the
+  computer. Low-end auto-on posts once *why* ("graphics drawn without a graphics card") and shows "· auto" + reasons in
+  the status-bar button; switching it is remembered as the user's choice. Simulation follows the profile (readout rate,
+  new host `setSnapshotInterval` 16–1000 ms, tested). **Help → System information** window (memory, cores, WebGL2,
+  graphics, drawn by GPU/CPU, recommendation, Low-end on/off + source, toggle). On the owner's laptop: 8 GB+, 8 cores,
+  Intel UHD 620, GPU → no Low-end.
+- Test browsers render WebGL in software → they auto-enable Low-end. e2e and manual screenshots now start from
+  `e2e/fixtures/low-end-off.json` (normal computer); `system-info.spec.ts` clears it to test the automatic path.
+  456 unit, 72 e2e.
+- Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-Day 09 · Step 8/8 — owner approves the whole-Day test; then PR #10 ready, squash-merge into `develop`, note for Day 10.
+Day 10 · Steps 3–4/8 — global error boundary; landing page v0.
 
 ## Open issues
 - `apps/web/AGENTS.md` is generated by `next dev` (Next.js agent notes) and left uncommitted — owner to decide:

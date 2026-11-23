@@ -34,8 +34,6 @@ export {
 } from "./project-tabs";
 export type { ProjectTab, ProjectTabsState } from "./project-tabs";
 export {
-  LOW_END_MAX_CORES,
-  LOW_END_MAX_MEMORY_GB,
   MAX_STATUS_MESSAGES,
   appendMessage,
   detectLowEnd,
@@ -167,3 +165,17 @@ export { createSimulation } from "./sim/simulation";
 export type { SimModel, Simulation, SimulationSnapshot } from "./sim/simulation";
 export { DEMO_SIGNALS, createDemoModels } from "./sim/demo-models";
 export type { DemoOptions } from "./sim/demo-models";
+export {
+  LOW_END_MAX_CORES,
+  LOW_END_MAX_MEMORY_GB,
+  assessCapabilities,
+  describeLowEndReason,
+  isSoftwareRenderer,
+  performanceProfile,
+} from "./capabilities";
+export type {
+  CapabilityHints,
+  CapabilityReport,
+  LowEndReason,
+  PerformanceProfile,
+} from "./capabilities";

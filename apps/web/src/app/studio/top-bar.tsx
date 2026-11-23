@@ -16,6 +16,7 @@ import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import {
   Bug,
   CodeXml,
+  Cpu,
   Download,
   FilePlus2,
   FolderOpen,
@@ -135,6 +136,9 @@ export function TopBar({
             <MenubarItem onSelect={() => run("help.shortcuts")}>
               <Keyboard /> Keyboard shortcuts
               {hint("help.shortcuts")}
+            </MenubarItem>
+            <MenubarItem onSelect={() => run("help.system")}>
+              <Cpu /> System information
             </MenubarItem>
             <MenubarSeparator />
             <MenubarItem asChild>
