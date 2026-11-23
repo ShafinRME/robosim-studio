@@ -6,12 +6,16 @@ import {
   MAX_ARCHIVE_BYTES,
   archiveFileName,
   copyProject,
+  createShareToken,
   readArchive,
+  readShareToken,
+  shareTokenFromHash,
+  shareUrl,
   writeArchive,
   type MessageLevel,
   type Project,
 } from "@robosim/core";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 type Post = (level: MessageLevel, text: string) => void;
 
@@ -90,4 +94,60 @@ export function useProjectImport(
       />
     ),
   };
+}
+
+/** Copies a link that opens a copy of the project (packed into the link; nothing is uploaded). */
+export function copyShareLink(project: Project, post: Post) {
+  const result = createShareToken(project);
+  if (!result.ok) {
+    post("warning", "This project is too large for a link. Export it as a .rsim file instead.");
+    return;
+  }
+  const url = shareUrl(window.location.href, result.token);
+  navigator.clipboard.writeText(url).then(
+    () =>
+      post("success", "Share link copied. Anyone with the link can open a copy of this project."),
+    () => post("warning", "The share link could not be copied to the clipboard."),
+  );
+}
+
+/**
+ * Opens a project from a share link (`/studio#share=…`) once the studio is ready, also when a link
+ * is pasted into the address bar of an open studio. The link is removed from the address bar
+ * afterwards, so a reload does not open it again.
+ */
+export function useShareLinkOpener(
+  ready: boolean,
+  open: (project: Project) => boolean,
+  post: Post,
+) {
+  const latest = useRef({ open, post });
+  useEffect(() => {
+    latest.current = { open, post };
+  });
+
+  useEffect(() => {
+    if (!ready) return;
+    const openFromHash = () => {
+      const token = shareTokenFromHash(window.location.hash);
+      if (token === null) return;
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      const result = readShareToken(token);
+      if (!result.ok) {
+        console.warn(`Share link refused (${result.reason}):`, result.issues);
+        latest.current.post(
+          "warning",
+          `This share link could not be opened: ${result.issues[0] ?? result.reason}.`,
+        );
+        return;
+      }
+      const project = copyProject(result.project);
+      if (latest.current.open(project)) {
+        latest.current.post("success", `Opened the shared project “${project.name}”.`);
+      }
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [ready]);
 }

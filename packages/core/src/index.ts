@@ -121,3 +121,15 @@ export {
   writeArchive,
 } from "./archive";
 export type { ArchiveReadResult, ArchiveRejection } from "./archive";
+export {
+  MAX_SHARE_PROJECT_CHARS,
+  MAX_SHARE_TOKEN_CHARS,
+  SHARE_HASH_KEY,
+  createShareToken,
+  fromBase64Url,
+  readShareToken,
+  shareTokenFromHash,
+  shareUrl,
+  toBase64Url,
+} from "./share";
+export type { ShareTokenResult } from "./share";

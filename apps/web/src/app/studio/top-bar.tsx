@@ -20,7 +20,9 @@ import {
   Download,
   FilePlus2,
   FolderOpen,
+  History,
   Keyboard,
+  Link2,
   Pause,
   Play,
   Redo2,
@@ -71,6 +73,10 @@ export function TopBar({
               <FilePlus2 /> New project
               {hint("file.newProject")}
             </MenubarItem>
+            <MenubarItem onSelect={() => run("file.openRecent")}>
+              <History /> Recent projects…
+              {hint("file.openRecent")}
+            </MenubarItem>
             <MenubarItem disabled={!hasProject} onSelect={() => run("file.closeProject")}>
               <X /> Close project
               {hint("file.closeProject")}
@@ -83,6 +89,10 @@ export function TopBar({
             <MenubarItem disabled={!hasProject} onSelect={() => run("file.export")}>
               <Download /> Export project
               {hint("file.export")}
+            </MenubarItem>
+            <MenubarItem disabled={!hasProject} onSelect={() => run("file.share")}>
+              <Link2 /> Copy share link
+              {hint("file.share")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>

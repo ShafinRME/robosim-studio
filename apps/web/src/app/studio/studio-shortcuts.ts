@@ -20,6 +20,7 @@ export const STUDIO_SHORTCUTS: ShortcutBindings = {
   "edit.undo": ["Mod+Z"],
   "edit.redo": ["Mod+Shift+Z", "Mod+Y"],
   "file.newProject": ["Alt+N"],
+  "file.openRecent": ["Alt+O"],
   "file.closeProject": ["Alt+W"],
   "project.next": ["Alt+]"],
   "project.previous": ["Alt+["],

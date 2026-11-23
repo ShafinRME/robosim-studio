@@ -13,6 +13,8 @@ export type StudioCommandContext = {
   hasProject: boolean;
   exportProject: () => void;
   importProject: () => void;
+  openRecent: () => void;
+  shareProject: () => void;
   undo: () => void;
   redo: () => void;
   /** Label of the edit Undo / Redo would act on, or null. */
@@ -57,6 +59,13 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       run: () => ctx().newProject(),
     },
     {
+      id: "file.openRecent",
+      title: "Recent projects…",
+      category: "File",
+      keywords: ["open", "saved", "history", "delete"],
+      run: () => ctx().openRecent(),
+    },
+    {
       id: "file.closeProject",
       title: "Close project",
       category: "File",
@@ -78,6 +87,14 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       category: "File",
       keywords: ["open file", "upload", "load"],
       run: () => ctx().importProject(),
+    },
+    {
+      id: "file.share",
+      title: "Copy share link",
+      category: "File",
+      keywords: ["link", "url", "send", "share"],
+      enabled: () => ctx().hasProject,
+      run: () => ctx().shareProject(),
     },
     {
       id: "edit.undo",

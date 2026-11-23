@@ -3,16 +3,22 @@
 import { redoLabel, rememberRecent, undoLabel, type Command } from "@robosim/core";
 import { Button } from "@robosim/ui/components/button";
 import { CommandPalette } from "@robosim/ui/components/command-palette";
-import { FilePlus2 } from "lucide-react";
+import { FilePlus2, History } from "lucide-react";
 import { useSetTheme } from "@robosim/ui/components/theme-provider";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
 import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
+import { RecentProjectsDialog } from "./recent-projects-dialog";
 import { ShortcutsDialog } from "./shortcuts-dialog";
 import { useOpenProjects } from "./open-projects";
-import { exportProject, useProjectImport } from "./project-files";
+import {
+  copyShareLink,
+  exportProject,
+  useProjectImport,
+  useShareLinkOpener,
+} from "./project-files";
 import { ActiveProjectProvider, useProjectState } from "./studio-project";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
 import { TopBar } from "./top-bar";
@@ -36,6 +42,7 @@ function StudioWindow() {
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const shortcuts = useShortcutMap();
   const activeStore = open.activeStore;
@@ -52,6 +59,7 @@ function StudioWindow() {
   };
 
   const importer = useProjectImport(open.openProject, post);
+  useShareLinkOpener(open.restored, open.openProject, post);
   const newProject = open.newProject;
   const closeProject = open.closeProject;
   const hasProject = projects.activeId !== null;
@@ -64,6 +72,13 @@ function StudioWindow() {
       if (activeStore) exportProject(activeStore.getState().project, post);
     },
     importProject: importer.pick,
+    openRecent: () => {
+      setPaletteOpen(false);
+      setRecentOpen(true);
+    },
+    shareProject: () => {
+      if (activeStore) copyShareLink(activeStore.getState().project, post);
+    },
     undo: undoEdit,
     redo: redoEdit,
     undoLabel: history ? undoLabel(history) : null,
@@ -153,9 +168,14 @@ function StudioWindow() {
           !hasProject && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-blueprint">
               <p className="text-sm text-muted-foreground">No project open</p>
-              <Button onClick={newProject}>
-                <FilePlus2 /> New project
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={newProject}>
+                  <FilePlus2 /> New project
+                </Button>
+                <Button variant="outline" onClick={() => setRecentOpen(true)}>
+                  <History /> Recent projects
+                </Button>
+              </div>
             </div>
           )
         )}
@@ -169,6 +189,15 @@ function StudioWindow() {
         recent={recent}
         shortcuts={keysById}
         onRun={run}
+      />
+      <RecentProjectsDialog
+        open={recentOpen}
+        onOpenChange={setRecentOpen}
+        openIds={new Set(projects.tabs.map((t) => t.id))}
+        listSaved={open.listSaved}
+        openSaved={open.openSaved}
+        deleteSaved={open.deleteSaved}
+        post={post}
       />
       <ShortcutsDialog
         open={shortcutsOpen}

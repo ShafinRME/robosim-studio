@@ -17,7 +17,12 @@ import {
   type ProjectTabsState,
 } from "@robosim/core";
 import { useEffect, useState } from "react";
-import { StorageError, openProjectDatabase, type ProjectDatabase } from "../../lib/project-db";
+import {
+  StorageError,
+  openProjectDatabase,
+  type ProjectDatabase,
+  type ProjectSummary,
+} from "../../lib/project-db";
 import { backUpUnsaved, clearUnsaved, readUnsaved } from "../../lib/unsaved-backup";
 
 /** localStorage, or null where it is missing or blocked. */
@@ -59,9 +64,9 @@ function createOpenProjectsEngine(
     post("warning", `${storageError.message} Your projects are not being saved.`);
   };
 
-  const save = (project: Project) => {
-    if (!db) return;
-    db.saveProject(project).then(() => {
+  const save = (project: Project): Promise<void> => {
+    if (!db) return Promise.resolve();
+    return db.saveProject(project).then(() => {
       problem = null;
       const storage = localStore();
       if (storage) clearUnsaved(storage, project.id);
@@ -72,17 +77,17 @@ function createOpenProjectsEngine(
     clearTimeout(timers.get(id));
     timers.set(
       id,
-      setTimeout(() => flush(id), AUTOSAVE_DELAY_MS),
+      setTimeout(() => void flush(id), AUTOSAVE_DELAY_MS),
     );
   };
 
-  const flush = (id: string) => {
+  const flush = (id: string): Promise<void> => {
     const timer = timers.get(id);
-    if (timer === undefined) return;
+    if (timer === undefined) return Promise.resolve();
     clearTimeout(timer);
     timers.delete(id);
     const store = stores.get(id);
-    if (store) save(store.getState().project);
+    return store ? save(store.getState().project) : Promise.resolve();
   };
 
   return {
@@ -115,11 +120,18 @@ function createOpenProjectsEngine(
     },
     /** Saves any pending change, then forgets the project and its history (tab closed). */
     remove(id: string) {
-      flush(id);
+      void flush(id);
       stores.delete(id);
     },
-    flushAll() {
-      for (const id of [...timers.keys()]) flush(id);
+    /** Drops a project without saving it (it is being deleted). */
+    forget(id: string) {
+      clearTimeout(timers.get(id));
+      timers.delete(id);
+      stores.delete(id);
+    },
+    /** Saves every pending edit now; resolves when all are written. */
+    flushAll(): Promise<void> {
+      return Promise.all([...timers.keys()].map(flush)).then(() => {});
     },
     /**
      * The page is closing: start saving every pending edit, and also back it up synchronously,
@@ -132,7 +144,7 @@ function createOpenProjectsEngine(
       });
       const storage = localStore();
       if (storage) backUpUnsaved(storage, pending);
-      for (const id of [...timers.keys()]) flush(id);
+      for (const id of [...timers.keys()]) void flush(id);
     },
   };
 }
@@ -148,6 +160,12 @@ export type OpenProjects = {
   closeProject: (id: string) => void;
   activate: (id: string) => void;
   cycle: (step: 1 | -1) => void;
+  /** Saved projects, newest first (empty when browser storage is unavailable). */
+  listSaved: () => Promise<ProjectSummary[]>;
+  /** Opens a saved project (or switches to its tab). Returns false if it could not be opened. */
+  openSaved: (id: string) => Promise<boolean>;
+  /** Deletes a saved project for good; its tab is closed first. */
+  deleteSaved: (id: string) => Promise<boolean>;
 };
 
 /**
@@ -238,12 +256,12 @@ export function useOpenProjects(post: Post): OpenProjects {
   useEffect(() => {
     const onHide = () => engine.flushForUnload();
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") engine.flushAll();
+      if (document.visibilityState === "hidden") void engine.flushAll();
     };
     window.addEventListener("pagehide", onHide);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      engine.flushAll();
+      void engine.flushAll();
       window.removeEventListener("pagehide", onHide);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -284,5 +302,52 @@ export function useOpenProjects(post: Post): OpenProjects {
     },
     activate: (id) => setTabs((s) => activateProjectTab(s, id)),
     cycle: (step) => setTabs((s) => cycleProjectTab(s, step)),
+    async listSaved() {
+      if (!db) return [];
+      try {
+        await engine.flushAll(); // the list must show the latest edits
+        return await db.listRecent();
+      } catch (error) {
+        engine.reportStorage(error);
+        return [];
+      }
+    },
+    async openSaved(id) {
+      if (engine.get(id)) {
+        setTabs((s) => activateProjectTab(s, id));
+        return true;
+      }
+      if (!db || tooMany()) return false;
+      try {
+        const result = await db.loadProject(id);
+        if (!result?.ok) {
+          post("warning", "This saved project is damaged and could not be opened.");
+          return false;
+        }
+        engine.adopt(result.project);
+        setTabs((s) => openProjectTab(s, result.project.id, result.project.name));
+        post("info", `Opened “${result.project.name}”.`);
+        return true;
+      } catch (error) {
+        engine.reportStorage(error);
+        return false;
+      }
+    },
+    async deleteSaved(id) {
+      if (!db) return false;
+      if (engine.get(id)) {
+        engine.forget(id);
+        setTabs((s) => closeProjectTab(s, id));
+      }
+      try {
+        await db.deleteProject(id);
+        const storage = localStore();
+        if (storage) clearUnsaved(storage, id);
+        return true;
+      } catch (error) {
+        engine.reportStorage(error);
+        return false;
+      }
+    },
   };
 }
