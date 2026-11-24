@@ -24,6 +24,7 @@ const part = (overrides: Partial<Part> = {}): Part => ({
   x: 120,
   y: -40,
   rotation: 90,
+  flip: false,
   props: { resistance: 220, tolerance: "5%", placed: true },
   ...overrides,
 });
@@ -249,3 +250,33 @@ describe("migrations", () => {
 function structuredCloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
+
+describe("format v2 (Day 12): parts can be flipped", () => {
+  it("upgrades a v1 project: every part gets flip = false", () => {
+    const v1 = {
+      ...createProject({ name: "Old", lab: "circuit", id: "p1", now: NOW }),
+      version: 1,
+      parts: [
+        { id: "r1", type: "resistor", name: "R1", x: 0, y: 0, rotation: 90, props: {} },
+        { id: "r2", type: "resistor", name: "R2", x: 100, y: 0, rotation: 0, props: {} },
+      ],
+    };
+    const result = loadProject(v1);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fromVersion).toBe(1);
+    expect(result.project.version).toBe(2);
+    expect(result.project.parts.map((p) => p.flip)).toEqual([false, false]);
+    expect(result.project.parts[0]?.rotation).toBe(90);
+  });
+
+  it("leaves broken v1 data for the validator to explain", () => {
+    const result = loadProject({ format: PROJECT_FORMAT, version: 1, parts: "nope" });
+    expect(result).toMatchObject({ ok: false, reason: "invalid" });
+  });
+
+  it("requires flip in v2 files", () => {
+    const { flip: _flip, ...noFlip } = part();
+    expect(issuesOf({ ...project(), parts: [noFlip] }).join()).toMatch(/parts\.0\.flip/);
+  });
+});

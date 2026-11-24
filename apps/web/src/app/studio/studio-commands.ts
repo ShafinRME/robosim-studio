@@ -3,6 +3,7 @@
 import { createCommandRegistry, type Command, type CommandRegistry } from "@robosim/core";
 import { useEffect, useRef, useState } from "react";
 import { ISSUES_URL, REPO_URL } from "../../lib/links";
+import { setSchematicPrefs } from "../../lib/schematic-prefs";
 import type { SimController } from "./studio-simulation";
 import { STUDIO_PANELS, type StudioPanelId } from "./studio-workspace";
 
@@ -171,6 +172,34 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       category: "View",
       keywords: ["performance", "animations", "slow computer"],
       run: () => ctx().setLowEnd(!ctx().lowEnd),
+    },
+    {
+      id: "view.symbols.iec",
+      title: "IEC symbols (box resistor)",
+      category: "View",
+      keywords: ["schematic", "symbol style", "IEC 60617", "european"],
+      run: () => setSchematicPrefs({ symbolStyle: "iec" }),
+    },
+    {
+      id: "view.symbols.ansi",
+      title: "ANSI symbols (zig-zag resistor)",
+      category: "View",
+      keywords: ["schematic", "symbol style", "IEEE 315", "american"],
+      run: () => setSchematicPrefs({ symbolStyle: "ansi" }),
+    },
+    {
+      id: "view.units.mm",
+      title: "Units: millimetres",
+      category: "View",
+      keywords: ["schematic", "metric", "mm", "position"],
+      run: () => setSchematicPrefs({ lengthUnit: "mm" }),
+    },
+    {
+      id: "view.units.in",
+      title: "Units: inches",
+      category: "View",
+      keywords: ["schematic", "imperial", "inch", "mil", "position"],
+      run: () => setSchematicPrefs({ lengthUnit: "in" }),
     },
     {
       id: "view.theme.dark",

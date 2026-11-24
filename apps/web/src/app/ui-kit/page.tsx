@@ -5,6 +5,7 @@ import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
 import { ROBOTICS_ICONS } from "@robosim/ui/icons/robotics";
 import { ControlsDemo } from "./controls-demo";
 import { WorkspaceDemo } from "./workspace-demo";
+import { SymbolsGallery } from "./symbols-gallery";
 import {
   Activity,
   Cpu,
@@ -267,6 +268,10 @@ export default function UiKitPage() {
 
         <Section id="workspace" title="Workspace — panel · toolbar · inspector">
           <WorkspaceDemo />
+        </Section>
+
+        <Section id="schematic-symbols" title="Schematic symbols — IEC & ANSI">
+          <SymbolsGallery />
         </Section>
 
         <Section id="controls" title="Controls">

@@ -14,13 +14,13 @@ import { LABS, type LabId } from "./labs";
 
 export const PROJECT_FORMAT = "robosim-project";
 /** Current project format version. Bump it together with a migration in `PROJECT_MIGRATIONS`. */
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 2;
 /** Project files larger than this are refused before parsing. */
 export const MAX_PROJECT_CHARS = 5_000_000;
 export const MAX_PROJECT_PARTS = 2_000;
 export const MAX_PART_PROPS = 64;
 export const MAX_NAME_CHARS = 100;
-/** Canvas coordinates are limited to ±this many units. */
+/** Canvas coordinates are limited to ±this many units (schematic: mils, ADR 008). */
 export const MAX_COORDINATE = 1_000_000;
 const MAX_TEXT_PROP_CHARS = 1_000;
 const MAX_REPORTED_ISSUES = 10;
@@ -56,8 +56,10 @@ export const partSchema = z.strictObject({
   name: z.string().max(MAX_NAME_CHARS),
   x: coordinateSchema,
   y: coordinateSchema,
-  /** Degrees, 0 ≤ rotation < 360. */
+  /** Degrees clockwise, 0 ≤ rotation < 360 (the schematic uses multiples of 90). */
   rotation: z.number().min(0).lt(360),
+  /** Mirrored about the symbol's vertical axis; applied before the rotation (ADR 008). */
+  flip: z.boolean(),
   props: z
     .record(propKeySchema, propValueSchema)
     .refine((props) => Object.keys(props).length <= MAX_PART_PROPS, {
@@ -96,8 +98,20 @@ export type Project = z.infer<typeof projectSchema>;
 
 /** Upgrades raw project data from format version `n` to `n + 1`. Must be pure. */
 export type ProjectMigration = (data: Record<string, unknown>) => Record<string, unknown>;
-/** Migration from each old version (key) to the next one. v1 is the first format: none yet. */
-export const PROJECT_MIGRATIONS: Readonly<Record<number, ProjectMigration>> = {};
+/** Migration from each old version (key) to the next one. */
+export const PROJECT_MIGRATIONS: Readonly<Record<number, ProjectMigration>> = {
+  /** v2 (Day 12, ADR 008): parts can be mirrored — every existing part gets `flip: false`. */
+  1: (data) => ({
+    ...data,
+    parts: Array.isArray(data.parts)
+      ? data.parts.map((part: unknown) =>
+          typeof part === "object" && part !== null && !Array.isArray(part)
+            ? { ...part, flip: (part as { flip?: unknown }).flip ?? false }
+            : part,
+        )
+      : data.parts,
+  }),
+};
 
 export type ProjectRejection =
   "too-large" | "corrupt" | "not-a-project" | "newer-version" | "migration-failed" | "invalid";

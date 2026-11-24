@@ -181,8 +181,8 @@ in chapter 7.
 ![The studio: top bar, project tabs, four panels and the status bar](images/studio-overview.png)
 
 The studio is where you will build and simulate. Open it with **Open the studio** on the home page
-(or go to `/studio`). In v0.0.1 the panels are still empty — each lab fills them in later versions —
-but you can already arrange the workspace the way you like.
+(or go to `/studio`). The **Canvas** is a schematic editor where you draw circuits (chapter 8); the
+other labs fill the panels in later versions. You can arrange the workspace the way you like.
 
 ## 7.1 Parts of the window
 
@@ -192,9 +192,9 @@ but you can already arrange the workspace the way you like.
 | **Simulation controls** (▶ ⏭ ■ 1×) | Run / Pause, Step, Stop and the simulation speed (see 7.6). |
 | **Project tabs** | One tab per open project. **+** adds a new one. |
 | **Explorer** (left) | Will list the files and parts of your project. |
-| **Canvas** (middle) | The drawing area with a blueprint grid. |
+| **Canvas** (middle) | The schematic: place, select and arrange circuit parts on a grid (chapter 8). |
 | **Console** (under the canvas) | A log of everything the studio tells you, with the time. |
-| **Inspector** (right) | Shows the open project (name, lab, parts). Will also show the properties of the selected part. |
+| **Inspector** (right) | Shows the selected part (name, value, position, orientation) and the open project (name, lab, parts). |
 | **Status bar** (bottom) | State, latest message, pointer position, Low-end mode and version. |
 
 ## 7.2 Arranging panels
@@ -334,7 +334,7 @@ While a simulation is loaded:
 |---|---|
 | **Idle / Running / Paused** | Simulation state, with the simulated time and steps per second (see 7.6). |
 | Message | The latest message, e.g. *Saved layout restored.* All messages are in the **Console**. |
-| **X … Y …** | Mouse pointer position on the canvas, in pixels. |
+| **X … Y …** | Mouse pointer position on the schematic grid, in millimetres or inches (**View → Schematic**). |
 | **Low-end off / on** | Click to switch **Low-end mode** (below). **· auto** means the studio switched it on by itself for this computer; point at the button to see why. |
 | **v0.0.1** | Software version. |
 
@@ -397,6 +397,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 | **Alt + 1 … 4** | Show or hide Explorer, Canvas, Inspector, Console |
 | **Alt + Shift + R** | Reset layout |
 | **Alt + Shift + L** | Low-end mode on / off |
+| **F**, **+**, **−**, **R**, **X**, **Y**, arrows, **Delete**, **Ctrl + A** (on the canvas) | Schematic keys — see chapter 8 |
 
 - On a Mac use **⌘** instead of **Ctrl** and **⌥ Option** instead of **Alt**.
 - While you type in a text box (such as the palette search), only **Ctrl** shortcuts work, so your
@@ -404,7 +405,94 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 - The browser keeps some keys for itself (Ctrl + N, Ctrl + W, Ctrl + Tab…), so the studio uses
   **Alt** for those actions instead.
 
-# 8. If something goes wrong
+# 8. Drawing a schematic
+
+![The schematic editor: tool palette on the left, a circuit on the grid, R2 selected and shown in the Inspector](images/schematic-editor.png)
+
+The **Canvas** is a schematic editor that works like professional circuit software. Parts sit on a
+grid of **2.54 mm (0.1 inch)** — the standard spacing of component pins — so their connection points
+always line up. Wires (to connect the parts) come in the next version of this manual.
+
+## 8.1 Moving around: zoom and pan
+
+| Do this | To |
+|---|---|
+| Turn the **mouse wheel** | Zoom in or out around the mouse pointer (10 % to 3 200 %) |
+| Drag with the **middle mouse button**, or hold **Space** and drag | Pan (move the view) |
+| **Shift** + mouse wheel | Pan left and right |
+| Press **F** (or **Home**), or click **⛶** in the zoom bar | Zoom to fit the whole drawing |
+| Press **+** / **−**, or click the zoom bar buttons | Zoom one step in or out |
+| Click the **%** value in the zoom bar | Go back to 100 % (real size) |
+
+The small cross on the grid is the origin (0, 0). The status bar shows where the pointer is on the
+grid, in millimetres or inches.
+
+## 8.2 Placing parts
+
+![Placing a resistor: the teal outline shows where it will go](images/schematic-placing.png)
+
+1. In the **tool palette** on the left of the canvas, click a part: **resistor**, **DC voltage
+   source**, **DC current source** or **ground**.
+2. Move the mouse over the canvas: a teal outline of the part follows the pointer and snaps to the grid.
+3. Press **R** to turn it 90° (**Shift + R** turns the other way), **X** to mirror it left–right or
+   **Y** to mirror it top–bottom.
+4. Click to place it. You stay in the tool, so you can place more of the same part.
+5. Press **Esc** or right-click (or click the arrow tool) to stop placing.
+
+Every part gets the next free name automatically — **R1**, **R2**, … **V1**, **I1**, **GND1** — and
+a sensible starting value (for example 1 kΩ, 5 V, 1 mA).
+
+## 8.3 Selecting and editing
+
+![Box selection: dragging from left to right selects the parts fully inside the box](images/schematic-box-select.png)
+
+| Do this | To |
+|---|---|
+| Click a part | Select it (it turns teal with a soft box around it) |
+| **Shift** + click | Add a part to the selection |
+| **Ctrl** + click | Add or remove one part |
+| Drag on empty canvas **from left to right** | Select the parts **fully inside** the box (solid outline) |
+| Drag on empty canvas **from right to left** | Select every part the box **touches** (dashed outline) |
+| **Ctrl + A** | Select all parts |
+| **Esc**, or click empty canvas | Select nothing |
+| Drag a selected part | Move the selection, by whole grid steps |
+| **Arrow keys** | Move the selection one grid step (**Shift** + arrow: ten steps) |
+| **R** / **Shift + R** | Rotate the selection 90° clockwise / counter-clockwise |
+| **X** / **Y** | Mirror the selection left–right / top–bottom |
+| **Delete** (or **Backspace**) | Delete the selection |
+
+The **rotate**, **mirror** and **delete** buttons at the bottom of the tool palette do the same. A
+group of parts turns and mirrors around its middle, keeping its layout. Every change is one step
+for **Undo** (**Ctrl + Z**) — the Edit menu says what will be undone, for example *Undo Move 2 parts*.
+
+## 8.4 Changing a part in the Inspector
+
+Select one part and the Inspector shows:
+
+| Row | What you can do |
+|---|---|
+| **Name** | Rename the part (it must start with a letter, for example `R_load`). |
+| **Type** | What kind of part it is. |
+| **Resistance / Voltage / Current** | Type a new value and press **Enter**. Write it the way it is printed on parts: `4.7k`, `4k7`, `4.7 kΩ`, `220R`, `100n`, `10 µF`, `500 mV`. A value that is not possible (for example `0` Ω) is refused with a message in the status bar, and the old value stays. |
+| **Position**, **Orientation** | Where the part is (from the origin) and how it is turned and mirrored. |
+
+With several parts selected, the Inspector shows how many and their names. **Esc** in a field puts
+the old value back.
+
+## 8.5 Symbol style and units
+
+![Our own schematic symbols in IEC and ANSI style: as placed, turned 90° and mirrored](images/schematic-symbols.png)
+
+**View → Schematic** chooses:
+
+- **IEC symbols** (default; box resistor, used in Europe, Asia and most textbooks) or **ANSI
+  symbols** (zig-zag resistor, used in the USA).
+- **Units: millimetres** or **Units: inches** for the pointer position and the Inspector.
+
+Your choice is remembered in this browser. Part names and values always stay upright and readable,
+however a part is turned.
+
+# 9. If something goes wrong
 
 RoboSim Studio tries hard never to leave you with a blank or frozen page.
 
@@ -439,3 +527,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.0 · Day 09 | 2026-11-24 | New section 7.6: running a simulation (Run / Pause, Step, Stop, speed, live values, "Behind"). Sections 7.7–7.9 renumbered; simulation shortcuts added. |
 | 0.0.0 · Day 10 | 2026-11-24 | Chapter 3 rewritten for the new home page; automatic Low-end mode and **System information** (7.7); Delete closes a project tab; new chapter 8, *If something goes wrong*. |
 | 0.0.1 | 2026-11-24 | **First public release (v0.0.1).** Version numbers updated throughout; no other changes. |
+| 0.0.1 · Day 12 | 2026-11-24 | New chapter 8, *Drawing a schematic*: zoom and pan, placing parts, selecting and editing, the Inspector, IEC / ANSI symbols and units. Canvas, Inspector and pointer position updated in chapter 7; *If something goes wrong* is now chapter 9. |

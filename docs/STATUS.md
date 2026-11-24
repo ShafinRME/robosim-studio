@@ -1,9 +1,68 @@
 # Status
 
-**Current:** Day 11 complete — Circuit model (Phase 1 · Circuit Lab) · next: Day 12 — Schematic canvas
-**Branch:** `develop` (Day 12 branch `feat/day-12-schematic-canvas` is created at the start of Day 12)
+**Current:** Day 12 complete — Schematic canvas (Phase 1 · Circuit Lab) · next: Day 13 — Wiring
+**Branch:** `develop` (Day 13 branch `feat/day-13-wiring` is created at the start of Day 13)
 **Session:** Days 11–15 – Circuit Lab foundations
-**Updated:** 2026-11-24
+**Updated:** 2026-11-25
+
+## Day 12 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; evaluate React Flow vs own SVG canvas → ADR 008 | ✅ done (Accepted by owner) |
+| 2/8 | Project format v2 (`flip`) + migration; group move / rotate / flip / delete edits + tests | ✅ done |
+| 3/8 | Canvas panel: grid, pan/zoom (wheel, middle/Space drag, F fit, zoom %), cursor position, Low-end | ✅ done |
+| 4/8 | Own part symbols R / V / I / ground (IEC + ANSI), pins, designator + value labels, auto designators | ✅ done |
+| 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ✅ done |
+| 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ✅ done |
+| 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner approved; PR #16) |
+
+## Decisions (Day 12)
+- **ADR 008** (`docs/adr/008-schematic-canvas.md`, **Accepted by the owner 2026-11-24**): our own SVG schematic engine instead of React Flow
+  (PLAN names React Flow). React Flow 13.0.3 is MIT but a node graph (no wire-to-wire T-junctions, HTML nodes awkward to
+  rotate/flip), pulls `d3-zoom/drag/selection/interpolate` (**ISC** — outside our MIT/Apache/BSD rule) and is a new major
+  from 2026-11-16. Conventions: 1 unit = 1 mil, grid 100 mil (2.54 mm) / fine 50; y down; transform = rotate(cw 90° steps)
+  ∘ mirror-X; group rotate/flip about the grid-snapped centre; wheel zoom about the cursor, middle / Space drag pan, F fit,
+  box select (L→R inside, R→L touching), R, X/Y, Delete, arrows; one undo step per action.
+- **Project format v2:** parts have `flip: boolean`; migration v1 → v2 adds `flip: false` (old files and saved
+  projects open unchanged). Edits: `setPartFlip`, `moveParts`, `removeParts`, `rotateParts(ids, quarterTurns)`,
+  `flipParts(ids, "x" | "y")` — one undo step each, labels "Rotate R1" / "Rotate 3 parts". Group centre is snapped to the
+  grid with half-to-even rounding, so flipping twice is an exact undo; four rotations of an odd-sized group can end one
+  grid step away (same as other EDA tools), always on the grid. 600 unit tests.
+- Step 3 — `core/schematic/viewport.ts`: 1 mil units, 100 % = real size at 96 dpi, zoom 10–3 200 % about the cursor,
+  wheel step limited per event, zoom steps, fit (max 400 %), grid level (×5/×2 when dots < 8 px; 16 px in Low-end),
+  grid snap, mm/inch formatting. Web `schematic-canvas.tsx`: one `<svg>`, one viewport matrix, memoised parts layer,
+  dot grid + major lines as screen-space patterns, origin cross, wheel zoom (Shift+wheel pans), middle / Space + drag
+  pan, F / Home fit, + / − keys, floating zoom toolbar (−, %, 100 %, +, fit), header "SCHEMATIC · IEC · n parts".
+  Status bar: grid-snapped cursor in mm or inch. Tokens `--schematic-*` in both themes.
+- Step 4 — `core/schematic/symbols.ts`: our own artwork as primitives for resistor, DC V source, DC I source, ground in
+  IEC 60617 and ANSI/IEEE 315; pins on the 100-mil grid; `placePoint` (mirror → rotate cw → move), SVG transform,
+  placed pins / bounds; upright labels, stacked when on one side ("V1" over "9 V"); designator prefixes and lowest free
+  number (R1, R2…). Lines have a real 6-mil width, ≥ 1.4 px when zoomed out; labels hidden when too small.
+  View → Schematic: IEC / ANSI symbols, units mm / inch (remembered, `lib/schematic-prefs.ts`). Symbol gallery on
+  `/ui-kit#schematic-symbols`. 632 unit, 83 e2e (new `schematic.spec.ts`: zoom, fit, pan, style, units).
+- Step 5 — `core/schematic/selection.ts`: `PLACEABLE_PARTS` (resistor, DC V, DC I, ground — temporary until the Day 14
+  library), `createPart` (lowest free designator, definition defaults stored explicitly), `partBounds`, `hitTest`
+  (topmost part, tolerance), box select (`boxModeOf`: L→R inside, R→L touching; `partsInRect`). Canvas: vertical tool
+  palette with our own symbol icons; place tool with ghost on the grid, R / Shift+R turns and X / Y mirrors the ghost,
+  click places (stays in the tool, like EDA), Esc or right-click ends it. One undo step per part ("Add R2").
+- Step 6 — select tool: click, Shift-click (add), Ctrl-click (toggle), click inside a group narrows to that part, box
+  select (solid = inside, dashed = touching), drag by whole grid steps (one "Move" step), arrows nudge 100 mil (Shift ×10),
+  R / Shift+R rotate, X / Y mirror, Delete, Ctrl+A, Esc; palette buttons Rotate / Mirror / Delete; hover highlight;
+  selected parts in brand colour with a soft box. Selection = shared view state (`schematic-selection.ts`, never saved
+  or undone). Inspector: Part section (name, type, value typed like "4k7" with plain-word range errors, position,
+  orientation) or Selection (count, names). Fixed in the UI kit: toolbar toggle items inside tooltips now show their
+  "on" state (`aria-checked`). 645 unit, 89 e2e.
+- Step 7 — **50-part performance test** (`e2e/schematic.isolated.spec.ts`, runs alone): place 50 resistors with the
+  tool, select all, drag 2 s, pan 2 s — normal and Low-end. First run found real jank (drag 68, pan 67 of 122 frames);
+  fixed: (1) the selection is its own SVG layer whose `transform` is set directly during a drag (no React render; one
+  `moveParts` edit on release, offset cleared in a layout effect so nothing jumps); (2) panning moves the already-drawn
+  picture with a CSS transform (picture drawn with a half-screen margin, redrawn only when the margin runs out or on
+  release); (3) the canvas uses a setter-only cursor context and reports the pointer only when its grid position
+  changes (the full context re-rendered the canvas on every move). Now: drag 121 / 122, pan 121 / 122 frames, worst gap
+  17–33 ms, no long tasks (also in Low-end). User Manual: new chapter 8 *Drawing a schematic* (8.1–8.5, 4 new
+  screenshots), chapter 7 updated, *If something goes wrong* → chapter 9; PDF rebuilt. Manual screenshot of the UI-kit
+  tooltip now retries the hover (was flaky). 645 unit, 91 e2e.
 
 ## Day 11 steps
 | Step | Task | State |
@@ -116,8 +175,9 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 12 — Schematic canvas:** React Flow canvas (grid, pan/zoom, place / rotate / flip / delete parts, multi-select);
-done when 50 parts place smoothly. First check React Flow (licence, audit) and record the choice in an ADR.
+**Day 13 — Wiring:** wires as their own objects (orthogonal routing, corners), wire-to-wire T-junctions with dots,
+net labels, copy/paste, rubber-band wires when parts move; project format v3 (wires, labels) with migration; netlist
+from the drawing via `buildNetlist` (Day 11). Done when nets are computed correctly in tests.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

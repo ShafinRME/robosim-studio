@@ -1,6 +1,6 @@
 import { deflateSync, strToU8 } from "fflate";
 import { describe, expect, it } from "vitest";
-import { createProject, type Part, type Project } from "./project";
+import { PROJECT_VERSION, createProject, type Part, type Project } from "./project";
 import {
   MAX_SHARE_TOKEN_CHARS,
   createShareToken,
@@ -19,6 +19,7 @@ const part = (i: number): Part => ({
   x: i * 7.25,
   y: 0 - i * 3, // never -0 (JSON turns -0 into 0)
   rotation: (i * 90) % 360,
+  flip: i % 3 === 0,
   props: { resistance: 100 + i, note: `part ${i}`, on: i % 2 === 0 },
 });
 const project = (parts = 3): Project => ({
@@ -54,7 +55,11 @@ describe("base64url", () => {
 describe("share links", () => {
   it("round-trips a project through a token", () => {
     const p = project();
-    expect(readShareToken(tokenOf(p))).toEqual({ ok: true, project: p, fromVersion: 1 });
+    expect(readShareToken(tokenOf(p))).toEqual({
+      ok: true,
+      project: p,
+      fromVersion: PROJECT_VERSION,
+    });
   });
 
   it("builds and reads the link fragment", () => {

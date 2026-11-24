@@ -32,7 +32,7 @@ type StudioStatus = {
   lowEndAuto: boolean;
 };
 
-/** Canvas pointer position in canvas pixels, or null when the pointer is outside. */
+/** Pointer position on the schematic (mils, grid-snapped), or null when it is outside. */
 type Cursor = { x: number; y: number } | null;
 
 const StatusContext = createContext<StudioStatus | null>(null);
@@ -43,6 +43,7 @@ const MessagesContext = createContext<readonly StatusMessage[] | null>(null);
 const CursorContext = createContext<{ cursor: Cursor; setCursor: (c: Cursor) => void } | null>(
   null,
 );
+const CursorSetterContext = createContext<((c: Cursor) => void) | null>(null);
 
 /** Plain-language reasons this computer gets Low-end mode by default (same array until the hints change). */
 let reasonsCache: { hints: object; reasons: string[] } | null = null;
@@ -154,7 +155,9 @@ export function StudioStatusProvider({ children }: { children: ReactNode }) {
   return (
     <StatusContext.Provider value={status}>
       <MessagesContext.Provider value={messages}>
-        <CursorContext.Provider value={cursorValue}>{children}</CursorContext.Provider>
+        <CursorSetterContext.Provider value={setCursor}>
+          <CursorContext.Provider value={cursorValue}>{children}</CursorContext.Provider>
+        </CursorSetterContext.Provider>
       </MessagesContext.Provider>
     </StatusContext.Provider>
   );
@@ -176,5 +179,15 @@ export function useStudioMessages(): readonly StatusMessage[] {
 export function useCanvasCursor() {
   const value = useContext(CursorContext);
   if (!value) throw new Error("useCanvasCursor must be used inside StudioStatusProvider");
+  return value;
+}
+
+/**
+ * Only the setter, which never changes: the canvas reports the pointer without re-rendering on
+ * every pointer move (that cost ~40 % of the frames while panning 50 parts; Day 12).
+ */
+export function useSetCanvasCursor(): (cursor: Cursor) => void {
+  const value = useContext(CursorSetterContext);
+  if (!value) throw new Error("useSetCanvasCursor must be used inside StudioStatusProvider");
   return value;
 }

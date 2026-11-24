@@ -32,6 +32,7 @@ import {
 import { Kbd, KbdGroup } from "@robosim/ui/components/kbd";
 import { SimControls } from "./sim-controls";
 import { ISSUES_URL, REPO_URL } from "../../lib/links";
+import { useSchematicPrefs } from "../../lib/schematic-prefs";
 import { STUDIO_PANELS } from "./studio-workspace";
 
 /** Studio top bar: logo, application menus, simulation controls and theme switch. */
@@ -53,6 +54,7 @@ export function TopBar({
   /** Display keys per command id, for menu hints. */
   keysById: Readonly<Record<string, readonly string[]>>;
 }) {
+  const { symbolStyle, lengthUnit } = useSchematicPrefs();
   const hint = (id: string) => {
     const keys = keysById[id];
     return keys ? <MenubarHint>{keys.join("+")}</MenubarHint> : null;
@@ -122,6 +124,32 @@ export function TopBar({
                 {hint(`view.toggle.${panel.id}`)}
               </MenubarCheckboxItem>
             ))}
+            <MenubarSeparator />
+            <MenubarLabel>Schematic</MenubarLabel>
+            <MenubarCheckboxItem
+              checked={symbolStyle === "iec"}
+              onCheckedChange={() => run("view.symbols.iec")}
+            >
+              IEC symbols
+            </MenubarCheckboxItem>
+            <MenubarCheckboxItem
+              checked={symbolStyle === "ansi"}
+              onCheckedChange={() => run("view.symbols.ansi")}
+            >
+              ANSI symbols
+            </MenubarCheckboxItem>
+            <MenubarCheckboxItem
+              checked={lengthUnit === "mm"}
+              onCheckedChange={() => run("view.units.mm")}
+            >
+              Units: millimetres
+            </MenubarCheckboxItem>
+            <MenubarCheckboxItem
+              checked={lengthUnit === "in"}
+              onCheckedChange={() => run("view.units.in")}
+            >
+              Units: inches
+            </MenubarCheckboxItem>
             <MenubarSeparator />
             <MenubarItem onSelect={() => run("view.resetLayout")}>
               <RotateCcw /> Reset layout

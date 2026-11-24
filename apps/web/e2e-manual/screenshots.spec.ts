@@ -53,8 +53,12 @@ test("workspace: panels, toolbar and inspector", async ({ page }) => {
   const workspace = page.locator("#workspace");
   await workspace.scrollIntoViewIfNeeded();
   // Show a toolbar tooltip in the picture.
-  await workspace.getByRole("radio", { name: "Wire" }).hover();
-  await expect(page.getByRole("tooltip")).toBeVisible();
+  // Hover until the tooltip shows: the page may still shift a little after loading.
+  await expect(async () => {
+    await page.mouse.move(0, 0);
+    await workspace.getByRole("radio", { name: "Wire" }).hover();
+    await expect(page.getByRole("tooltip")).toBeVisible({ timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
   await settle(page);
   await workspace.screenshot({ path: shot("workspace") });
 });
@@ -186,4 +190,86 @@ test.describe("studio workspace", () => {
     await settle(page);
     await dialog.screenshot({ path: shot("keyboard-shortcuts") });
   });
+});
+
+test.describe("schematic canvas", () => {
+  /** Canvas point `dx`, `dy` grid steps (19.2 px at 200 %) from the origin at the centre. */
+  async function at(page: Page, dx: number, dy: number) {
+    const box = await page.getByTestId("studio-canvas").boundingBox();
+    if (!box) throw new Error("no layout");
+    return { x: box.width / 2 + dx * 19.2, y: box.height / 2 + dy * 19.2 };
+  }
+
+  async function place(page: Page, tool: string, dx: number, dy: number, turns = 0) {
+    const canvas = page.getByTestId("studio-canvas");
+    await page.getByRole("radio", { name: tool }).click();
+    await canvas.hover({ position: await at(page, dx, dy) });
+    for (let i = 0; i < turns; i++) await page.keyboard.press("r");
+    await canvas.click({ position: await at(page, dx, dy) });
+    await page.keyboard.press("Escape");
+  }
+
+  /** A voltage divider drawn with the real tools: V1, R1, R2 (2.2 kΩ) and two grounds. */
+  async function drawDivider(page: Page) {
+    await setTheme(page, "dark");
+    await page.goto("/studio");
+    await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
+    await place(page, "Place DC voltage source", -8, 0);
+    await place(page, "Place resistor", -3, -4);
+    await place(page, "Place resistor", 2, 0, 1);
+    await place(page, "Place ground", -8, 4);
+    await place(page, "Place ground", 2, 4);
+    const canvas = page.getByTestId("studio-canvas");
+    await canvas.click({ position: await at(page, 2, 0) });
+    const value = page.getByRole("textbox", { name: "Resistance" });
+    await value.fill("2k2");
+    await value.press("Enter");
+    return canvas;
+  }
+
+  test("drawing with a part selected", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await canvas.click({ position: await at(page, 2, 0) });
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-editor") });
+  });
+
+  test("placing a part", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await canvas.hover({ position: await at(page, 9, -4) });
+    await page.keyboard.press("r");
+    await canvas.hover({ position: await at(page, 9, -3) });
+    await expect(canvas.getByTestId("schematic-ghost")).toBeVisible();
+    await settle(page);
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("no layout");
+    await page.screenshot({ path: shot("schematic-placing"), clip: box });
+  });
+
+  test("box selection", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await canvas.click({ position: await at(page, 12, 6) }); // nothing selected
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("no layout");
+    const from = await at(page, -11, -6);
+    const to = await at(page, 5, 6);
+    await page.mouse.move(box.x + from.x, box.y + from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + to.x, box.y + to.y, { steps: 5 });
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-box-select"), clip: box });
+    await page.mouse.up();
+  });
+});
+
+test("schematic symbols: IEC and ANSI", async ({ page }) => {
+  await setTheme(page, "dark");
+  await page.goto("/ui-kit");
+  await settle(page);
+  const gallery = page.locator("#schematic-symbols");
+  await gallery.scrollIntoViewIfNeeded();
+  await settle(page);
+  await gallery.screenshot({ path: shot("schematic-symbols") });
 });

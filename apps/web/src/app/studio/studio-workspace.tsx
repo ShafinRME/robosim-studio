@@ -22,10 +22,12 @@ import {
   InspectorValue,
 } from "@robosim/ui/components/inspector";
 import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
-import { SimReadout } from "./sim-controls";
+import { PartInspector } from "./part-inspector";
+import { SchematicCanvas } from "./schematic-canvas";
+import { useSelection } from "./schematic-selection";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
-import { useCanvasCursor, useStudioMessages, useStudioStatus } from "./studio-status";
+import { useStudioMessages, useStudioStatus } from "./studio-status";
 import {
   Dock,
   type DockviewApi,
@@ -66,26 +68,7 @@ function ExplorerPanel() {
 }
 
 function CanvasPanel() {
-  const { setCursor } = useCanvasCursor();
-  return (
-    <div
-      className="relative h-full bg-blueprint"
-      data-testid="studio-canvas"
-      onPointerMove={(event) => {
-        const box = event.currentTarget.getBoundingClientRect();
-        setCursor({
-          x: Math.round(event.clientX - box.left),
-          y: Math.round(event.clientY - box.top),
-        });
-      }}
-      onPointerLeave={() => setCursor(null)}
-    >
-      <span className="absolute top-2 left-2 font-mono text-2xs text-faint-foreground">
-        CANVAS · empty
-      </span>
-      <SimReadout />
-    </div>
-  );
+  return <SchematicCanvas />;
 }
 
 /**
@@ -129,6 +112,7 @@ function ProjectNameField({ id, store, name }: { id: string; store: ProjectStore
 function InspectorPanel() {
   useDevCrash("inspector");
   const { store, state } = useActiveProject();
+  const selectedIds = useSelection(state?.project.id ?? null);
   if (!store || !state) {
     return (
       <EmptyPanel
@@ -144,7 +128,8 @@ function InspectorPanel() {
     <div className="h-full overflow-auto">
       {/* Headings in order for assistive tech: h1 (workspace) → h2 (panel) → h3 (section). */}
       <h2 className="sr-only">Inspector</h2>
-      <Inspector defaultOpen={["project"]}>
+      <Inspector defaultOpen={["part", "project"]}>
+        <PartInspector store={store} parts={project.parts} selectedIds={selectedIds} />
         <InspectorSection id="project" title="Project">
           <InspectorRow label="Name">
             {(id) => (
@@ -165,9 +150,11 @@ function InspectorPanel() {
           </InspectorRow>
         </InspectorSection>
       </Inspector>
-      <p className="px-2.5 py-3 text-2xs text-faint-foreground">
-        Select a part to see and edit its properties.
-      </p>
+      {selectedIds.length === 0 ? (
+        <p className="px-2.5 py-3 text-2xs text-faint-foreground">
+          Select a part to see and edit its properties.
+        </p>
+      ) : null}
     </div>
   );
 }

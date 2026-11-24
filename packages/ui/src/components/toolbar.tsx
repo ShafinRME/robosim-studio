@@ -54,6 +54,8 @@ const toolClass = cn(
   "disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4",
   "data-[state=on]:bg-brand-soft data-[state=on]:text-brand data-[state=on]:shadow-glow",
   "aria-pressed:bg-brand-soft aria-pressed:text-brand",
+  // Toggle items inside a tooltip: the tooltip owns data-state, so also style the radio state.
+  "aria-checked:bg-brand-soft aria-checked:text-brand aria-checked:shadow-glow",
 );
 
 /** Tooltip with the tool name and an optional shortcut. */
