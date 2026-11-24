@@ -2,7 +2,7 @@ export { APP_NAME, APP_VERSION } from "./app";
 
 export { LABS } from "./labs";
 export type { LabId, LabInfo } from "./labs";
-export { clampStep, formatSI, parseSI } from "./units";
+export { clampStep, formatSI, parseRKM, parseSI } from "./units";
 export {
   LAYOUT_STORAGE_KEY,
   LAYOUT_VERSION,
@@ -180,3 +180,81 @@ export type {
   LowEndReason,
   PerformanceProfile,
 } from "./capabilities";
+export {
+  GROUND_NET_NAME,
+  GROUND_NODE,
+  GROUND_PART_TYPE,
+  MAX_CONNECTIONS,
+  MAX_NETLIST_NODES,
+  MAX_NETLIST_PARTS,
+  MAX_NET_LABELS,
+  MAX_PART_PINS,
+  NetlistError,
+  buildNetlist,
+  circuitInputSchema,
+  netlistSchema,
+  parseNetlist,
+} from "./circuit/netlist";
+export type {
+  CircuitInput,
+  CircuitPart,
+  Net,
+  Netlist,
+  NetlistComponent,
+  PinRef,
+} from "./circuit/netlist";
+export {
+  GROUND_UNKNOWN,
+  MAX_DENSE_UNKNOWNS,
+  MnaStampError,
+  createDenseMna,
+  createSolution,
+} from "./circuit/mna";
+export type { DenseMna, MnaContext, Solution, Unknown } from "./circuit/mna";
+export {
+  PART_CATEGORIES,
+  PIN_TYPES,
+  checkDefinition,
+  createDevice,
+  numberProp,
+  resolveProps,
+} from "./circuit/component";
+export type {
+  BooleanProperty,
+  ChoiceProperty,
+  ComponentDefinition,
+  Device,
+  DeviceSetup,
+  IntegrationMethod,
+  NumberProperty,
+  PartCategory,
+  PinDefinition,
+  PinType,
+  PropProblem,
+  PropValue,
+  PropertyDefinition,
+  Readout,
+  ResolvedProps,
+} from "./circuit/component";
+export { QUANTITIES, unitOf } from "./circuit/quantities";
+export type { Quantity } from "./circuit/quantities";
+export {
+  REFERENCE_PARTS,
+  dcCurrentSourceDefinition,
+  dcVoltageSourceDefinition,
+  resistorDefinition,
+} from "./circuit/reference-parts";
+export { dcPathsOf } from "./circuit/component";
+export { formatQuantity, parseQuantity } from "./circuit/quantities";
+export type { QuantityParseResult, QuantityRange } from "./circuit/quantities";
+export {
+  ISSUE_CODES,
+  ISSUE_SEVERITY,
+  MAX_REPORTED_ISSUES,
+  canSimulate,
+  checkCircuit,
+  listNames,
+  solverIssues,
+  sortIssues,
+} from "./circuit/issues";
+export type { CircuitIssue, DefinitionLookup, IssueCode, IssueSeverity } from "./circuit/issues";

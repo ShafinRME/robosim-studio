@@ -45,15 +45,53 @@ const NUMBER_WITH_PREFIX =
   /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?) ?(meg|MEG|[TGMkKmµμunp])? ?([^ \d.+-][^ ]*)?$/;
 
 /**
- * Parses "4.7k", "4k7"-free plain notation, "100 nF", "-3.3", "2.2e-6", "1meg".
+ * RKM code (IEC 60062), as printed on resistors and capacitors: the multiplier letter stands where
+ * the decimal point would be — "4k7" = 4.7 k, "1M5" = 1.5 M, "4n7" = 4.7 n, "R47" = 0.47.
+ * Bounded digits on both sides, letter in the middle: unambiguous, no ReDoS.
+ */
+const RKM = /^(\d{0,6})(R|F|[TGMkKmµμunp])(\d{1,6})$/;
+
+/**
+ * Parses an RKM code. `decimalLetter` allows the unit letter used as a plain decimal point:
+ * "R" for resistance ("2R2" = 2.2 Ω), "F" for capacitance ("1F5" = 1.5 F). Returns `null` otherwise.
+ */
+export function parseRKM(input: string, decimalLetter?: "R" | "F"): number | null {
+  if (input.length > MAX_INPUT_LENGTH) return null;
+  const match = RKM.exec(input.trim());
+  if (!match) return null;
+  const [, whole = "", letter = "", fraction = ""] = match;
+  let exponent: number;
+  if (letter === "R" || letter === "F") {
+    if (letter !== decimalLetter) return null;
+    exponent = 0;
+  } else {
+    const known = PARSE_PREFIX[letter];
+    if (known === undefined) return null;
+    exponent = known;
+  }
+  const value = Number(`${whole || "0"}.${fraction}`) * 10 ** exponent;
+  return Number.isFinite(value) ? normalise(value) : null;
+}
+
+/**
+ * Parses "4.7k", "100 nF", "-3.3", "2.2e-6", "1meg" and RKM codes ("4k7", "4k7 Ω", "2R2").
  * Returns `null` for anything that is not a finite number (never NaN), so callers can show a
  * friendly message instead of propagating bad values into a simulation.
- * A trailing unit (e.g. "F", "Ω", "Hz") is allowed and ignored; pass `unit` to restrict it.
+ * A trailing unit (e.g. "F", "Ω", "Hz") is allowed and ignored; pass `unit` to restrict it
+ * (`""` = no unit allowed).
  */
 export function parseSI(input: string, unit?: string): number | null {
   if (input.length > MAX_INPUT_LENGTH) return null;
   const text = input.trim().replace(/\s+/g, " ");
   if (text === "") return null;
+  const plain = parsePlain(text, unit);
+  if (plain !== null) return plain;
+  // "4k7" also looks like the number 4 with a unit "k7", so RKM is tried whenever that fails.
+  const body = unit && text.endsWith(unit) ? text.slice(0, -unit.length).trimEnd() : text;
+  return parseRKM(body, unit === undefined || unit === "Ω" ? "R" : unit === "F" ? "F" : undefined);
+}
+
+function parsePlain(text: string, unit: string | undefined): number | null {
   const match = NUMBER_WITH_PREFIX.exec(text);
   if (!match) return null;
   const [, numberPart = "", rawPrefix, rest = ""] = match;

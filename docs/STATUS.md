@@ -1,9 +1,56 @@
 # Status
 
-**Current:** Day 10 complete · **v0.0.1 released** · Phase 0 done — next: Day 11 (new session, Days 11–15)
-**Branch:** `develop` (Day 11 branch `feat/day-11-…` is created at the start of Day 11)
-**Session:** Days 06–10 – Studio core (finished); next session: Days 11–15 – Circuit Lab foundations
+**Current:** Day 11 complete — Circuit model (Phase 1 · Circuit Lab) · next: Day 12 — Schematic canvas
+**Branch:** `develop` (Day 12 branch `feat/day-12-schematic-canvas` is created at the start of Day 12)
+**Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
+
+## Day 11 steps
+| Step | Task | State |
+|---|---|---|
+| 1/7 | Day branch; study old RoboSim (read-only) and scope the model | ✅ done |
+| 2/7 | Draft ADR 007 — Circuit model | ✅ done (Accepted by owner) |
+| 3/7 | Netlist types + Zod schema in `packages/core/src/circuit/` + tests | ✅ done |
+| 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ✅ done |
+| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ✅ done |
+| 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ✅ done |
+| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner test 5 files / 119 tests; PR #15) |
+
+## Decisions (Day 11)
+- Old RoboSim has **no circuit simulator** (no MNA/netlist code) — nothing to port; new design.
+- **ADR 007** (`docs/adr/007-circuit-model.md`): circuit document (saved: parts + wires/labels/ground;
+  wires added Day 13 with a format bump) → derived **netlist** (`buildNetlist`, union-find, deterministic node
+  numbering, ground = node 0); part = **definition** (pins, typed properties) + **device** (`branches`, `stateSize`,
+  `stamp`, `stampNonlinear?`, `stampTransient?`, `accept?`, `report`) writing only via `MnaContext`; state in one
+  `Float64Array`; SI numbers inside and in files, text only at input/display (RKM "4k7" added); `CircuitIssue`
+  with 13 codes, graph checks before solving, results never NaN. PLAN's "ADR-002" name → 007 (002 was taken).
+- Owner rule (2026-11-24): design everything to world-class industry standard. ADR 007 §5 adds: reference
+  designators (R1, C1, U1…), stable net names, SPICE sign conventions + default tolerances (RELTOL/ABSTOL/VNTOL/GMIN,
+  27 °C), gmin/source stepping, SPICE `.model` parameter names, ratings/tolerance/E-series, ERC pin types,
+  IEC 60617 + ANSI symbol styles, ISO 80000 unit display. **Accepted by the owner 2026-11-24.**
+- Step 3 — `packages/core/src/circuit/netlist.ts`: `buildNetlist(input)` (input = parts with pin ids in definition
+  order + connections + labels; Zod-validated); union-find; ground symbols (`type: "ground"`) and labels `GND`/`0`
+  → node 0; same label = same net; names = smallest label or `N_<designator>_<pin>` (never clashes with a label);
+  numbering independent of drawing order; broken references throw `NetlistError` (document bug, not a learner
+  mistake). `parseNetlist` validates netlists crossing a boundary. Limits: 2 000 parts, 256 pins/part, 8 000 nodes.
+- Step 4 — `mna.ts`: `MnaContext` (`conductance`, `current`, `voltageSource`, `vccs`, `vcvs`, raw `matrix`/`rhs`;
+  ground dropped; non-finite values or unknown nodes throw `MnaStampError`), dense implementation (≤ 1 024 unknowns,
+  tests/small circuits), `createSolution`. `component.ts`: definition (pins with ERC types, typed number/choice/boolean
+  properties, designator prefix, branches, stateSize) + device (`stamp`, optional non-linear/transient/accept hooks,
+  `report` readouts); `resolveProps` (defaults, per-property problems), `createDevice`, `checkDefinition`.
+  `reference-parts.ts`: resistor, DC voltage source, DC current source. End-to-end test: 9 V divider 1 k/2 k →
+  6 V, 3 mA, battery −27 mW (SPICE sign). 500 unit tests.
+- Step 5 — `units.ts`: `parseRKM` (IEC 60062: "4k7", "1M5", "4n7", "R47"; R only for Ω, F only for F) and `parseSI`
+  falls back to it ("4k7" otherwise reads as 4 with unit "k7"). `circuit/quantities.ts`: unit spellings per quantity
+  (Ω/Ω-sign/ohm/R, µ/u, Hz/hz, °C/C, %), `parseQuantity(text, quantity, range)` → value or plain-word message
+  ("Resistance must be more than 0 Ω.", "\"abc\" is not a resistance. Try 4.7k, 4k7 or 220 Ω."), wrong units refused
+  ("4.7 kF" for a resistor); `formatQuantity` (ISO 80000: "4.7 kΩ", "5 %", "27 °C"); round-trip tested.
+- Step 6 — `circuit/issues.ts`: `checkCircuit(netlist, lookup)` → `CircuitIssue` (code, severity, message, hint, parts,
+  pins, nets), errors first, deterministic, ≤ 100. Checks: empty circuit, no ground, open pin ("Pin 2 of R2 is not
+  connected to anything." / "The Positive (+) pin of V1 …"), floating group (DC paths, incl. capacitor-only nodes),
+  shorted / parallel / looped voltage sources, current source with nowhere to send its current, invalid values,
+  duplicate designators, unknown part types. Messages for solver issues (singular, no convergence, over-limit,
+  model error) ready. Definitions gained `dcPaths` / `voltagePairs` (noted in ADR 007 §4). 583 unit tests.
 
 ## Day 10 steps
 | Step | Task | State |
@@ -69,8 +116,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 11 — Circuit model ADR** (new session "Days 11–15 – Circuit Lab foundations"): netlist data model, component
-interface (MNA stamp + state), units and SI prefixes, beginner-friendly error model; ADR 007 committed.
+**Day 12 — Schematic canvas:** React Flow canvas (grid, pan/zoom, place / rotate / flip / delete parts, multi-select);
+done when 50 parts place smoothly. First check React Flow (licence, audit) and record the choice in an ADR.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

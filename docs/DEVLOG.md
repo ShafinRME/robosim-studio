@@ -9,6 +9,23 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 11 — Circuit model (2026-11-24)
+- Built: ADR 007 (accepted) — circuit document → derived netlist; part = definition (pins with ERC types, typed
+  properties, designator prefix) + device writing MNA stamps only through `MnaContext`; SI numbers inside, text only
+  at input/display; beginner error model; industry conventions (designators, SPICE signs and tolerances, `.model`
+  names, E-series, ERC, IEC/ANSI symbols, ISO 80000 display). In `packages/core/src/circuit`: `buildNetlist`
+  (union-find, ground = node 0, labels, numbering independent of drawing order), dense `MnaContext`, component
+  contract with reference resistor / V / I sources (9 V divider exact, SPICE signs), `parseQuantity` with RKM codes
+  ("4k7", "2R2", "4n7") and plain-word range messages, `checkCircuit` (no ground, open pins, floating groups,
+  shorted / parallel / looped sources, current-source cutsets, invalid values, duplicate designators). No UI yet.
+  583 unit tests (+119).
+- Learned: the old RoboSim had no circuit simulator, so the model is new; "4k7" also matches "4 with unit k7", so RKM
+  must be tried whenever plain parsing fails; graph checks need two facts per part (`dcPaths`, `voltagePairs`) —
+  "all pins joined" is the safe default so a new part never raises a false alarm; a test-only Gaussian solve is
+  enough to pin down stamp signs before the real solver exists.
+- Next: Day 12 — schematic canvas (React Flow: grid, pan/zoom, place / rotate / flip / delete, multi-select; 50
+  parts smoothly).
+
 ## Day 10 — Low-end mode & landing page (2026-11-24)
 - Built: capability detection in core (memory, cores, WebGL2, software / privacy-hidden graphics) and one
   `performanceProfile` for Low-end mode; Low-end switches itself on with a stated reason; Help → System information.
