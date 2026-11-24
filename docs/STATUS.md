@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 11 · Step 2/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
+**Current:** Day 11 · Step 4/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-11-circuit-model` (from `develop`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
@@ -9,16 +9,16 @@
 | Step | Task | State |
 |---|---|---|
 | 1/7 | Day branch; study old RoboSim (read-only) and scope the model | ✅ done |
-| 2/7 | Draft ADR 007 — Circuit model | ✅ done (Proposed, owner review) |
-| 3/7 | Netlist types + Zod schema in `packages/core/src/circuit/` + tests | ⏳ next |
-| 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ⬜ |
-| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ⬜ |
+| 2/7 | Draft ADR 007 — Circuit model | ✅ done (Accepted by owner) |
+| 3/7 | Netlist types + Zod schema in `packages/core/src/circuit/` + tests | ✅ done |
+| 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ✅ done |
+| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ⏳ next |
 | 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ⬜ |
 | 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 11)
 - Old RoboSim has **no circuit simulator** (no MNA/netlist code) — nothing to port; new design.
-- **ADR 007** (`docs/adr/007-circuit-model.md`, Proposed): circuit document (saved: parts + wires/labels/ground;
+- **ADR 007** (`docs/adr/007-circuit-model.md`): circuit document (saved: parts + wires/labels/ground;
   wires added Day 13 with a format bump) → derived **netlist** (`buildNetlist`, union-find, deterministic node
   numbering, ground = node 0); part = **definition** (pins, typed properties) + **device** (`branches`, `stateSize`,
   `stamp`, `stampNonlinear?`, `stampTransient?`, `accept?`, `report`) writing only via `MnaContext`; state in one
@@ -27,7 +27,19 @@
 - Owner rule (2026-11-24): design everything to world-class industry standard. ADR 007 §5 adds: reference
   designators (R1, C1, U1…), stable net names, SPICE sign conventions + default tolerances (RELTOL/ABSTOL/VNTOL/GMIN,
   27 °C), gmin/source stepping, SPICE `.model` parameter names, ratings/tolerance/E-series, ERC pin types,
-  IEC 60617 + ANSI symbol styles, ISO 80000 unit display.
+  IEC 60617 + ANSI symbol styles, ISO 80000 unit display. **Accepted by the owner 2026-11-24.**
+- Step 3 — `packages/core/src/circuit/netlist.ts`: `buildNetlist(input)` (input = parts with pin ids in definition
+  order + connections + labels; Zod-validated); union-find; ground symbols (`type: "ground"`) and labels `GND`/`0`
+  → node 0; same label = same net; names = smallest label or `N_<designator>_<pin>` (never clashes with a label);
+  numbering independent of drawing order; broken references throw `NetlistError` (document bug, not a learner
+  mistake). `parseNetlist` validates netlists crossing a boundary. Limits: 2 000 parts, 256 pins/part, 8 000 nodes.
+- Step 4 — `mna.ts`: `MnaContext` (`conductance`, `current`, `voltageSource`, `vccs`, `vcvs`, raw `matrix`/`rhs`;
+  ground dropped; non-finite values or unknown nodes throw `MnaStampError`), dense implementation (≤ 1 024 unknowns,
+  tests/small circuits), `createSolution`. `component.ts`: definition (pins with ERC types, typed number/choice/boolean
+  properties, designator prefix, branches, stateSize) + device (`stamp`, optional non-linear/transient/accept hooks,
+  `report` readouts); `resolveProps` (defaults, per-property problems), `createDevice`, `checkDefinition`.
+  `reference-parts.ts`: resistor, DC voltage source, DC current source. End-to-end test: 9 V divider 1 k/2 k →
+  6 V, 3 mA, battery −27 mW (SPICE sign). 500 unit tests.
 
 ## Day 10 steps
 | Step | Task | State |
@@ -93,8 +105,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 11 · Steps 3–4** (after the owner's review of ADR 007): netlist types + Zod schema; component interface
-(`MnaContext`, stamps, state) with reference R/V/I stamps as test fixtures.
+**Day 11 · Steps 5–6:** units (RKM "4k7", `parseQuantity` with ranges); beginner error model (issue codes,
+messages, netlist graph checks).
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

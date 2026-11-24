@@ -1,6 +1,6 @@
 # ADR 007 — Circuit model: netlist, component interface (MNA stamps), units, beginner errors
 
-- **Status:** Proposed (owner review, Day 11)
+- **Status:** Accepted (owner, 2026-11-24)
 - **Date:** 2026-11-24 (Day 11)
 - **Note:** `docs/PLAN.md` calls this "ADR-002"; 002 was already taken (design language), so it is 007.
 

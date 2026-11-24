@@ -180,3 +180,67 @@ export type {
   LowEndReason,
   PerformanceProfile,
 } from "./capabilities";
+export {
+  GROUND_NET_NAME,
+  GROUND_NODE,
+  GROUND_PART_TYPE,
+  MAX_CONNECTIONS,
+  MAX_NETLIST_NODES,
+  MAX_NETLIST_PARTS,
+  MAX_NET_LABELS,
+  MAX_PART_PINS,
+  NetlistError,
+  buildNetlist,
+  circuitInputSchema,
+  netlistSchema,
+  parseNetlist,
+} from "./circuit/netlist";
+export type {
+  CircuitInput,
+  CircuitPart,
+  Net,
+  Netlist,
+  NetlistComponent,
+  PinRef,
+} from "./circuit/netlist";
+export {
+  GROUND_UNKNOWN,
+  MAX_DENSE_UNKNOWNS,
+  MnaStampError,
+  createDenseMna,
+  createSolution,
+} from "./circuit/mna";
+export type { DenseMna, MnaContext, Solution, Unknown } from "./circuit/mna";
+export {
+  PART_CATEGORIES,
+  PIN_TYPES,
+  checkDefinition,
+  createDevice,
+  numberProp,
+  resolveProps,
+} from "./circuit/component";
+export type {
+  BooleanProperty,
+  ChoiceProperty,
+  ComponentDefinition,
+  Device,
+  DeviceSetup,
+  IntegrationMethod,
+  NumberProperty,
+  PartCategory,
+  PinDefinition,
+  PinType,
+  PropProblem,
+  PropValue,
+  PropertyDefinition,
+  Readout,
+  ResolvedProps,
+} from "./circuit/component";
+export { QUANTITIES, unitOf } from "./circuit/quantities";
+export type { Quantity } from "./circuit/quantities";
+export {
+  REFERENCE_PARTS,
+  dcCurrentSourceDefinition,
+  dcVoltageSourceDefinition,
+  resistorDefinition,
+} from "./circuit/reference-parts";
