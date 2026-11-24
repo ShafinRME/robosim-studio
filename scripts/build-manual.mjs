@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { marked } from "marked";
+import { TextRenderer, marked } from "marked";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manualDir = path.join(root, "docs", "manual");
@@ -27,6 +27,12 @@ const body = fm ? raw.slice(fm[0].length) : raw;
 
 // --- Markdown → HTML, with a table of contents from the top-level headings ---------------------
 const toc = [];
+/** Escapes text for use inside HTML attributes and text. */
+const escapeHtml = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 const slug = (s) =>
   s
     .toLowerCase()
@@ -36,13 +42,15 @@ marked.use({
   renderer: {
     heading({ tokens, depth }) {
       const text = this.parser.parseInline(tokens);
-      const id = slug(text.replace(/<[^>]+>/g, ""));
+      // The id comes from the heading's plain text (marked's text renderer), never from
+      // stripping tags out of HTML with a regular expression (CodeQL js/incomplete-multi-character-sanitization).
+      const id = slug(this.parser.parseInline(tokens, new TextRenderer()));
       if (depth <= 2) toc.push({ depth, text, id });
       return `<h${depth} id="${id}">${text}</h${depth}>\n`;
     },
     image({ href, title, text }) {
       const caption = title || text;
-      return `<figure><img src="${href}" alt="${text}"><figcaption>${caption}</figcaption></figure>`;
+      return `<figure><img src="${escapeHtml(href)}" alt="${escapeHtml(text)}"><figcaption>${escapeHtml(caption)}</figcaption></figure>`;
     },
   },
 });
@@ -54,7 +62,7 @@ const tocHtml = toc
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <base href="${pathToFileURL(manualDir + path.sep).href}">
-<title>${meta.title ?? "User Manual"}</title>
+<title>${escapeHtml(meta.title ?? "User Manual")}</title>
 <style>
   /* Print layout: every block flows normally (no fixed heights or flex), so nothing can overlap. */
   @page {
@@ -112,7 +120,7 @@ const html = `<!doctype html>
   <div class="rule"></div>
   <div class="sub">A free, open-source robotics lab that runs in your browser</div>
 </div>
-<div class="meta">Software version ${meta.version ?? "—"}<br>Updated ${meta.updated ?? "—"}<br>MIT licence</div>
+<div class="meta">Software version ${escapeHtml(meta.version ?? "—")}<br>Updated ${escapeHtml(meta.updated ?? "—")}<br>MIT licence</div>
 </section>
 <section class="toc"><div class="heading">Contents</div><ol>${tocHtml}</ol></section>
 <main>

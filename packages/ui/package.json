@@ -1,6 +1,6 @@
 {
   "name": "@robosim/ui",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Shared UI components, theme and styles for RoboSim Studio.",
   "type": "module",

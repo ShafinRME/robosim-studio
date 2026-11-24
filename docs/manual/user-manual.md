@@ -1,6 +1,6 @@
 ---
 title: RoboSim Studio — User Manual
-version: 0.0.0
+version: 0.0.1
 updated: 2026-11-22
 ---
 
@@ -9,7 +9,7 @@ updated: 2026-11-22
 This manual explains **what every screen, button and tool in RoboSim Studio does and how to use it**.
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
-- **Software version covered:** v0.0.0 (Phase 0 — Foundation)
+- **Software version covered:** v0.0.1 (Phase 0 — Foundation; first public release)
 - **Last updated:** 2026-11-24 (Day 10)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
@@ -141,7 +141,7 @@ old value is kept, so a wrong entry can never break a simulation. Correct the te
 
 ![A workspace preview: Parts panel, canvas with toolbar, and Inspector](images/workspace.png)
 
-RoboSim Studio's labs are built from three kinds of building blocks. In v0.0.0 you can try them in a
+RoboSim Studio's labs are built from three kinds of building blocks. In v0.0.1 you can try them in a
 small LED-circuit preview on the UI kit page (`/ui-kit` → **Workspace**). The studio itself is described
 in chapter 7.
 
@@ -181,7 +181,7 @@ in chapter 7.
 ![The studio: top bar, project tabs, four panels and the status bar](images/studio-overview.png)
 
 The studio is where you will build and simulate. Open it with **Open the studio** on the home page
-(or go to `/studio`). In v0.0.0 the panels are still empty — each lab fills them in later versions —
+(or go to `/studio`). In v0.0.1 the panels are still empty — each lab fills them in later versions —
 but you can already arrange the workspace the way you like.
 
 ## 7.1 Parts of the window
@@ -336,7 +336,7 @@ While a simulation is loaded:
 | Message | The latest message, e.g. *Saved layout restored.* All messages are in the **Console**. |
 | **X … Y …** | Mouse pointer position on the canvas, in pixels. |
 | **Low-end off / on** | Click to switch **Low-end mode** (below). **· auto** means the studio switched it on by itself for this computer; point at the button to see why. |
-| **v0.0.0** | Software version. |
+| **v0.0.1** | Software version. |
 
 **Low-end mode** makes the studio lighter for slower computers: animations are off, the numbers in
 the status bar and on the canvas update less often, and the simulation sends fewer updates (later,
@@ -438,3 +438,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.0 · Day 08 | 2026-11-23 | New section 7.5: automatic saving, Recent projects, `.rsim` export / import and share links. Sections 7.6–7.8 renumbered; Alt + O added. |
 | 0.0.0 · Day 09 | 2026-11-24 | New section 7.6: running a simulation (Run / Pause, Step, Stop, speed, live values, "Behind"). Sections 7.7–7.9 renumbered; simulation shortcuts added. |
 | 0.0.0 · Day 10 | 2026-11-24 | Chapter 3 rewritten for the new home page; automatic Low-end mode and **System information** (7.7); Delete closes a project tab; new chapter 8, *If something goes wrong*. |
+| 0.0.1 | 2026-11-24 | **First public release (v0.0.1).** Version numbers updated throughout; no other changes. |
