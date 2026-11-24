@@ -1,9 +1,9 @@
 # Status
 
-**Current:** Day 12 · Step 6/8 done — Schematic canvas (Phase 1 · Circuit Lab)
+**Current:** Day 12 · Step 7/8 done — Schematic canvas (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-12-schematic-canvas` (from `develop` after Day 11 merge `0b9d3c3`)
 **Session:** Days 11–15 – Circuit Lab foundations
-**Updated:** 2026-11-24
+**Updated:** 2026-11-25
 
 ## Day 12 steps
 | Step | Task | State |
@@ -14,8 +14,8 @@
 | 4/8 | Own part symbols R / V / I / ground (IEC + ANSI), pins, designator + value labels, auto designators | ✅ done |
 | 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ✅ done |
 | 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ✅ done |
-| 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ⏳ next |
-| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+| 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⏳ next |
 
 ## Decisions (Day 12)
 - **ADR 008** (`docs/adr/008-schematic-canvas.md`, **Accepted by the owner 2026-11-24**): our own SVG schematic engine instead of React Flow
@@ -53,6 +53,16 @@
   or undone). Inspector: Part section (name, type, value typed like "4k7" with plain-word range errors, position,
   orientation) or Selection (count, names). Fixed in the UI kit: toolbar toggle items inside tooltips now show their
   "on" state (`aria-checked`). 645 unit, 89 e2e.
+- Step 7 — **50-part performance test** (`e2e/schematic.isolated.spec.ts`, runs alone): place 50 resistors with the
+  tool, select all, drag 2 s, pan 2 s — normal and Low-end. First run found real jank (drag 68, pan 67 of 122 frames);
+  fixed: (1) the selection is its own SVG layer whose `transform` is set directly during a drag (no React render; one
+  `moveParts` edit on release, offset cleared in a layout effect so nothing jumps); (2) panning moves the already-drawn
+  picture with a CSS transform (picture drawn with a half-screen margin, redrawn only when the margin runs out or on
+  release); (3) the canvas uses a setter-only cursor context and reports the pointer only when its grid position
+  changes (the full context re-rendered the canvas on every move). Now: drag 121 / 122, pan 121 / 122 frames, worst gap
+  17–33 ms, no long tasks (also in Low-end). User Manual: new chapter 8 *Drawing a schematic* (8.1–8.5, 4 new
+  screenshots), chapter 7 updated, *If something goes wrong* → chapter 9; PDF rebuilt. Manual screenshot of the UI-kit
+  tooltip now retries the hover (was flaky). 645 unit, 91 e2e.
 
 ## Day 11 steps
 | Step | Task | State |
@@ -165,8 +175,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 12 · Step 7:** 50-part performance test (smooth placing / dragging, also in Low-end mode), remaining e2e,
-User Manual section "Schematic canvas" with screenshots, `pnpm manual`.
+**Day 12 · Step 8:** owner's final review (studio + User Manual chapter 8) → DEVLOG, mark PR #16 ready, check CodeQL
+alerts, squash-merge into `develop`; then the note for Day 13 (wiring).
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

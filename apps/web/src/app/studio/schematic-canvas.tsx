@@ -64,12 +64,14 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
+  type RefObject,
 } from "react";
 import {
   DESIGNATOR_SIZE,
@@ -80,7 +82,7 @@ import { useSchematicPrefs } from "../../lib/schematic-prefs";
 import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
-import { useCanvasCursor, useStudioStatus } from "./studio-status";
+import { useSetCanvasCursor, useStudioStatus } from "./studio-status";
 
 /** Pointer travel (px) before a press becomes a drag. */
 const DRAG_THRESHOLD = 3;
@@ -189,41 +191,39 @@ const PartView = memo(function PartView({
   );
 });
 
+/**
+ * All parts in two layers: the selection is drawn last (on top) in its own group, so a drag only
+ * changes that group's transform — set directly by the canvas, without re-rendering React — and
+ * the project is edited once, on release.
+ */
 const PartsLayer = memo(function PartsLayer({
   parts,
   style,
   showLabels,
   selected,
-  moveDelta,
+  moveLayer,
 }: {
   parts: readonly Part[];
   style: SymbolStyle;
   showLabels: boolean;
   selected: ReadonlySet<string>;
-  moveDelta: Point | null;
+  moveLayer: RefObject<SVGGElement | null>;
 }) {
-  const offset = moveDelta && (moveDelta.x !== 0 || moveDelta.y !== 0) ? moveDelta : null;
+  const view = (part: Part, isSelected: boolean) => (
+    <PartView
+      key={part.id}
+      part={part}
+      style={style}
+      showLabels={showLabels}
+      selected={isSelected}
+    />
+  );
   return (
     <g data-testid="schematic-parts">
-      {parts.map((part) => {
-        const isSelected = selected.has(part.id);
-        const view = (
-          <PartView
-            key={part.id}
-            part={part}
-            style={style}
-            showLabels={showLabels}
-            selected={isSelected}
-          />
-        );
-        return isSelected && offset ? (
-          <g key={part.id} transform={`translate(${offset.x} ${offset.y})`}>
-            {view}
-          </g>
-        ) : (
-          view
-        );
-      })}
+      <g>{parts.filter((p) => !selected.has(p.id)).map((p) => view(p, false))}</g>
+      <g ref={moveLayer} data-testid="schematic-selection-layer">
+        {parts.filter((p) => selected.has(p.id)).map((p) => view(p, true))}
+      </g>
     </g>
   );
 });
@@ -318,7 +318,19 @@ export function SchematicCanvas() {
   const projectId = state?.project.id ?? null;
   const { symbolStyle } = useSchematicPrefs();
   const { lowEnd, post } = useStudioStatus();
-  const { setCursor } = useCanvasCursor();
+  const setCursorNow = useSetCanvasCursor();
+  // Report the pointer only when its grid position changes (the status bar shows grid steps).
+  const lastCursor = useRef<Point | null>(null);
+  const setCursor = useCallback(
+    (point: Point | null) => {
+      const last = lastCursor.current;
+      if (point && last && point.x === last.x && point.y === last.y) return;
+      if (!point && !last) return;
+      lastCursor.current = point;
+      setCursorNow(point);
+    },
+    [setCursorNow],
+  );
   const selectedIds = useSelection(projectId);
 
   const helpId = useId();
@@ -334,13 +346,40 @@ export function SchematicCanvas() {
   const tool = toolState.projectId === projectId ? toolState.tool : SELECT_TOOL;
   const setTool = (next: Tool) => setToolState({ projectId, tool: next });
   const [ghost, setGhost] = useState<Point | null>(null);
-  const [moveDelta, setMoveDelta] = useState<Point | null>(null);
+  const moveLayer = useRef<SVGGElement>(null);
   const [box, setBox] = useState<{ start: Point; end: Point } | null>(null);
   const [panning, setPanning] = useState(false);
   const drag = useRef<Drag | null>(null);
   const fittedFor = useRef<string | null | undefined>(undefined);
+  const svgRef = useRef<SVGSVGElement>(null);
+  /** Pan distance (px) shown by moving the drawn picture, not yet in `viewport`. */
+  const panOffset = useRef<Point>({ x: 0, y: 0 });
+  /** Extra picture drawn around the visible area so a pan never shows an empty edge. */
+  const margin = Math.round(Math.max(size.width, size.height) / 2);
+
+  /** True between a pan commit and the redraw: the picture offset must not move meanwhile. */
+  const redrawPending = useRef(false);
+
+  const commitPan = useCallback(() => {
+    const { x, y } = panOffset.current;
+    panOffset.current = { x: 0, y: 0 };
+    if (x === 0 && y === 0) return;
+    redrawPending.current = true;
+    setViewport((v) => (v ? panBy(v, x, y) : v));
+  }, []);
+  // The new viewport is drawn: show the offset collected since the commit (usually none).
+  useLayoutEffect(() => {
+    redrawPending.current = false;
+    const { x, y } = panOffset.current;
+    if (svgRef.current) svgRef.current.style.transform = x || y ? `translate(${x}px, ${y}px)` : "";
+  }, [viewport]);
 
   const bounds = useMemo(() => unionRects((parts ?? []).map(partBounds)), [parts]);
+  // After a move is committed the parts render at their new place: drop the drag offset in the
+  // same frame (before paint), so they never jump.
+  useLayoutEffect(() => {
+    moveLayer.current?.setAttribute("transform", "translate(0 0)");
+  }, [parts]);
   // Only ids of parts that still exist (after Undo, delete elsewhere…).
   const selection = useMemo(() => {
     const existing = new Set((parts ?? []).map((p) => p.id));
@@ -507,13 +546,20 @@ export function SchematicCanvas() {
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!viewport) return;
     const screen = localPoint(event);
-    const world = toWorld(viewport, screen);
     const d = drag.current;
     if (d?.kind === "pan") {
-      const last = d.last;
+      const off = panOffset.current;
+      off.x += screen.x - d.last.x;
+      off.y += screen.y - d.last.y;
       d.last = screen;
-      setViewport((v) => (v ? panBy(v, screen.x - last.x, screen.y - last.y) : v));
-    } else if (d && (d.kind === "move" || d.kind === "box")) {
+      // Move the already-drawn picture on the compositor; redraw only when the margin runs out.
+      if (Math.abs(off.x) > margin * 0.75 || Math.abs(off.y) > margin * 0.75) commitPan();
+      else if (svgRef.current && !redrawPending.current) {
+        svgRef.current.style.transform = `translate(${off.x}px, ${off.y}px)`;
+      }
+    }
+    const world = toWorld(panBy(viewport, panOffset.current.x, panOffset.current.y), screen);
+    if (d && (d.kind === "move" || d.kind === "box")) {
       if (
         !d.active &&
         Math.hypot(screen.x - d.startScreen.x, screen.y - d.startScreen.y) > DRAG_THRESHOLD
@@ -525,7 +571,7 @@ export function SchematicCanvas() {
           { x: world.x - d.startWorld.x, y: world.y - d.startWorld.y },
           SCHEMATIC_GRID,
         );
-        setMoveDelta(d.delta);
+        moveLayer.current?.setAttribute("transform", `translate(${d.delta.x} ${d.delta.y})`);
       }
       if (d.active && d.kind === "box") setBox({ start: d.startWorld, end: world });
     }
@@ -541,16 +587,20 @@ export function SchematicCanvas() {
     }
     if (!d) return;
     if (d.kind === "pan") {
+      commitPan();
       setPanning(false);
       return;
     }
     if (d.kind === "move") {
       const delta = d.delta;
-      setMoveDelta(null);
       if (!d.active && d.narrowTo) select([d.narrowTo]);
-      if (d.active && (delta.x !== 0 || delta.y !== 0)) {
+      const moved =
+        d.active &&
+        (delta.x !== 0 || delta.y !== 0) &&
         apply(store, () => projectEdits.moveParts(d.ids, delta.x, delta.y));
-      }
+      // A committed move resets the layer when the new positions render (layout effect below);
+      // a refused or empty move resets it now.
+      if (!moved) moveLayer.current?.setAttribute("transform", "translate(0 0)");
       return;
     }
     setBox(null);
@@ -655,6 +705,9 @@ export function SchematicCanvas() {
   };
 
   const scale = viewport ? scaleOf(viewport) : 1;
+  // The picture is drawn `margin` px bigger on every side: its top-left is at (−margin, −margin).
+  const drawViewport = viewport ? panBy(viewport, margin, margin) : null;
+  const drawSize = { width: size.width + 2 * margin, height: size.height + 2 * margin };
   const showLabels = DESIGNATOR_SIZE * scale >= 6;
   const count = parts?.length ?? 0;
   const ghostSymbol = tool.kind === "place" ? symbolFor(tool.type) : undefined;
@@ -705,18 +758,20 @@ export function SchematicCanvas() {
         keys move the selection, Delete removes it. Mouse wheel zooms, middle button or Space and
         drag pans, F fits the drawing.
       </p>
-      {viewport && size.width > 0 ? (
+      {viewport && drawViewport && size.width > 0 ? (
         <svg
-          width={size.width}
-          height={size.height}
-          className="absolute inset-0"
+          ref={svgRef}
+          width={size.width + 2 * margin}
+          height={size.height + 2 * margin}
+          className={cn("absolute", panning && "will-change-transform")}
+          style={{ left: -margin, top: -margin }}
           aria-hidden
           data-zoom={viewport.zoom}
         >
-          <Grid viewport={viewport} size={size} lowEnd={lowEnd} />
-          <OriginMark viewport={viewport} />
+          <Grid viewport={drawViewport} size={drawSize} lowEnd={lowEnd} />
+          <OriginMark viewport={drawViewport} />
           <g
-            transform={`matrix(${scale} 0 0 ${scale} ${-viewport.originX * scale} ${-viewport.originY * scale})`}
+            transform={`matrix(${scale} 0 0 ${scale} ${-drawViewport.originX * scale} ${-drawViewport.originY * scale})`}
             style={
               {
                 "--schematic-stroke": Math.max(6, 1.4 / scale),
@@ -730,7 +785,7 @@ export function SchematicCanvas() {
                 style={symbolStyle}
                 showLabels={showLabels}
                 selected={selection}
-                moveDelta={moveDelta}
+                moveLayer={moveLayer}
               />
             ) : null}
             {ghostSymbol && ghost && tool.kind === "place" ? (
