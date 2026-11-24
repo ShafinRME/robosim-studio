@@ -10,7 +10,7 @@ This manual explains **what every screen, button and tool in RoboSim Studio does
 It grows together with the software: each feature is added here on the Day it is built and tested.
 
 - **Software version covered:** v0.0.0 (Phase 0 — Foundation)
-- **Last updated:** 2026-11-24 (Day 09)
+- **Last updated:** 2026-11-24 (Day 10)
 - Features that are not built yet are listed under *Coming soon* and are not described in detail.
 
 # 1. What is RoboSim Studio?
@@ -58,17 +58,18 @@ The public website address will be added here when the first version is online (
 
 ![The home page (dark theme)](images/home-page.png)
 
-The home page is the first screen you see. In v0.0.0 it is a **preview page** that confirms the
-software is running and leads you to the studio.
+The home page is the first screen you see. It explains what RoboSim Studio is and takes you to the
+studio.
 
-| Part of the screen | What it does |
+| Part of the page | What it does |
 |---|---|
-| **Logo** (cube with X/Y/Z arrows and a copper gear) | The RoboSim Studio logo — a robot's coordinate frame and servo joint inside a 3D simulation world. The same picture is the icon in your browser tab. |
-| **RoboSim Studio** title | Shows the name of the software. |
-| **Open the studio** | Opens the studio workspace (chapter 7). |
-| **UI kit** | Opens the design preview page with all controls (chapters 4–6). |
-| Grid of 10 labs | Lists the labs in release order (P1 = phase 1, and so on). Not clickable yet. |
-| Footer line | Shows the software version and the current development phase. |
+| **Top bar** | The logo (a robot's coordinate frame and servo joint — also the icon in your browser tab), **GitHub** (the source code, in a new tab), **Open the studio** and the theme switch. |
+| **Open the studio** | Opens the studio workspace (chapter 7). It appears three times on the page. |
+| **Source on GitHub** | Opens the source code in a new tab. |
+| **Chart** (right of the title) | A real result of the simulation kernel: the demo spring's position over 6 seconds (shaded: force on). It is calculated when the website is built. |
+| **Ready today** | The six things that already work in the studio. |
+| **The 10 labs** | The labs in release order, each with one line about what it will do and its phase. All are *planned*: they arrive one by one. |
+| **Footer** | Software version, the MIT licence, the source code and the **UI kit** (the design preview page, chapters 4–6). |
 
 # 4. Appearance: light and dark themes
 
@@ -228,7 +229,8 @@ layout and says so in the status bar. To go back to the default at any time, cho
 - **New project:** click **+** next to the tabs, or **File → New project**. Projects are named
   *Untitled*, *Untitled 2*, … (up to 12 at once).
 - **Switch:** click a tab, or use **←** / **→** when a tab has keyboard focus.
-- **Close:** click the **×** on a tab, or **File → Close project**. The next tab opens.
+- **Close:** click the **×** on a tab, press **Delete** while a tab has keyboard focus, or use
+  **File → Close project**. The next tab opens.
 - With no project open, the workspace shows **New project** and **Recent projects**.
 
 Projects are saved automatically (see 7.5). They have no parts yet — parts arrive with the labs.
@@ -333,8 +335,29 @@ While a simulation is loaded:
 | **Idle / Running / Paused** | Simulation state, with the simulated time and steps per second (see 7.6). |
 | Message | The latest message, e.g. *Saved layout restored.* All messages are in the **Console**. |
 | **X … Y …** | Mouse pointer position on the canvas, in pixels. |
-| **Low-end off / on** | Click to switch **Low-end mode**: all animations are turned off, which helps slower computers. The choice is remembered. On computers with 4 GB of memory or less it starts switched on. |
+| **Low-end off / on** | Click to switch **Low-end mode** (below). **· auto** means the studio switched it on by itself for this computer; point at the button to see why. |
 | **v0.0.0** | Software version. |
+
+**Low-end mode** makes the studio lighter for slower computers: animations are off, the numbers in
+the status bar and on the canvas update less often, and the simulation sends fewer updates (later,
+3D views will also use fewer pixels and no shadows). Your choice is remembered.
+
+The studio switches Low-end mode on **by itself** when the computer has 4 GB of memory or less, 2
+processor cores or fewer, no WebGL2 3D graphics, or draws graphics without a graphics card. It
+then says why once in the Console. If you switch it on or off yourself, your choice wins.
+
+**System information** (**Help → System information**) shows what the studio found out about your
+computer and whether Low-end mode is recommended, with a button to switch it. This information is
+used only on your computer and is never sent anywhere.
+
+![The System information window — here on a computer without a graphics card, so Low-end mode is recommended](images/system-info.png)
+
+| Row | What it shows |
+|---|---|
+| **Memory**, **Processor cores** | As reported by the browser (browsers report at most "8 GB"). |
+| **3D graphics (WebGL2)** | Whether 3D views can work on this computer. |
+| **Graphics**, **Drawn by** | The graphics chip, and whether a graphics card or the processor draws the 3D views. Some browsers (for example Brave and Safari) hide the chip for privacy: then it says *Hidden by the browser*. |
+| **Low-end mode recommended** | *No*, or *Yes* with the reasons. |
 
 ## 7.8 Command palette
 
@@ -360,6 +383,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 | Keys | Action |
 |---|---|
 | **Ctrl + K** | Command palette (open / close) |
+| **Delete** (on a project tab) | Close that project |
 | **Ctrl + /** or **?** | Keyboard shortcuts window |
 | **Ctrl + Z** | Undo |
 | **Ctrl + Y** or **Ctrl + Shift + Z** | Redo |
@@ -380,11 +404,27 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 - The browser keeps some keys for itself (Ctrl + N, Ctrl + W, Ctrl + Tab…), so the studio uses
   **Alt** for those actions instead.
 
+# 8. If something goes wrong
+
+RoboSim Studio tries hard never to leave you with a blank or frozen page.
+
+| What you see | What it means | What to do |
+|---|---|---|
+| **A panel says "The … panel stopped working"** | Only that panel failed. The rest of the studio and your project are fine. | Click **Try again** in the panel. |
+| **"The studio stopped working"** | The studio itself failed. Your projects are saved in this browser. | Click **Try again**, or **Reload the studio** (your projects open again; changes from the last second may be missing). |
+| **"Something went wrong"** | Another page failed. | **Try again**, or go to the **Home page**. |
+| **"Page not found"** | The address does not exist (for example a mistyped link). | **Open the studio** or go to the **Home page**. |
+
+![The studio's error screen](images/studio-error.png)
+
+Every error screen has **Report a problem**, which opens a new issue on GitHub. If the screen shows
+an **Error code**, include it in your report. The studio never shows or sends technical details
+about your computer or your projects.
+
 # Coming soon
 
 These parts of the manual will be written as each feature is finished:
 
-- More Low-end mode options and automatic graphics detection (Day 10)
 - One chapter for each of the 10 labs
 
 # Version history of this manual
@@ -397,3 +437,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.0 · Day 07 | 2026-11-23 | New section 7.4: project name in the Inspector, Undo / Redo (Edit menu, Ctrl + Z, Ctrl + Y). Shortcut table updated. |
 | 0.0.0 · Day 08 | 2026-11-23 | New section 7.5: automatic saving, Recent projects, `.rsim` export / import and share links. Sections 7.6–7.8 renumbered; Alt + O added. |
 | 0.0.0 · Day 09 | 2026-11-24 | New section 7.6: running a simulation (Run / Pause, Step, Stop, speed, live values, "Behind"). Sections 7.7–7.9 renumbered; simulation shortcuts added. |
+| 0.0.0 · Day 10 | 2026-11-24 | Chapter 3 rewritten for the new home page; automatic Low-end mode and **System information** (7.7); Delete closes a project tab; new chapter 8, *If something goes wrong*. |

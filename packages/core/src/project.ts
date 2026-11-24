@@ -6,6 +6,10 @@
  * migrated to the current format version and validated with a strict Zod schema before use.
  */
 import { z } from "zod";
+
+// Never let Zod try `new Function` for speed: our Content Security Policy forbids eval, and the
+// attempt alone is reported as a security violation in the browser (found by Lighthouse, Day 10).
+z.config({ jitless: true });
 import { LABS, type LabId } from "./labs";
 
 export const PROJECT_FORMAT = "robosim-project";

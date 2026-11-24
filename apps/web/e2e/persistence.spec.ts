@@ -38,7 +38,7 @@ test.describe("projects are saved in the browser", () => {
   test("a closed project is not reopened", async ({ page }) => {
     await page.getByRole("button", { name: "New project" }).click();
     await rename(page, "Temporary");
-    await page.getByRole("button", { name: "Close Temporary" }).click();
+    await page.getByTitle("Close Temporary", { exact: true }).click();
     await expect(tabs(page)).toHaveCount(1);
 
     await page.reload();

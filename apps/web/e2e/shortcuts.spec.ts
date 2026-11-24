@@ -45,7 +45,7 @@ test.describe("keyboard shortcuts", () => {
     await page.keyboard.press("Alt+Shift+R");
     await expect(status(page)).toHaveText("Layout reset to the default.");
     await page.keyboard.press("Alt+Shift+L");
-    await expect(status(page)).toHaveText("Low-end mode on: animations off.");
+    await expect(status(page)).toHaveText("Low-end mode on: animations off, lighter updates.");
   });
 
   test("Ctrl+/ and ? open the shortcuts window, which lists the keys", async ({ page }) => {

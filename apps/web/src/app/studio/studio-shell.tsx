@@ -5,13 +5,22 @@ import { Button } from "@robosim/ui/components/button";
 import { CommandPalette } from "@robosim/ui/components/command-palette";
 import { FilePlus2, History } from "lucide-react";
 import { useSetTheme } from "@robosim/ui/components/theme-provider";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
 import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
+import { useDevCrash } from "./panel-error-boundary";
 import { RecentProjectsDialog } from "./recent-projects-dialog";
 import { ShortcutsDialog } from "./shortcuts-dialog";
+import { SystemInfoDialog } from "./system-info-dialog";
 import { useOpenProjects } from "./open-projects";
 import {
   copyShareLink,
@@ -38,11 +47,16 @@ export function StudioShell() {
 
 /** The simulation reports to the status bar and Console. */
 function StudioSimulation({ children }: { children: ReactNode }) {
-  const { post } = useStudioStatus();
-  return <SimulationProvider post={post}>{children}</SimulationProvider>;
+  const { post, lowEnd } = useStudioStatus();
+  return (
+    <SimulationProvider post={post} lowEnd={lowEnd}>
+      {children}
+    </SimulationProvider>
+  );
 }
 
 function StudioWindow() {
+  useDevCrash("studio");
   const { post, lowEnd, setLowEnd } = useStudioStatus();
   const setTheme = useSetTheme();
   const controls = useRef<StudioWorkspaceControls | null>(null);
@@ -50,8 +64,14 @@ function StudioWindow() {
   const sim = useSimController();
   const projects = open.tabs;
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
+  // Stable callbacks, so the memoised workspace does not re-render with the studio around it.
+  const onWorkspaceControls = useCallback((c: StudioWorkspaceControls) => {
+    controls.current = c;
+  }, []);
+  const onOpenPanels = useCallback((ids: string[]) => setOpenPanels(new Set(ids)), []);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [systemOpen, setSystemOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const shortcuts = useShortcutMap();
@@ -102,6 +122,10 @@ function StudioWindow() {
     setLowEnd,
     setTheme,
     togglePalette: () => setPaletteOpen((open) => !open),
+    openSystemInfo: () => {
+      setPaletteOpen(false);
+      setSystemOpen(true);
+    },
     openShortcuts: () => {
       setPaletteOpen(false);
       setShortcutsOpen(true);
@@ -167,10 +191,7 @@ function StudioWindow() {
         <h1 className="sr-only">RoboSim Studio workspace</h1>
         {/* The workspace stays mounted with no project open, so the layout is kept. */}
         <ActiveProjectProvider store={activeStore}>
-          <StudioWorkspace
-            onControls={(c) => (controls.current = c)}
-            onOpenPanelsChange={(ids) => setOpenPanels(new Set(ids))}
-          />
+          <StudioWorkspace onControls={onWorkspaceControls} onOpenPanelsChange={onOpenPanels} />
         </ActiveProjectProvider>
         {!open.restored ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-blueprint">
@@ -211,6 +232,7 @@ function StudioWindow() {
         deleteSaved={open.deleteSaved}
         post={post}
       />
+      <SystemInfoDialog open={systemOpen} onOpenChange={setSystemOpen} />
       <ShortcutsDialog
         open={shortcutsOpen}
         onOpenChange={setShortcutsOpen}

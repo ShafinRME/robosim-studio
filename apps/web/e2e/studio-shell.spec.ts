@@ -71,7 +71,7 @@ test.describe("studio top bar and project tabs", () => {
     await expect(projectTabs(page).first()).toHaveAttribute("aria-selected", "true");
 
     // Closing the active tab activates the tab to its right.
-    await page.getByRole("button", { name: "Close Untitled", exact: true }).click();
+    await page.getByTitle("Close Untitled", { exact: true }).click();
     await expect(projectTabs(page)).toHaveText(["Untitled 2", "Untitled 3"]);
     await expect(projectTabs(page).first()).toHaveAttribute("aria-selected", "true");
   });
@@ -84,6 +84,18 @@ test.describe("studio top bar and project tabs", () => {
     await expect(projectTabs(page).first()).toHaveAttribute("aria-selected", "true");
     await page.keyboard.press("ArrowLeft");
     await expect(projectTabs(page).nth(1)).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("Delete closes the focused project tab (the × is for the mouse only)", async ({ page }) => {
+    await page.getByRole("button", { name: "New project" }).click();
+    await expect(projectTabs(page)).toHaveCount(2);
+    // The × is hidden from assistive technology: the tab list holds only tabs.
+    await expect(page.getByRole("button", { name: /^Close Untitled/ })).toHaveCount(0);
+    await expect(projectTabs(page).nth(1)).toHaveAttribute("aria-keyshortcuts", "Delete");
+    await projectTabs(page).nth(1).focus();
+    await page.keyboard.press("Delete");
+    await expect(projectTabs(page)).toHaveText(["Untitled"]);
+    await expect(projectTabs(page).first()).toBeFocused();
   });
 
   test("closing the last project shows an empty state with New project", async ({ page }) => {

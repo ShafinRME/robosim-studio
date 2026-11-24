@@ -70,7 +70,7 @@ test.describe("recent projects", () => {
     await rename(page, "Arm");
     await page.getByRole("button", { name: "New project" }).click();
     await rename(page, "Rover");
-    await page.getByRole("button", { name: "Close Arm" }).click();
+    await page.getByTitle("Close Arm", { exact: true }).click();
     await expect(tabs(page)).toHaveText(["Rover"]);
 
     await page.keyboard.press("Alt+O");

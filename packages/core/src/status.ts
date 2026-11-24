@@ -2,6 +2,7 @@
  * Studio status: the message log shown in the status bar and Console panel, and the
  * Low-end mode decision for slower computers (8 GB RAM, integrated graphics).
  */
+import { assessCapabilities, type CapabilityHints } from "./capabilities";
 
 export type MessageLevel = "info" | "success" | "warning" | "error";
 
@@ -39,26 +40,12 @@ export function formatClock(time: number): string {
     .join(":");
 }
 
-/** What the browser tells us about the computer. Both values may be missing. */
-export type DeviceHints = { deviceMemory?: number; hardwareConcurrency?: number };
+/** What the browser tells us about the computer (see `capabilities.ts`). */
+export type DeviceHints = CapabilityHints;
 
-/** At or below these, the studio suggests Low-end mode. */
-export const LOW_END_MAX_MEMORY_GB = 4;
-export const LOW_END_MAX_CORES = 2;
-
-/**
- * Suggests Low-end mode from the browser's hints. `deviceMemory` is rounded down and capped
- * at 8 GB by browsers, so only clearly small machines are flagged.
- */
+/** Whether the studio should suggest Low-end mode for this computer. */
 export function detectLowEnd(hints: DeviceHints): boolean {
-  const { deviceMemory, hardwareConcurrency } = hints;
-  if (typeof deviceMemory === "number" && deviceMemory > 0) {
-    if (deviceMemory <= LOW_END_MAX_MEMORY_GB) return true;
-  }
-  if (typeof hardwareConcurrency === "number" && hardwareConcurrency > 0) {
-    if (hardwareConcurrency <= LOW_END_MAX_CORES) return true;
-  }
-  return false;
+  return assessCapabilities(hints).lowEndRecommended;
 }
 
 /** Stored choice ("on" / "off"); anything else means "not chosen, use detection". */

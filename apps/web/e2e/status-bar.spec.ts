@@ -59,7 +59,7 @@ test.describe("studio status bar", () => {
     await expect(lowEndButton(page)).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("html")).toHaveAttribute("data-low-end", "");
     await expect(statusBar(page).getByRole("status")).toHaveText(
-      "Low-end mode on: animations off.",
+      "Low-end mode on: animations off, lighter updates.",
     );
     const transition = await page
       .locator(".dv-tab")

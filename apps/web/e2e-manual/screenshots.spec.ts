@@ -156,6 +156,28 @@ test.describe("studio workspace", () => {
     await page.screenshot({ path: shot("simulation-running") });
   });
 
+  test("system information window", async ({ page }) => {
+    await page.getByRole("menuitem", { name: "Help" }).click();
+    await page.getByRole("menuitem", { name: "System information" }).click();
+    const dialog = page.getByRole("dialog", { name: "System information" });
+    await expect(dialog).toBeVisible();
+    await settle(page);
+    await dialog.screenshot({ path: shot("system-info") });
+  });
+
+  test("studio error screen", async ({ page }) => {
+    // Development-only crash switch (see panel-error-boundary.tsx).
+    await page.goto("/studio?crash=studio");
+    await expect(page.getByRole("heading", { name: "The studio stopped working" })).toBeVisible();
+    // Hide the development-only error badge so the picture shows what users see.
+    await page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+    await settle(page);
+    await page.screenshot({
+      path: shot("studio-error"),
+      clip: { x: 383, y: 160, width: 600, height: 440 },
+    });
+  });
+
   test("keyboard shortcuts window", async ({ page }) => {
     await page.getByTestId("studio-canvas").click();
     await page.keyboard.press("Control+Slash");

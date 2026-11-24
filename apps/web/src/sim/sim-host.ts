@@ -16,8 +16,10 @@ import {
 
 /** Tick the scheduler about this often (ms). 4 ms ≈ 4 steps per tick at 1 kHz. */
 export const TICK_MS = 4;
-/** Send snapshots about this often (ms): ~30 per second is enough for any display. */
+/** Send snapshots about this often (ms) by default: ~30 per second is enough for any display. */
 export const SNAPSHOT_MS = 33;
+const MIN_SNAPSHOT_MS = 16;
+const MAX_SNAPSHOT_MS = 1000;
 const MAX_WATCHED = 100;
 
 export type ModelRegistry = Readonly<Record<string, () => readonly SimModel[]>>;
@@ -66,6 +68,7 @@ export function createSimHost(registry: ModelRegistry, clock: HostClock = realCl
   let tickTimer: unknown = null;
   let lastTick = 0;
   let lastSent = -Infinity;
+  let snapshotMs = SNAPSHOT_MS;
   /** Step counts per tick over the last second, for `stepsPerSecond`. */
   let recent: { at: number; steps: number }[] = [];
 
@@ -95,7 +98,7 @@ export function createSimHost(registry: ModelRegistry, clock: HostClock = realCl
     const steps = sim.advance((now - lastTick) / 1000);
     lastTick = now;
     recent.push({ at: now, steps });
-    if (now - lastSent >= SNAPSHOT_MS) send();
+    if (now - lastSent >= snapshotMs) send();
     tickTimer = clock.setTimer(tick, TICK_MS);
   };
 
@@ -161,6 +164,21 @@ export function createSimHost(registry: ModelRegistry, clock: HostClock = realCl
       }
       requireSim().watch(names.filter((name): name is string => typeof name === "string"));
       send();
+    },
+
+    /** How often snapshots are sent while running (Low-end mode sends fewer). */
+    setSnapshotInterval(ms: unknown) {
+      if (
+        typeof ms !== "number" ||
+        !Number.isFinite(ms) ||
+        ms < MIN_SNAPSHOT_MS ||
+        ms > MAX_SNAPSHOT_MS
+      ) {
+        throw new SimHostError(
+          `snapshot interval must be ${MIN_SNAPSHOT_MS}–${MAX_SNAPSHOT_MS} ms`,
+        );
+      }
+      snapshotMs = ms;
     },
 
     /** One listener receives every snapshot (the studio). Sends the current state at once. */

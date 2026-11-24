@@ -75,7 +75,7 @@ test.describe("command palette", () => {
     await page.keyboard.press("Control+k");
     await search(page).fill("low-end");
     await page.keyboard.press("Enter");
-    await expect(status(page)).toHaveText("Low-end mode on: animations off.");
+    await expect(status(page)).toHaveText("Low-end mode on: animations off, lighter updates.");
 
     await page.keyboard.press("Control+k");
     await expect(options(page).first()).toContainText("Toggle Low-end mode");

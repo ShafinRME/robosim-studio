@@ -30,7 +30,7 @@
   /* Text */
   --foreground: oklch(0.21 0.02 255);
   --muted-foreground: oklch(0.47 0.02 255);
-  --faint-foreground: oklch(0.6 0.015 255);
+  --faint-foreground: oklch(0.51 0.015 255); /* ≥ 4.5:1 on every surface (WCAG AA, Day 10) */
 
   /* Brand & highlight */
   --brand: oklch(0.56 0.12 205);
@@ -102,7 +102,7 @@
 
   --foreground: oklch(0.95 0.006 255);
   --muted-foreground: oklch(0.72 0.015 255);
-  --faint-foreground: oklch(0.56 0.015 255);
+  --faint-foreground: oklch(0.64 0.015 255); /* ≥ 4.5:1 on every surface (WCAG AA, Day 10) */
 
   --brand: oklch(0.78 0.13 200);
   --brand-foreground: oklch(0.17 0.03 220);

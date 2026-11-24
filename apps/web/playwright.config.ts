@@ -14,6 +14,9 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
+    // Test browsers draw graphics without a GPU, so the studio would switch Low-end mode on by
+    // itself. Start like a normal computer (Low-end off); low-end-auto tests clear this.
+    storageState: "e2e/fixtures/low-end-off.json",
   },
   projects: [
     {

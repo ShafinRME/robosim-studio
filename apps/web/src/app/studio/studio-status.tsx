@@ -2,11 +2,13 @@
 
 import {
   appendMessage,
+  assessCapabilities,
+  describeLowEndReason,
   resolveLowEnd,
-  type DeviceHints,
   type MessageLevel,
   type StatusMessage,
 } from "@robosim/core";
+import { readCapabilityHints, subscribeCapabilities } from "../../lib/device-capabilities";
 import {
   createContext,
   useCallback,
@@ -21,24 +23,40 @@ import {
 const LOW_END_KEY = "robosim-low-end";
 
 type StudioStatus = {
-  messages: readonly StatusMessage[];
   post: (level: MessageLevel, text: string) => void;
   lowEnd: boolean;
   setLowEnd: (on: boolean) => void;
+  /** Why this computer gets Low-end mode by default (empty: it does not). */
+  lowEndReasons: readonly string[];
+  /** True when Low-end mode follows the automatic choice (the user never switched it). */
+  lowEndAuto: boolean;
 };
 
 /** Canvas pointer position in canvas pixels, or null when the pointer is outside. */
 type Cursor = { x: number; y: number } | null;
 
 const StatusContext = createContext<StudioStatus | null>(null);
+// Messages have their own context: a new message re-renders only the status bar and the
+// Console, not the whole studio (each full re-render cost ~150 ms at start-up; Lighthouse, Day 10).
+const MessagesContext = createContext<readonly StatusMessage[] | null>(null);
 // Separate context so pointer moves only re-render what shows the cursor.
 const CursorContext = createContext<{ cursor: Cursor; setCursor: (c: Cursor) => void } | null>(
   null,
 );
 
-function deviceHints(): DeviceHints {
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  return { deviceMemory: nav.deviceMemory, hardwareConcurrency: nav.hardwareConcurrency };
+/** Plain-language reasons this computer gets Low-end mode by default (same array until the hints change). */
+let reasonsCache: { hints: object; reasons: string[] } | null = null;
+const NO_REASONS: string[] = [];
+function lowEndReasons(): string[] {
+  const hints = readCapabilityHints();
+  if (reasonsCache?.hints !== hints) {
+    const report = assessCapabilities(hints);
+    reasonsCache = {
+      hints,
+      reasons: report.lowEndReasons.map((reason) => describeLowEndReason(reason, report)),
+    };
+  }
+  return reasonsCache.reasons;
 }
 
 // Low-end mode is a small external store: the stored choice (or device hints) in the browser,
@@ -66,17 +84,29 @@ function writeLowEndChoice(on: boolean) {
   for (const listener of lowEndListeners) listener();
 }
 
+// Also re-read when the idle graphics check finishes: it may recommend Low-end mode.
 function subscribeLowEnd(listener: () => void) {
   lowEndListeners.add(listener);
-  return () => lowEndListeners.delete(listener);
+  const unsubscribe = subscribeCapabilities(listener);
+  return () => {
+    lowEndListeners.delete(listener);
+    unsubscribe();
+  };
 }
 
-const lowEndSnapshot = () => resolveLowEnd(readLowEndChoice(), deviceHints());
+const lowEndSnapshot = () => resolveLowEnd(readLowEndChoice(), readCapabilityHints());
 const lowEndServerSnapshot = () => false;
+const choiceSnapshot = () => readLowEndChoice();
+const choiceServerSnapshot = () => "off";
+/** The automatic Low-end notice is shown once per page. */
+let autoNoticeShown = false;
 
 export function StudioStatusProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<StatusMessage[]>([]);
   const lowEnd = useSyncExternalStore(subscribeLowEnd, lowEndSnapshot, lowEndServerSnapshot);
+  const choice = useSyncExternalStore(subscribeLowEnd, choiceSnapshot, choiceServerSnapshot);
+  const lowEndAuto = choice !== "on" && choice !== "off";
+  const reasons = useSyncExternalStore(subscribeLowEnd, lowEndReasons, () => NO_REASONS);
   const [cursor, setCursor] = useState<Cursor>(null);
 
   const post = useCallback((level: MessageLevel, text: string) => {
@@ -93,23 +123,39 @@ export function StudioStatusProvider({ children }: { children: ReactNode }) {
     };
   }, [lowEnd]);
 
+  // Say once why Low-end mode switched itself on, and how to turn it off.
+  useEffect(() => {
+    if (!lowEnd || !lowEndAuto || autoNoticeShown) return;
+    autoNoticeShown = true;
+    const why = reasons.join(", ") || "limited hardware";
+    // After this render, not during the effect (avoids a cascading render).
+    queueMicrotask(() =>
+      post(
+        "info",
+        `Low-end mode is on for this computer (${why}). You can turn it off in the status bar.`,
+      ),
+    );
+  }, [lowEnd, lowEndAuto, reasons, post]);
+
   const setLowEnd = useCallback(
     (on: boolean) => {
       writeLowEndChoice(on);
-      post("info", on ? "Low-end mode on: animations off." : "Low-end mode off.");
+      post("info", on ? "Low-end mode on: animations off, lighter updates." : "Low-end mode off.");
     },
     [post],
   );
 
   const status = useMemo(
-    () => ({ messages, post, lowEnd, setLowEnd }),
-    [messages, post, lowEnd, setLowEnd],
+    () => ({ post, lowEnd, setLowEnd, lowEndReasons: reasons, lowEndAuto }),
+    [post, lowEnd, setLowEnd, reasons, lowEndAuto],
   );
   const cursorValue = useMemo(() => ({ cursor, setCursor }), [cursor]);
 
   return (
     <StatusContext.Provider value={status}>
-      <CursorContext.Provider value={cursorValue}>{children}</CursorContext.Provider>
+      <MessagesContext.Provider value={messages}>
+        <CursorContext.Provider value={cursorValue}>{children}</CursorContext.Provider>
+      </MessagesContext.Provider>
     </StatusContext.Provider>
   );
 }
@@ -117,6 +163,13 @@ export function StudioStatusProvider({ children }: { children: ReactNode }) {
 export function useStudioStatus(): StudioStatus {
   const value = useContext(StatusContext);
   if (!value) throw new Error("useStudioStatus must be used inside StudioStatusProvider");
+  return value;
+}
+
+/** The studio message log (status bar and Console). */
+export function useStudioMessages(): readonly StatusMessage[] {
+  const value = useContext(MessagesContext);
+  if (!value) throw new Error("useStudioMessages must be used inside StudioStatusProvider");
   return value;
 }
 
