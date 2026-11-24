@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assessCapabilities,
   describeLowEndReason,
+  isMaskedRenderer,
   isSoftwareRenderer,
   performanceProfile,
   type CapabilityHints,
@@ -28,6 +29,26 @@ describe("isSoftwareRenderer", () => {
   });
 });
 
+describe("isMaskedRenderer", () => {
+  it.each([
+    ["Brave", true],
+    ["WebKit WebGL", true],
+    ["Apple GPU", true],
+    ["Mozilla", true],
+    [INTEL, false],
+    [SWIFTSHADER, false],
+    [null, false],
+  ])("%s → %s", (renderer, expected) => {
+    expect(isMaskedRenderer(renderer)).toBe(expected);
+  });
+
+  it("does not guess from a hidden name: no software-graphics verdict", () => {
+    const report = assessCapabilities({ webgl2: true, renderer: "Brave" });
+    expect(report).toMatchObject({ rendererHidden: true, softwareGraphics: false });
+    expect(report.lowEndRecommended).toBe(false);
+  });
+});
+
 describe("assessCapabilities", () => {
   it("a typical 8 GB laptop with integrated graphics needs no Low-end mode", () => {
     expect(
@@ -42,6 +63,7 @@ describe("assessCapabilities", () => {
       cores: 8,
       webgl2: true,
       renderer: INTEL,
+      rendererHidden: false,
       softwareGraphics: false,
       lowEndReasons: [],
       lowEndRecommended: false,

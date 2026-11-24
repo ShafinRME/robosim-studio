@@ -2,10 +2,9 @@
 
 import { createCommandRegistry, type Command, type CommandRegistry } from "@robosim/core";
 import { useEffect, useRef, useState } from "react";
+import { ISSUES_URL, REPO_URL } from "../../lib/links";
 import type { SimController } from "./studio-simulation";
 import { STUDIO_PANELS, type StudioPanelId } from "./studio-workspace";
-
-export const REPO_URL = "https://github.com/ShafinRME/robosim-studio";
 
 /** Everything the studio commands act on. Read fresh each time a command runs. */
 export type StudioCommandContext = {
@@ -212,7 +211,7 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       title: "Report a problem",
       category: "Help",
       keywords: ["bug", "issue"],
-      run: () => openExternal(`${REPO_URL}/issues/new`),
+      run: () => openExternal(ISSUES_URL),
     },
   ];
 }

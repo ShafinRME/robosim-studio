@@ -27,6 +27,8 @@ export type CapabilityReport = {
   cores: number | null;
   webgl2: boolean | null;
   renderer: string | null;
+  /** The browser hides the real graphics name for privacy (e.g. Brave, Safari): GPU unknown. */
+  rendererHidden: boolean;
   /** Graphics are drawn by the CPU (no usable GPU / driver): 3D will be slow. */
   softwareGraphics: boolean;
   lowEndReasons: LowEndReason[];
@@ -36,6 +38,13 @@ export type CapabilityReport = {
 // Known CPU (software) renderers: Chrome's SwiftShader, Mesa llvmpipe/softpipe, Windows' fallback.
 const SOFTWARE_RENDERER =
   /swiftshader|llvmpipe|softpipe|software rasterizer|microsoft basic render|mesa offscreen/i;
+
+// Names privacy-protecting browsers report instead of the real GPU.
+const MASKED_RENDERER = /^(brave|webkit webgl|mozilla|google inc.?|apple gpu|generic renderer)$/i;
+
+export function isMaskedRenderer(renderer: string | undefined | null): boolean {
+  return typeof renderer === "string" && MASKED_RENDERER.test(renderer.trim());
+}
 
 export function isSoftwareRenderer(renderer: string | undefined | null): boolean {
   return typeof renderer === "string" && SOFTWARE_RENDERER.test(renderer.slice(0, 300));
@@ -52,6 +61,7 @@ export function assessCapabilities(hints: CapabilityHints): CapabilityReport {
     typeof hints.renderer === "string" && hints.renderer.trim()
       ? hints.renderer.trim().slice(0, 200)
       : null;
+  const rendererHidden = isMaskedRenderer(renderer);
   const softwareGraphics = isSoftwareRenderer(renderer);
 
   const reasons: LowEndReason[] = [];
@@ -65,6 +75,7 @@ export function assessCapabilities(hints: CapabilityHints): CapabilityReport {
     cores,
     webgl2,
     renderer,
+    rendererHidden,
     softwareGraphics,
     lowEndReasons: reasons,
     lowEndRecommended: reasons.length > 0,

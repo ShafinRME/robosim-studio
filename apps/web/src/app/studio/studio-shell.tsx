@@ -10,6 +10,7 @@ import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
 import { TEXT_EDITING_COMMANDS, isTypingTarget, useShortcutMap } from "./studio-shortcuts";
+import { useDevCrash } from "./panel-error-boundary";
 import { RecentProjectsDialog } from "./recent-projects-dialog";
 import { ShortcutsDialog } from "./shortcuts-dialog";
 import { SystemInfoDialog } from "./system-info-dialog";
@@ -48,6 +49,7 @@ function StudioSimulation({ children }: { children: ReactNode }) {
 }
 
 function StudioWindow() {
+  useDevCrash("studio");
   const { post, lowEnd, setLowEnd } = useStudioStatus();
   const setTheme = useSetTheme();
   const controls = useRef<StudioWorkspaceControls | null>(null);

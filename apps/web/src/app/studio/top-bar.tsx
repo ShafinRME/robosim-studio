@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Kbd, KbdGroup } from "@robosim/ui/components/kbd";
 import { SimControls } from "./sim-controls";
-import { REPO_URL } from "./studio-commands";
+import { ISSUES_URL, REPO_URL } from "../../lib/links";
 import { STUDIO_PANELS } from "./studio-workspace";
 
 /** Studio top bar: logo, application menus, simulation controls and theme switch. */
@@ -147,7 +147,7 @@ export function TopBar({
               </a>
             </MenubarItem>
             <MenubarItem asChild>
-              <a href={`${REPO_URL}/issues/new`} target="_blank" rel="noopener noreferrer">
+              <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
                 <Bug /> Report a problem
               </a>
             </MenubarItem>

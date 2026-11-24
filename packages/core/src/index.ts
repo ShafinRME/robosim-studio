@@ -170,6 +170,7 @@ export {
   LOW_END_MAX_MEMORY_GB,
   assessCapabilities,
   describeLowEndReason,
+  isMaskedRenderer,
   isSoftwareRenderer,
   performanceProfile,
 } from "./capabilities";

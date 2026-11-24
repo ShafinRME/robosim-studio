@@ -21,6 +21,7 @@ import {
   InspectorSection,
   InspectorValue,
 } from "@robosim/ui/components/inspector";
+import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
@@ -126,6 +127,7 @@ function ProjectNameField({ id, store, name }: { id: string; store: ProjectStore
 }
 
 function InspectorPanel() {
+  useDevCrash("inspector");
   const { store, state } = useActiveProject();
   if (!store || !state) {
     return (
@@ -208,11 +210,24 @@ function ConsolePanel() {
 }
 
 /** Panel registry: Dockview creates panels by these ids. Labs will add their own later. */
+/** Wraps a panel so a crash inside it stays inside it (see PanelErrorBoundary). */
+function guarded(title: string, Panel: FunctionComponent): FunctionComponent<IDockviewPanelProps> {
+  function GuardedPanel() {
+    return (
+      <PanelErrorBoundary title={title}>
+        <Panel />
+      </PanelErrorBoundary>
+    );
+  }
+  GuardedPanel.displayName = `Guarded(${title})`;
+  return GuardedPanel;
+}
+
 const PANELS: Record<string, FunctionComponent<IDockviewPanelProps>> = {
-  explorer: ExplorerPanel,
-  canvas: CanvasPanel,
-  inspector: InspectorPanel,
-  console: ConsolePanel,
+  explorer: guarded("Explorer", ExplorerPanel),
+  canvas: guarded("Canvas", CanvasPanel),
+  inspector: guarded("Inspector", InspectorPanel),
+  console: guarded("Console", ConsolePanel),
 };
 
 export type StudioPanelId = "explorer" | "canvas" | "inspector" | "console";

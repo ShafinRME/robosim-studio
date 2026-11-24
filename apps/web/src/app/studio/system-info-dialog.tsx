@@ -42,14 +42,21 @@ export function SystemInfoDialog({
       "3D graphics (WebGL2)",
       report.webgl2 === null ? "Not checked" : report.webgl2 ? "Available" : "Not available",
     ],
-    ["Graphics", report.renderer ?? "Unknown"],
+    [
+      "Graphics",
+      report.rendererHidden
+        ? "Hidden by the browser (privacy protection)"
+        : (report.renderer ?? "Unknown"),
+    ],
     [
       "Drawn by",
       report.webgl2 === false
         ? "—"
-        : report.softwareGraphics
-          ? "The processor (no graphics card in use) — 3D will be slow"
-          : "The graphics card",
+        : report.rendererHidden
+          ? "Unknown — the browser hides it"
+          : report.softwareGraphics
+            ? "The processor (no graphics card in use) — 3D will be slow"
+            : "The graphics card",
     ],
     ["Low-end mode recommended", reasons.length ? `Yes: ${reasons.join(", ")}` : "No"],
   ];
