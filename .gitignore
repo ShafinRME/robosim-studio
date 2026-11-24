@@ -4,6 +4,7 @@ node_modules/
 
 # Builds & caches
 .next/
+next-env.d.ts
 out/
 dist/
 build/
@@ -34,3 +35,6 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Written by `next dev` (Next.js agent notes); re-created on every start, not part of the project
+apps/web/AGENTS.md

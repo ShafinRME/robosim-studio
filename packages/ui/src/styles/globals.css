@@ -1,0 +1,255 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Scan the web app and this package for Tailwind class names. */
+@source "../../../../apps/**/*.{ts,tsx}";
+@source "../**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================================================================
+   RoboSim Studio design tokens — "Signal" design language (docs/adr/002-design-language.md)
+   Components must use these tokens (via Tailwind classes such as bg-surface-1, text-brand),
+   never raw colour values.
+   ============================================================================================= */
+
+/* ---------- Light theme ---------- */
+:root {
+  color-scheme: light;
+
+  /* Surfaces: canvas → panel → raised → hover */
+  --canvas: oklch(0.968 0.004 255);
+  --surface-1: oklch(0.995 0.002 255);
+  --surface-2: oklch(1 0 0);
+  --surface-3: oklch(0.948 0.006 255);
+  --border-strong: oklch(0.86 0.01 255);
+  --grid-dot: oklch(0.22 0.02 255 / 14%);
+  --grid-line: oklch(0.22 0.02 255 / 5%);
+
+  /* Text */
+  --foreground: oklch(0.21 0.02 255);
+  --muted-foreground: oklch(0.47 0.02 255);
+  --faint-foreground: oklch(0.51 0.015 255); /* ≥ 4.5:1 on every surface (WCAG AA, Day 10) */
+
+  /* Brand & highlight */
+  --brand: oklch(0.56 0.12 205);
+  --brand-foreground: oklch(0.99 0.005 205);
+  --brand-soft: oklch(0.56 0.12 205 / 12%);
+  --highlight: oklch(0.6 0.15 55);
+  --highlight-foreground: oklch(0.99 0.01 60);
+  --highlight-soft: oklch(0.6 0.15 55 / 14%);
+
+  /* Status */
+  --success: oklch(0.55 0.14 152);
+  --warning: oklch(0.66 0.15 75);
+  --danger: oklch(0.56 0.2 25);
+  --info: oklch(0.55 0.15 250);
+
+  /* Instrument channels (oscilloscope convention) */
+  --ch1: oklch(0.7 0.16 90);
+  --ch2: oklch(0.6 0.12 205);
+  --ch3: oklch(0.58 0.22 340);
+  --ch4: oklch(0.6 0.16 145);
+
+  /* Elevation */
+  --shadow-panel: 0 1px 2px oklch(0.2 0.02 255 / 6%), 0 0 0 1px oklch(0.2 0.02 255 / 6%);
+  --shadow-popover: 0 8px 24px -6px oklch(0.2 0.02 255 / 18%), 0 0 0 1px oklch(0.2 0.02 255 / 8%);
+  --shadow-glow: 0 0 0 1px oklch(0.56 0.12 205 / 35%);
+
+  /* shadcn/ui mapping */
+  --background: var(--canvas);
+  --card: var(--surface-1);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--foreground);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-3);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--danger);
+  --border: oklch(0.9 0.008 255);
+  --input: oklch(0.88 0.01 255);
+  --ring: var(--brand);
+
+  /* Shape, density, motion (same in both themes) */
+  --radius: 0.375rem;
+  --control-h-sm: 1.5rem;
+  --control-h: 1.75rem;
+  --control-h-lg: 2.25rem;
+  --panel-header-h: 2rem;
+  --toolbar-h: 2.5rem;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration: 180ms;
+  --duration-slow: 240ms;
+}
+
+/* ---------- Dark theme (default for the studio) ---------- */
+.dark {
+  color-scheme: dark;
+
+  --canvas: oklch(0.155 0.012 255);
+  --surface-1: oklch(0.19 0.013 255);
+  --surface-2: oklch(0.225 0.014 255);
+  --surface-3: oklch(0.265 0.015 255);
+  --border-strong: oklch(0.36 0.016 255);
+  --grid-dot: oklch(1 0 0 / 8%);
+  --grid-line: oklch(1 0 0 / 3%);
+
+  --foreground: oklch(0.95 0.006 255);
+  --muted-foreground: oklch(0.72 0.015 255);
+  --faint-foreground: oklch(0.64 0.015 255); /* ≥ 4.5:1 on every surface (WCAG AA, Day 10) */
+
+  --brand: oklch(0.78 0.13 200);
+  --brand-foreground: oklch(0.17 0.03 220);
+  --brand-soft: oklch(0.78 0.13 200 / 14%);
+  --highlight: oklch(0.76 0.14 60);
+  --highlight-foreground: oklch(0.18 0.03 55);
+  --highlight-soft: oklch(0.76 0.14 60 / 15%);
+
+  --success: oklch(0.75 0.15 152);
+  --warning: oklch(0.82 0.14 85);
+  --danger: oklch(0.68 0.19 25);
+  --info: oklch(0.74 0.12 250);
+
+  --ch1: oklch(0.87 0.16 95);
+  --ch2: oklch(0.8 0.12 200);
+  --ch3: oklch(0.73 0.2 340);
+  --ch4: oklch(0.79 0.17 145);
+
+  --shadow-panel: 0 0 0 1px oklch(1 0 0 / 6%);
+  --shadow-popover: 0 12px 32px -8px oklch(0 0 0 / 55%), 0 0 0 1px oklch(1 0 0 / 8%);
+  --shadow-glow: 0 0 0 1px oklch(0.78 0.13 200 / 45%), 0 0 14px -2px oklch(0.78 0.13 200 / 45%);
+
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 12%);
+}
+
+/* ---------- Tailwind theme: expose tokens as utilities ---------- */
+@theme inline {
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-strong: var(--border-strong);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-highlight-soft: var(--highlight-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-ch1: var(--ch1);
+  --color-ch2: var(--ch2);
+  --color-ch3: var(--ch3);
+  --color-ch4: var(--ch4);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.66);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.33);
+  --radius-xl: calc(var(--radius) * 2);
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+
+  --shadow-panel: var(--shadow-panel);
+  --shadow-popover: var(--shadow-popover);
+  --shadow-glow: var(--shadow-glow);
+
+  --ease-out: var(--ease-out);
+}
+
+/* ---------- Digital surfaces ---------- */
+
+/* Current flow along a wire: use with stroke-dasharray, e.g. "2 10". */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@utility animate-flow {
+  animation: flow 0.9s linear infinite;
+}
+
+/* Blueprint canvas: fine dot grid every 16 px with a faint major line every 80 px. */
+@utility bg-blueprint {
+  background-color: var(--canvas);
+  background-image:
+    radial-gradient(circle at 1px 1px, var(--grid-dot) 1px, transparent 0),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:
+    16px 16px,
+    80px 80px,
+    80px 80px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/60;
+  }
+  html {
+    font-size: 16px;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  /* Numbers that change (readouts, inspectors) never jitter. */
+  .tabular,
+  code,
+  kbd,
+  samp {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: var(--brand-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  /* Low-end mode (status bar toggle): no animations, transitions or glow on slower computers. */
+  [data-low-end] *,
+  [data-low-end] *::before,
+  [data-low-end] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-low-end] {
+    --shadow-glow: none;
+  }
+}
