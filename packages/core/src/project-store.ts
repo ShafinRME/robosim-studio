@@ -68,6 +68,53 @@ export function normalizeRotation(degrees: number): number {
   return r === 360 ? 0 : r;
 }
 
+export type Point = { x: number; y: number };
+
+/** Default schematic grid in mils (ADR 008): group centres snap to it. */
+export const DEFAULT_GRID = 100;
+
+/** Rounds half to even, so ties go the same way from both sides (a flip, then a flip back). */
+function roundHalfEven(v: number): number {
+  const r = Math.round(v);
+  return Math.abs(v % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+/**
+ * Centre of the parts' positions, snapped to the grid (so rotated or mirrored parts stay on the
+ * grid). Half-even rounding makes flipping twice an exact undo.
+ */
+function groupCenter(parts: readonly { x: number; y: number }[], grid = DEFAULT_GRID): Point {
+  if (parts.length === 0) return { x: 0, y: 0 };
+  const xs = parts.map((p) => p.x);
+  const ys = parts.map((p) => p.y);
+  // `+ 0` turns −0 into 0 (JSON cannot keep −0).
+  const snap = (v: number) => (grid > 0 ? roundHalfEven(v / grid) * grid + 0 : v);
+  return {
+    x: snap((Math.min(...xs) + Math.max(...xs)) / 2),
+    y: snap((Math.min(...ys) + Math.max(...ys)) / 2),
+  };
+}
+
+/**
+ * One undoable edit over several parts. A single part is named in the label ("Rotate R1"),
+ * several are counted ("Rotate 3 parts"). Unknown ids are skipped.
+ */
+function groupEdit(
+  verb: string,
+  ids: readonly string[],
+  change: (parts: Draft<Project>["parts"]) => void,
+): ProjectEdit {
+  const unique = [...new Set(ids)];
+  if (unique.length > MAX_PROJECT_PARTS) throw new ProjectEditError("too many parts");
+  const wanted = new Set(unique);
+  const recipe = (draft: Draft<Project>) => {
+    const parts = draft.parts.filter((part) => wanted.has(part.id));
+    if (parts.length) change(parts);
+  };
+  if (unique.length === 1) return { label: verb, part: unique[0], recipe };
+  return { label: `${verb} ${unique.length} parts`, recipe };
+}
+
 /** Ready-made, validated edits. Each returns a named command for `store.apply`. */
 export const projectEdits = {
   renameProject(name: string): ProjectEdit {
@@ -133,6 +180,88 @@ export const projectEdits = {
         if (part) part.rotation = rotation;
       },
     };
+  },
+
+  /** Mirrors one part about its own vertical axis (keeps its position). */
+  setPartFlip(id: string, flip: boolean): ProjectEdit {
+    return {
+      label: flip ? "Flip" : "Unflip",
+      part: id,
+      recipe: (draft) => {
+        const part = findPart(draft, id);
+        if (part) part.flip = flip;
+      },
+    };
+  },
+
+  /** Moves several parts by (dx, dy) as one undo step. */
+  moveParts(ids: readonly string[], dx: number, dy: number): ProjectEdit {
+    checkCoordinate(dx, "dx");
+    checkCoordinate(dy, "dy");
+    return groupEdit("Move", ids, (parts) => {
+      for (const part of parts) {
+        part.x = checkCoordinate(part.x + dx, "x");
+        part.y = checkCoordinate(part.y + dy, "y");
+      }
+    });
+  },
+
+  /** Deletes several parts as one undo step. */
+  removeParts(ids: readonly string[]): ProjectEdit {
+    const remove = new Set(ids);
+    return {
+      ...groupEdit("Delete", ids, () => undefined),
+      recipe: (draft) => {
+        if (!draft.parts.some((part) => remove.has(part.id))) return;
+        draft.parts = draft.parts.filter((part) => !remove.has(part.id));
+      },
+    };
+  },
+
+  /**
+   * Rotates parts clockwise by `quarterTurns` × 90° about `center` (default: the centre of their
+   * positions, snapped to `grid`), so a group keeps its layout (ADR 008). One part turns in place.
+   */
+  rotateParts(
+    ids: readonly string[],
+    quarterTurns: number,
+    options: { center?: Point; grid?: number } = {},
+  ): ProjectEdit {
+    if (!Number.isInteger(quarterTurns)) throw new ProjectEditError("quarter turns must be whole");
+    const turns = ((quarterTurns % 4) + 4) % 4;
+    return groupEdit("Rotate", ids, (parts) => {
+      const c = options.center ?? groupCenter(parts, options.grid);
+      for (const part of parts) {
+        let dx = part.x - c.x;
+        let dy = part.y - c.y;
+        // Clockwise on screen (y points down): (dx, dy) → (−dy, dx).
+        for (let i = 0; i < turns; i++) [dx, dy] = [-dy, dx];
+        part.x = checkCoordinate(c.x + dx, "x");
+        part.y = checkCoordinate(c.y + dy, "y");
+        part.rotation = normalizeRotation(part.rotation + turns * 90);
+      }
+    });
+  },
+
+  /**
+   * Mirrors parts left–right (`"x"`) or top–bottom (`"y"`) about `center` (default as rotateParts).
+   * With transform = rotate(r) ∘ mirror(f): mirror-X gives rotate(−r) ∘ mirror(¬f);
+   * mirror-Y = rotate(180°) ∘ mirror-X gives rotate(180° − r) ∘ mirror(¬f).
+   */
+  flipParts(
+    ids: readonly string[],
+    axis: "x" | "y",
+    options: { center?: Point; grid?: number } = {},
+  ): ProjectEdit {
+    return groupEdit("Flip", ids, (parts) => {
+      const c = options.center ?? groupCenter(parts, options.grid);
+      for (const part of parts) {
+        if (axis === "x") part.x = checkCoordinate(2 * c.x - part.x, "x");
+        else part.y = checkCoordinate(2 * c.y - part.y, "y");
+        part.flip = !part.flip;
+        part.rotation = normalizeRotation(axis === "x" ? -part.rotation : 180 - part.rotation);
+      }
+    });
   },
 
   renamePart(id: string, name: string): ProjectEdit {

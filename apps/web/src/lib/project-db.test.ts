@@ -1,4 +1,10 @@
-import { createProject, createProjectStore, projectEdits, type Project } from "@robosim/core";
+import {
+  PROJECT_VERSION,
+  createProject,
+  createProjectStore,
+  projectEdits,
+  type Project,
+} from "@robosim/core";
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StorageError, openProjectDatabase, type ProjectDatabase } from "./project-db";
@@ -31,6 +37,7 @@ describe("project database", () => {
         x: 10,
         y: 20,
         rotation: 90,
+        flip: false,
         props: { resistance: 220 },
       }),
     );
@@ -40,7 +47,11 @@ describe("project database", () => {
     expect(saved).toEqual({ ...original, updatedAt: at(5).toISOString() });
     expect(original.updatedAt).toBe(T0.toISOString()); // the open project is not changed
 
-    expect(await db.loadProject("p1")).toEqual({ ok: true, project: saved, fromVersion: 1 });
+    expect(await db.loadProject("p1")).toEqual({
+      ok: true,
+      project: saved,
+      fromVersion: PROJECT_VERSION,
+    });
   });
 
   it("returns null for a project that does not exist", async () => {

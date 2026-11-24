@@ -8,7 +8,13 @@ import {
   readArchive,
   writeArchive,
 } from "./archive";
-import { copyProject, createProject, serializeProject, type Project } from "./project";
+import {
+  PROJECT_VERSION,
+  copyProject,
+  createProject,
+  serializeProject,
+  type Project,
+} from "./project";
 import { createProjectStore, projectEdits } from "./project-store";
 
 const NOW = new Date("2026-11-23T10:00:00.000Z");
@@ -26,6 +32,7 @@ function sampleProject(): Project {
       x: -40.5,
       y: 12,
       rotation: 270,
+      flip: false,
       props: { rpm: 120, reversed: false, label: "M1 — left" },
     }),
   );
@@ -37,6 +44,7 @@ function sampleProject(): Project {
       x: 0,
       y: 0,
       rotation: 0,
+      flip: false,
       props: {},
     }),
   );
@@ -51,7 +59,11 @@ const zip = (files: Zippable) => zipSync(files);
 describe(".rsim round trip", () => {
   it("writes and reads back exactly the same project", () => {
     const project = sampleProject();
-    expect(readArchive(writeArchive(project))).toEqual({ ok: true, project, fromVersion: 1 });
+    expect(readArchive(writeArchive(project))).toEqual({
+      ok: true,
+      project,
+      fromVersion: PROJECT_VERSION,
+    });
   });
 
   it("is a normal zip with a manifest and the project", () => {

@@ -16,6 +16,7 @@ const resistor = (overrides: Partial<Part> = {}): Part => ({
   x: 0,
   y: 0,
   rotation: 0,
+  flip: false,
   props: { resistance: 220 },
   ...overrides,
 });
@@ -175,5 +176,163 @@ describe("normalizeRotation", () => {
     [359.5, 359.5],
   ])("%d° → %d°", (input, expected) => {
     expect(normalizeRotation(input)).toBe(expected);
+  });
+});
+
+describe("group edits (schematic, ADR 008)", () => {
+  /** R1 at (0, 0), R2 at (200, 0), R3 at (200, 100) — mils. */
+  function storeWithThree() {
+    const store = createProjectStore(base());
+    store.getState().apply(edits.addPart(resistor()));
+    store.getState().apply(edits.addPart(resistor({ id: "r2", name: "R2", x: 200 })));
+    store.getState().apply(edits.addPart(resistor({ id: "r3", name: "R3", x: 200, y: 100 })));
+    return store;
+  }
+  const parts = (store: ReturnType<typeof storeWithThree>) =>
+    store
+      .getState()
+      .project.parts.map(({ id, x, y, rotation, flip }) => ({ id, x, y, rotation, flip }));
+  const lastLabel = (store: ReturnType<typeof storeWithThree>) =>
+    store.getState().history.past.at(-1)?.label;
+
+  it("moves several parts as one undo step", () => {
+    const store = storeWithThree();
+    expect(store.getState().apply(edits.moveParts(["r1", "r3"], 100, -100))).toBe(true);
+    expect(parts(store).map((p) => [p.x, p.y])).toEqual([
+      [100, -100],
+      [200, 0],
+      [300, 0],
+    ]);
+    expect(lastLabel(store)).toBe("Move 2 parts");
+    store.getState().undo();
+    expect(parts(store).map((p) => [p.x, p.y])).toEqual([
+      [0, 0],
+      [200, 0],
+      [200, 100],
+    ]);
+  });
+
+  it("names a single part in the label", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r2"], 1));
+    expect(lastLabel(store)).toBe("Rotate R2");
+  });
+
+  it("rotates one part in place, clockwise", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r2"], 1));
+    expect(parts(store)[1]).toEqual({ id: "r2", x: 200, y: 0, rotation: 90, flip: false });
+    store.getState().apply(edits.rotateParts(["r2"], -2));
+    expect(parts(store)[1]?.rotation).toBe(270);
+  });
+
+  it("rotates a group about its grid-snapped centre, keeping the layout", () => {
+    const store = storeWithThree();
+    // Centre of (0..200, 0..100) = (100, 50) → snapped half-to-even to (100, 0) on the 100-mil grid.
+    store.getState().apply(edits.rotateParts(["r1", "r2", "r3"], 1));
+    expect(parts(store)).toEqual([
+      { id: "r1", x: 100, y: -100, rotation: 90, flip: false },
+      { id: "r2", x: 100, y: 100, rotation: 90, flip: false },
+      { id: "r3", x: 0, y: 100, rotation: 90, flip: false },
+    ]);
+    expect(lastLabel(store)).toBe("Rotate 3 parts");
+    // Four quarter turns restore the layout and orientation (the group may sit one grid step away,
+    // as in other EDA tools, because each turn snaps its centre to the grid).
+    for (let i = 0; i < 3; i++) store.getState().apply(edits.rotateParts(["r1", "r2", "r3"], 1));
+    const after = parts(store);
+    const [dx, dy] = [after[0]!.x, after[0]!.y];
+    expect(after.map((p) => [p.x - dx, p.y - dy, p.rotation])).toEqual([
+      [0, 0, 0],
+      [200, 0, 0],
+      [200, 100, 0],
+    ]);
+  });
+
+  it("keeps every rotated part on the grid", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r1", "r2", "r3"], 1));
+    for (const p of parts(store)) {
+      expect(Math.abs(p.x % 100)).toBe(0);
+      expect(Math.abs(p.y % 100)).toBe(0);
+    }
+  });
+
+  it("rotates about a given centre", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r2"], 1, { center: { x: 0, y: 0 } }));
+    expect(parts(store)[1]).toMatchObject({ x: 0, y: 200, rotation: 90 });
+  });
+
+  it("flips left–right: mirrors positions and the symbol (rotate(−r) ∘ mirror)", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r3"], 1));
+    store.getState().apply(edits.flipParts(["r1", "r2", "r3"], "x"));
+    expect(parts(store)).toEqual([
+      { id: "r1", x: 200, y: 0, rotation: 0, flip: true },
+      { id: "r2", x: 0, y: 0, rotation: 0, flip: true },
+      { id: "r3", x: 0, y: 100, rotation: 270, flip: true },
+    ]);
+    expect(lastLabel(store)).toBe("Flip 3 parts");
+  });
+
+  it("flips top–bottom (rotate(180° − r) ∘ mirror)", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.flipParts(["r1", "r3"], "y"));
+    expect(parts(store)).toEqual([
+      { id: "r1", x: 0, y: 0, rotation: 180, flip: true },
+      { id: "r2", x: 200, y: 0, rotation: 0, flip: false },
+      { id: "r3", x: 200, y: -100, rotation: 180, flip: true },
+    ]);
+  });
+
+  it("flipping twice restores the parts", () => {
+    for (const axis of ["x", "y"] as const) {
+      const store = storeWithThree();
+      store.getState().apply(edits.rotateParts(["r2"], 1));
+      const before = parts(store);
+      store.getState().apply(edits.flipParts(["r1", "r2", "r3"], axis));
+      store.getState().apply(edits.flipParts(["r1", "r2", "r3"], axis));
+      expect(parts(store)).toEqual(before);
+    }
+  });
+
+  it("sets the flip of one part in place", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.setPartFlip("r1", true));
+    expect(parts(store)[0]).toMatchObject({ x: 0, y: 0, flip: true });
+    expect(lastLabel(store)).toBe("Flip R1");
+  });
+
+  it("deletes several parts as one undo step", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.removeParts(["r1", "r3"]));
+    expect(parts(store).map((p) => p.id)).toEqual(["r2"]);
+    expect(lastLabel(store)).toBe("Delete 2 parts");
+    store.getState().undo();
+    expect(parts(store).map((p) => p.id)).toEqual(["r1", "r2", "r3"]);
+  });
+
+  it("changes nothing (and records nothing) for unknown ids", () => {
+    const store = storeWithThree();
+    expect(store.getState().apply(edits.moveParts(["nope"], 100, 0))).toBe(false);
+    expect(store.getState().apply(edits.removeParts([]))).toBe(false);
+    expect(store.getState().history.past).toHaveLength(3);
+  });
+
+  it("refuses moves outside the canvas and keeps the project unchanged", () => {
+    const store = storeWithThree();
+    expect(() => store.getState().apply(edits.moveParts(["r2", "r3"], 999_900, 0))).toThrow(
+      ProjectEditError,
+    );
+    expect(parts(store)[1]?.x).toBe(200);
+    expect(() => edits.rotateParts(["r1"], 0.5)).toThrow(/whole/);
+  });
+
+  it("keeps the project valid after group edits", () => {
+    const store = storeWithThree();
+    store.getState().apply(edits.rotateParts(["r1", "r2"], 3));
+    store.getState().apply(edits.flipParts(["r2", "r3"], "y"));
+    store.getState().apply(edits.moveParts(["r1", "r2", "r3"], -300, 700));
+    expect(projectSchema.safeParse(store.getState().project).success).toBe(true);
   });
 });

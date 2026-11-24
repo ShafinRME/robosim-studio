@@ -44,6 +44,7 @@ function randomEdit(
         x: coord(),
         y: coord(),
         rotation: int(4) * 90,
+        flip: false,
         props: {},
       });
     }
