@@ -9,6 +9,20 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 10 — Low-end mode & landing page (2026-11-24)
+- Built: capability detection in core (memory, cores, WebGL2, software / privacy-hidden graphics) and one
+  `performanceProfile` for Low-end mode; Low-end switches itself on with a stated reason; Help → System information.
+  Error screens for any page, the studio (projects are safe), each panel (one broken panel stays inside its panel)
+  and 404. Landing page v0 with a chart computed by the real kernel at build time. Lighthouse: home 100 / 100 / 100 /
+  100; studio 85–88 / 100 / 100 / 100 (owner accepted; performance follow-up in STATUS). User Manual chapters 3, 7.7, 8.
+  464 unit tests, 77 e2e.
+- Learned: test browsers draw WebGL in software, so they rightly get Low-end mode — tests now start from a stored
+  "off"; Brave hides the GPU name and changes the core count — show "hidden by the browser" instead of guessing;
+  Lighthouse caught a CSP violation from Zod's `new Function` probe (`jitless`), dim "faint" text and a tablist with
+  close buttons inside; measure performance changes A/B on a quiet machine — a "lazy loader" looked clever and made
+  the studio slower (74–77 vs 85–88); one shared React context for messages re-rendered the whole studio per message.
+- Next: release v0.0.1 to `main` (owner's OK), phase review; then the next session (Days 11–15).
+
 ## Day 09 — Simulation kernel (2026-11-24)
 - Built: ADR 006. In `@robosim/core`: fixed-step scheduler (1 ms steps, integer step count, real-time factor
   0.1–10×, per-frame step budget with a "behind" signal instead of freezing), typed double-buffered **Signal Bus**
