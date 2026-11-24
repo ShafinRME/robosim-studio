@@ -1,7 +1,7 @@
 # Status
 
-**Current:** Day 11 · Step 6/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
-**Branch:** `feat/day-11-circuit-model` (from `develop`)
+**Current:** Day 11 complete — Circuit model (Phase 1 · Circuit Lab) · next: Day 12 — Schematic canvas
+**Branch:** `develop` (Day 12 branch `feat/day-12-schematic-canvas` is created at the start of Day 12)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
 
@@ -14,7 +14,7 @@
 | 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ✅ done |
 | 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ✅ done |
 | 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ✅ done |
-| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ⏳ next |
+| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner test 5 files / 119 tests; PR #15) |
 
 ## Decisions (Day 11)
 - Old RoboSim has **no circuit simulator** (no MNA/netlist code) — nothing to port; new design.
@@ -116,8 +116,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 11 · Step 7:** owner review of Steps 5–6 → DEVLOG entry, mark PR #15 ready, squash-merge into `develop`;
-then the note for Day 12 (schematic canvas).
+**Day 12 — Schematic canvas:** React Flow canvas (grid, pan/zoom, place / rotate / flip / delete parts, multi-select);
+done when 50 parts place smoothly. First check React Flow (licence, audit) and record the choice in an ADR.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
