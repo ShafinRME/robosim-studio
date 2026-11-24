@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 11 · Step 4/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
+**Current:** Day 11 · Step 6/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-11-circuit-model` (from `develop`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
@@ -12,9 +12,9 @@
 | 2/7 | Draft ADR 007 — Circuit model | ✅ done (Accepted by owner) |
 | 3/7 | Netlist types + Zod schema in `packages/core/src/circuit/` + tests | ✅ done |
 | 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ✅ done |
-| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ⏳ next |
-| 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ⬜ |
-| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ✅ done |
+| 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ✅ done |
+| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ⏳ next |
 
 ## Decisions (Day 11)
 - Old RoboSim has **no circuit simulator** (no MNA/netlist code) — nothing to port; new design.
@@ -40,6 +40,17 @@
   `report` readouts); `resolveProps` (defaults, per-property problems), `createDevice`, `checkDefinition`.
   `reference-parts.ts`: resistor, DC voltage source, DC current source. End-to-end test: 9 V divider 1 k/2 k →
   6 V, 3 mA, battery −27 mW (SPICE sign). 500 unit tests.
+- Step 5 — `units.ts`: `parseRKM` (IEC 60062: "4k7", "1M5", "4n7", "R47"; R only for Ω, F only for F) and `parseSI`
+  falls back to it ("4k7" otherwise reads as 4 with unit "k7"). `circuit/quantities.ts`: unit spellings per quantity
+  (Ω/Ω-sign/ohm/R, µ/u, Hz/hz, °C/C, %), `parseQuantity(text, quantity, range)` → value or plain-word message
+  ("Resistance must be more than 0 Ω.", "\"abc\" is not a resistance. Try 4.7k, 4k7 or 220 Ω."), wrong units refused
+  ("4.7 kF" for a resistor); `formatQuantity` (ISO 80000: "4.7 kΩ", "5 %", "27 °C"); round-trip tested.
+- Step 6 — `circuit/issues.ts`: `checkCircuit(netlist, lookup)` → `CircuitIssue` (code, severity, message, hint, parts,
+  pins, nets), errors first, deterministic, ≤ 100. Checks: empty circuit, no ground, open pin ("Pin 2 of R2 is not
+  connected to anything." / "The Positive (+) pin of V1 …"), floating group (DC paths, incl. capacitor-only nodes),
+  shorted / parallel / looped voltage sources, current source with nowhere to send its current, invalid values,
+  duplicate designators, unknown part types. Messages for solver issues (singular, no convergence, over-limit,
+  model error) ready. Definitions gained `dcPaths` / `voltagePairs` (noted in ADR 007 §4). 583 unit tests.
 
 ## Day 10 steps
 | Step | Task | State |
@@ -105,8 +116,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 11 · Steps 5–6:** units (RKM "4k7", `parseQuantity` with ranges); beginner error model (issue codes,
-messages, netlist graph checks).
+**Day 11 · Step 7:** owner review of Steps 5–6 → DEVLOG entry, mark PR #15 ready, squash-merge into `develop`;
+then the note for Day 12 (schematic canvas).
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

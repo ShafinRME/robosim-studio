@@ -2,7 +2,7 @@ export { APP_NAME, APP_VERSION } from "./app";
 
 export { LABS } from "./labs";
 export type { LabId, LabInfo } from "./labs";
-export { clampStep, formatSI, parseSI } from "./units";
+export { clampStep, formatSI, parseRKM, parseSI } from "./units";
 export {
   LAYOUT_STORAGE_KEY,
   LAYOUT_VERSION,
@@ -244,3 +244,17 @@ export {
   dcVoltageSourceDefinition,
   resistorDefinition,
 } from "./circuit/reference-parts";
+export { dcPathsOf } from "./circuit/component";
+export { formatQuantity, parseQuantity } from "./circuit/quantities";
+export type { QuantityParseResult, QuantityRange } from "./circuit/quantities";
+export {
+  ISSUE_CODES,
+  ISSUE_SEVERITY,
+  MAX_REPORTED_ISSUES,
+  canSimulate,
+  checkCircuit,
+  listNames,
+  solverIssues,
+  sortIssues,
+} from "./circuit/issues";
+export type { CircuitIssue, DefinitionLookup, IssueCode, IssueSeverity } from "./circuit/issues";

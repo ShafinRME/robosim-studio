@@ -126,6 +126,17 @@ export interface ComponentDefinition {
   readonly branches: number;
   /** State slots this part keeps between time steps. */
   readonly stateSize: number;
+  /**
+   * Pin pairs (indices into `pins`) with a DC path between them, for the floating-node check.
+   * Omitted = all pins are joined (safe default: never a false alarm). A current source or a
+   * capacitor has none (`[]`).
+   */
+  readonly dcPaths?: readonly (readonly [number, number])[];
+  /**
+   * Pin pairs whose voltage the part fixes like an ideal voltage source (V source, VCVS output,
+   * inductor at DC), for the voltage-source-loop check.
+   */
+  readonly voltagePairs?: readonly (readonly [number, number])[];
   create(setup: DeviceSetup): Device;
 }
 
@@ -176,7 +187,22 @@ export function checkDefinition(definition: ComponentDefinition): string[] {
     if (!Number.isInteger(count) || count < 0 || count > 64)
       problems.push(`${where}: invalid ${name}`);
   }
+  for (const [name, pairs] of [
+    ["dcPaths", definition.dcPaths],
+    ["voltagePairs", definition.voltagePairs],
+  ] as const) {
+    for (const [a, b] of pairs ?? []) {
+      const valid = (i: number) => Number.isInteger(i) && i >= 0 && i < definition.pins.length;
+      if (!valid(a) || !valid(b) || a === b) problems.push(`${where}: invalid ${name} pair`);
+    }
+  }
   return problems;
+}
+
+/** Pin pairs (indices) that conduct at DC; undefined = every pin connects to every other. */
+export function dcPathsOf(definition: ComponentDefinition): readonly (readonly [number, number])[] {
+  if (definition.dcPaths) return definition.dcPaths;
+  return definition.pins.slice(1).map((_, i) => [0, i + 1] as const);
 }
 
 export type PropProblem = {

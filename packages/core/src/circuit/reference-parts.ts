@@ -48,6 +48,7 @@ export const resistorDefinition: ComponentDefinition = {
   ],
   branches: 0,
   stateSize: 0,
+  dcPaths: [[0, 1]],
   create({ props, nodes: [a = 0, b = 0] }) {
     const resistance = numberProp(props, "resistance");
     const g = 1 / resistance;
@@ -94,6 +95,8 @@ export const dcVoltageSourceDefinition: ComponentDefinition = {
   ],
   branches: 1,
   stateSize: 0,
+  dcPaths: [[0, 1]],
+  voltagePairs: [[0, 1]],
   create({ props, nodes: [plus = 0, minus = 0], branches: [k = 0] }) {
     const voltage = numberProp(props, "voltage");
     return {
@@ -135,6 +138,8 @@ export const dcCurrentSourceDefinition: ComponentDefinition = {
   ],
   branches: 0,
   stateSize: 0,
+  // An ideal current source fixes current, not voltage: no DC path through it.
+  dcPaths: [],
   create({ props, nodes: [from = 0, to = 0] }) {
     const current = numberProp(props, "current");
     return {

@@ -118,6 +118,10 @@ not step-by-step real time — kept as a cross-check on Day 28); hand-written pe
   The checks are deterministic and unit-tested per code. A fully ideal short (wire across a battery)
   is a `voltage-source-loop`; a near-short through a tiny resistor solves and is flagged by
   `over-limit`.
+- The graph checks need two facts from each part definition (Day 11 implementation): `dcPaths`
+  (pin pairs that conduct at DC; omitted = all pins joined, so a part never causes a false alarm;
+  `[]` for current sources and capacitors) and `voltagePairs` (pin pairs fixed like an ideal
+  voltage source: V sources, VCVS outputs, inductors at DC).
 
 ### 5. Industry conventions (so results and files feel like professional EDA / SPICE tools)
 - **Reference designators** are assigned automatically by part kind, as on real schematics and BOMs
