@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 13 · Step 2/8 done — Wiring (Phase 1 · Circuit Lab)
+**Current:** Day 13 · Step 4/8 done — Wiring (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
@@ -8,17 +8,17 @@
 ## Day 13 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; ADR 009 — wires and connectivity | ✅ done (Proposed, owner review) |
+| 1/8 | Day branch; ADR 009 — wires and connectivity | ✅ done (Accepted by owner) |
 | 2/8 | Project format v3 (wires, net labels) + migration; wire / label / group edits + tests | ✅ done |
-| 3/8 | Connectivity in core: drawing → `CircuitInput` → netlist; junction dots; "nets computed correctly" tests | ⏳ next |
-| 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ⬜ |
-| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ⬜ |
+| 3/8 | Connectivity in core: drawing → `CircuitInput` → netlist; junction dots; "nets computed correctly" tests | ✅ done |
+| 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ✅ done |
+| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ⏳ next |
 | 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ⬜ |
 | 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ⬜ |
 | 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 13)
-- **ADR 009** (`docs/adr/009-wires-and-connectivity.md`, **Proposed**): geometric connectivity like KiCad / Altium /
+- **ADR 009** (`docs/adr/009-wires-and-connectivity.md`, **Accepted by the owner 2026-11-25**): geometric connectivity like KiCad / Altium /
   LTspice — a wire end connects to a pin end, a wire end or the inside of another wire (T-junction, dot); two pins at
   one point connect; crossing wires do not; labels with the same name join; `GND` / `0` = ground. Wire tool W
   (L-preview, `/` switches posture), labels L, rubber-banding, copy/paste through a validated `robosim-clipboard` JSON.
@@ -28,6 +28,18 @@
   back-tracking), `routeL`, `isOrthogonal`, `onSegment`, `segmentAt`. Edits: `addWire` (cleaned + validated),
   `setWirePoints`, `addLabel`, `renameLabel`, `removeItems` / `moveItems` (parts + wires + labels, one undo step,
   moves in whole 50-mil steps); `addPart` now checks ids across all three. 667 unit, 85 e2e.
+- Step 3 — `core/schematic/connectivity.ts`: `connectivityOf(project)` → `CircuitInput` for `buildNetlist` + junction
+  dots + connected pins + wire/label groups (`groupOf`, `groupPin` for naming a wire's net). Union-find over pins,
+  wires and labels; pins by point (hash map); segments indexed by row / column, so lookups are fast (500 parts +
+  1 000 wires well under 1 s). Rules exactly as ADR 009: wire ends connect to pins, wire ends and segment insides;
+  pin-on-pin; crossings and a wire merely passing over a pin do not; labels on pins / wire ends / segments; same name
+  joins; GND label grounds. Dots where ≥ 3 arms meet (wire end 1, wire through / corner 2, pin 1). Parts without a
+  symbol are left out; unusable names become X1… for the netlist. 15 "nets computed correctly" tests.
+- Step 4 — wire tool (W, palette button with our own icon): click to start, dashed L-preview to the pointer
+  (horizontal first, `/` switches), click fixes a corner, reaching a pin or a wire ends the wire by itself, double-click
+  or Enter ends it, Backspace undoes exactly the last click (the tool keeps its own click history — first version
+  dropped merged corners, caught by e2e), Esc cancels / a second Esc leaves the tool, right-click cancels. Wires in a
+  new `--schematic-wire` green, junction dots 40 mil, open pin circles hidden once connected. 682 unit, 95 e2e.
 
 ## Day 12 steps
 | Step | Task | State |
@@ -199,8 +211,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 13 · Steps 3–4** (after the owner reviews ADR 009): connectivity in core (drawing → netlist, junction dots,
-"nets computed correctly" tests); wire tool on the canvas.
+**Day 13 · Steps 5–6:** rubber-band wires when parts move; select / move / delete wires (and mixed selections);
+Inspector shows a wire's net; net labels (L) and copy / cut / paste / duplicate.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

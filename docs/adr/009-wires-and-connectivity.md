@@ -1,6 +1,6 @@
 # ADR 009 — Wires and connectivity: geometric, EDA-style
 
-- **Status:** Proposed (owner review, Day 13)
+- **Status:** Accepted (owner, 2026-11-25)
 - **Date:** 2026-11-25 (Day 13)
 
 ## Context

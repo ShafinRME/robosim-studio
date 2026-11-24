@@ -333,3 +333,5 @@ export {
 export type { BoxMode, PlaceablePart } from "./schematic/selection";
 export { isOrthogonal, onSegment, routeL, segmentAt, simplifyWire } from "./schematic/wires";
 export type { Posture } from "./schematic/wires";
+export { connectivityOf, pinKey, placedPinsOf } from "./schematic/connectivity";
+export type { Connectivity, PlacedPin } from "./schematic/connectivity";

@@ -15,6 +15,7 @@ import {
   ProjectEditError,
   SCHEMATIC_GRID,
   boxModeOf,
+  connectivityOf,
   createPart,
   fitBounds,
   gridLevel,
@@ -23,9 +24,13 @@ import {
   panBy,
   partBounds,
   partsInRect,
+  placedPinsOf,
   projectEdits,
   rectFromPoints,
+  routeL,
   scaleOf,
+  segmentAt,
+  simplifyWire,
   snapToGrid,
   stepZoom,
   symbolFor,
@@ -35,11 +40,14 @@ import {
   zoomTo,
   type Part,
   type Point,
+  type Posture,
   type ProjectEdit,
   type ProjectStore,
   type Size,
   type SymbolStyle,
   type Viewport,
+  type Wire,
+  type WirePoint,
 } from "@robosim/core";
 import {
   Toolbar,
@@ -87,7 +95,17 @@ import { useSetCanvasCursor, useStudioStatus } from "./studio-status";
 /** Pointer travel (px) before a press becomes a drag. */
 const DRAG_THRESHOLD = 3;
 
-type Tool = { kind: "select" } | { kind: "place"; type: string; rotation: number; flip: boolean };
+type Tool =
+  | { kind: "select" }
+  | { kind: "place"; type: string; rotation: number; flip: boolean }
+  /** Wire tool (ADR 009): `points` are the fixed points of the wire being drawn (empty: not started). */
+  | {
+      kind: "wire";
+      posture: Posture;
+      points: readonly WirePoint[];
+      /** `points` before each click, so Backspace undoes exactly the last click. */
+      before: readonly (readonly WirePoint[])[];
+    };
 const SELECT_TOOL: Tool = { kind: "select" };
 
 type Drag =
@@ -138,11 +156,13 @@ const PartView = memo(function PartView({
   style,
   showLabels,
   selected,
+  connectedPins,
 }: {
   part: Part;
   style: SymbolStyle;
   showLabels: boolean;
   selected: boolean;
+  connectedPins: string;
 }) {
   const symbol = symbolFor(part.type);
   const b = partBounds(part);
@@ -183,6 +203,7 @@ const PartView = memo(function PartView({
           designator={part.name}
           value={symbol.value ? part.props[symbol.value.key] : undefined}
           showLabels={showLabels}
+          connectedPins={connectedPins}
         />
       ) : (
         <UnknownPart part={part} showLabels={showLabels} />
@@ -202,12 +223,15 @@ const PartsLayer = memo(function PartsLayer({
   showLabels,
   selected,
   moveLayer,
+  connected,
 }: {
   parts: readonly Part[];
   style: SymbolStyle;
   showLabels: boolean;
   selected: ReadonlySet<string>;
   moveLayer: RefObject<SVGGElement | null>;
+  /** Connected pin ids per part id ("1,2"). */
+  connected: ReadonlyMap<string, string>;
 }) {
   const view = (part: Part, isSelected: boolean) => (
     <PartView
@@ -216,6 +240,7 @@ const PartsLayer = memo(function PartsLayer({
       style={style}
       showLabels={showLabels}
       selected={isSelected}
+      connectedPins={connected.get(part.id) ?? ""}
     />
   );
   return (
@@ -227,6 +252,88 @@ const PartsLayer = memo(function PartsLayer({
     </g>
   );
 });
+
+const pointsAttr = (points: readonly WirePoint[]) => points.map(([x, y]) => `${x},${y}`).join(" ");
+
+/** Wires and junction dots (ADR 009). */
+const WiresLayer = memo(function WiresLayer({
+  wires,
+  junctions,
+}: {
+  wires: readonly Wire[];
+  junctions: readonly WirePoint[];
+}) {
+  return (
+    <g data-testid="schematic-wires">
+      {wires.map((wire) => (
+        <polyline
+          key={wire.id}
+          data-wire={wire.id}
+          points={pointsAttr(wire.points)}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ stroke: "var(--schematic-wire)", strokeWidth: "var(--schematic-stroke)" }}
+        />
+      ))}
+      {junctions.map(([x, y]) => (
+        <circle
+          key={`${x},${y}`}
+          data-junction={`${x},${y}`}
+          cx={x}
+          cy={y}
+          r={20}
+          style={{ fill: "var(--schematic-wire)" }}
+        />
+      ))}
+    </g>
+  );
+});
+
+/** The wire being drawn: fixed part solid, the L-shaped route to the pointer dashed. */
+function WirePreview({
+  fixed,
+  route,
+}: {
+  fixed: readonly WirePoint[];
+  route: readonly WirePoint[];
+}) {
+  return (
+    <g data-testid="wire-preview" style={{ pointerEvents: "none" }}>
+      {fixed.length >= 2 ? (
+        <polyline
+          points={pointsAttr(fixed)}
+          fill="none"
+          strokeLinejoin="round"
+          style={{ stroke: "var(--brand)", strokeWidth: "var(--schematic-stroke)" }}
+        />
+      ) : null}
+      {route.length >= 2 ? (
+        <polyline
+          points={pointsAttr(route)}
+          fill="none"
+          strokeDasharray="24 16"
+          strokeLinejoin="round"
+          style={{ stroke: "var(--brand)", strokeWidth: "var(--schematic-stroke)" }}
+        />
+      ) : null}
+      {fixed[0] ? (
+        <circle cx={fixed[0][0]} cy={fixed[0][1]} r={18} style={{ fill: "var(--brand)" }} />
+      ) : null}
+    </g>
+  );
+}
+
+/** Icon for the wire tool: an L-shaped wire between two dots (our artwork). */
+function WireIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth={2}>
+      <polyline points="4,18 4,6 20,6" strokeLinejoin="round" />
+      <circle cx="4" cy="18" r="2" fill="currentColor" />
+      <circle cx="20" cy="6" r="2" fill="currentColor" />
+    </svg>
+  );
+}
 
 /** Dot grid (minor) and faint lines (major, every 10), drawn in screen space for crisp pixels. */
 function Grid({ viewport, size, lowEnd }: { viewport: Viewport; size: Size; lowEnd: boolean }) {
@@ -374,7 +481,48 @@ export function SchematicCanvas() {
     if (svgRef.current) svgRef.current.style.transform = x || y ? `translate(${x}px, ${y}px)` : "";
   }, [viewport]);
 
-  const bounds = useMemo(() => unionRects((parts ?? []).map(partBounds)), [parts]);
+  const wires = state?.project.wires;
+  const labels = state?.project.labels;
+  const bounds = useMemo(
+    () =>
+      unionRects([
+        ...(parts ?? []).map(partBounds),
+        ...(wires ?? []).map((w) => {
+          const xs = w.points.map((p) => p[0]);
+          const ys = w.points.map((p) => p[1]);
+          return {
+            minX: Math.min(...xs),
+            minY: Math.min(...ys),
+            maxX: Math.max(...xs),
+            maxY: Math.max(...ys),
+          };
+        }),
+      ]),
+    [parts, wires],
+  );
+  // What is connected to what (ADR 009): junction dots, connected pins, the netlist input.
+  const connectivity = useMemo(
+    () => connectivityOf({ parts: parts ?? [], wires: wires ?? [], labels: labels ?? [] }),
+    [parts, wires, labels],
+  );
+  const connectedByPart = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const k of connectivity.connectedPins) {
+      const [part = "", pin = ""] = k.split("\u0000");
+      map.set(part, [...(map.get(part) ?? []), pin]);
+    }
+    return new Map([...map].map(([part, pins]) => [part, pins.join(",")]));
+  }, [connectivity]);
+  /** Points a wire can end on: pin ends and any point on an existing wire. */
+  const pinPoints = useMemo(
+    () => new Set(placedPinsOf(parts ?? []).map((p) => `${p.x},${p.y}`)),
+    [parts],
+  );
+  const isConnectable = useCallback(
+    (p: WirePoint) =>
+      pinPoints.has(`${p[0]},${p[1]}`) || (wires ?? []).some((w) => segmentAt(w.points, p) >= 0),
+    [pinPoints, wires],
+  );
   // After a move is committed the parts render at their new place: drop the drag offset in the
   // same frame (before paint), so they never jump.
   useLayoutEffect(() => {
@@ -471,6 +619,23 @@ export function SchematicCanvas() {
     setTool({ kind: "select" });
     setGhost(null);
   };
+  const startWiring = () => {
+    setTool({ kind: "wire", posture: "horizontal-first", points: [], before: [] });
+    select([]);
+    ref.current?.focus({ preventScroll: true });
+  };
+  /** Saves the wire being drawn (if it has a length) and stays in the wire tool. */
+  const finishWire = (points: readonly WirePoint[]) => {
+    const clean = simplifyWire(points);
+    if (clean.length >= 2) apply(store, () => projectEdits.addWire({ id: newId(), points: clean }));
+    if (tool.kind === "wire") setTool({ ...tool, points: [], before: [] });
+  };
+  /** The wire tool's route from its last fixed point to `to`. */
+  const wireRoute = (to: WirePoint): WirePoint[] => {
+    if (tool.kind !== "wire") return [];
+    const last = tool.points[tool.points.length - 1];
+    return last ? routeL(last, to, tool.posture) : [];
+  };
 
   const localPoint = (event: PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -491,10 +656,29 @@ export function SchematicCanvas() {
       return;
     }
     if (event.button === 2) {
-      if (tool.kind === "place") stopPlacing();
+      if (tool.kind === "wire" && tool.points.length > 0)
+        setTool({ ...tool, points: [], before: [] });
+      else if (tool.kind !== "select") stopPlacing();
       return;
     }
     if (event.button !== 0 || !parts || !store) return;
+
+    if (tool.kind === "wire") {
+      const snapped = snapToGrid(world, SCHEMATIC_GRID);
+      const p: WirePoint = [snapped.x, snapped.y];
+      const start = tool.points[0];
+      if (!start) {
+        setTool({ ...tool, points: [p], before: [] });
+        return;
+      }
+      const last = tool.points[tool.points.length - 1] as WirePoint;
+      if (last[0] === p[0] && last[1] === p[1]) return; // second click of a double-click
+      const points = simplifyWire([...tool.points, ...wireRoute(p).slice(1)]);
+      // Reaching a pin or another wire ends the wire by itself (ADR 009).
+      if (isConnectable(p) && !(p[0] === start[0] && p[1] === start[1])) finishWire(points);
+      else setTool({ ...tool, points, before: [...tool.before, tool.points] });
+      return;
+    }
 
     if (tool.kind === "place") {
       const at = snapToGrid(world, SCHEMATIC_GRID);
@@ -575,7 +759,7 @@ export function SchematicCanvas() {
       }
       if (d.active && d.kind === "box") setBox({ start: d.startWorld, end: world });
     }
-    if (tool.kind === "place") setGhost(snapToGrid(world, SCHEMATIC_GRID));
+    if (tool.kind !== "select") setGhost(snapToGrid(world, SCHEMATIC_GRID));
     setCursor(snapToGrid(world, SCHEMATIC_GRID));
   };
 
@@ -629,10 +813,44 @@ export function SchematicCanvas() {
     const hasSelection = ids.length > 0;
     const step = event.shiftKey ? SCHEMATIC_GRID * 10 : SCHEMATIC_GRID;
     const handled = () => event.preventDefault();
+    // Wire tool keys (ADR 009): Enter finishes, Backspace removes the last corner, / switches the
+    // corner direction, Esc cancels the wire (a second Esc leaves the tool).
+    if (tool.kind === "wire") {
+      const drawing = tool.points.length > 0;
+      if (event.key === "Enter" && drawing) {
+        handled();
+        finishWire(tool.points);
+        return;
+      }
+      if (event.key === "Backspace" && drawing) {
+        handled();
+        setTool({ ...tool, points: tool.before.at(-1) ?? [], before: tool.before.slice(0, -1) });
+        return;
+      }
+      if (event.key === "/") {
+        handled();
+        setTool({
+          ...tool,
+          posture: tool.posture === "horizontal-first" ? "vertical-first" : "horizontal-first",
+        });
+        return;
+      }
+      if (event.key === "Escape") {
+        handled();
+        if (drawing) setTool({ ...tool, points: [], before: [] });
+        else stopPlacing();
+        return;
+      }
+    }
     switch (event.key) {
       case " ":
         handled();
         setSpaceHeld(true);
+        return;
+      case "w":
+      case "W":
+        handled();
+        if (tool.kind !== "wire") startWiring();
         return;
       case "Escape":
         if (placing) {
@@ -723,7 +941,7 @@ export function SchematicCanvas() {
       aria-label="Schematic"
       aria-describedby={helpId}
       data-testid="studio-canvas"
-      data-tool={tool.kind === "place" ? `place:${tool.type}` : "select"}
+      data-tool={tool.kind === "place" ? `place:${tool.type}` : tool.kind}
       className={cn(
         "relative h-full overflow-hidden bg-canvas outline-none select-none",
         "focus-visible:ring-1 focus-visible:ring-brand/60 focus-visible:ring-inset",
@@ -731,7 +949,7 @@ export function SchematicCanvas() {
           ? "cursor-grabbing"
           : spaceHeld
             ? "cursor-grab"
-            : tool.kind === "place"
+            : tool.kind !== "select"
               ? "cursor-crosshair"
               : "cursor-default",
         tool.kind === "select" && !lowEnd && "schematic-hover",
@@ -749,14 +967,19 @@ export function SchematicCanvas() {
         if (event.key === " ") setSpaceHeld(false);
       }}
       onBlur={() => setSpaceHeld(false)}
+      onDoubleClick={() => {
+        if (tool.kind === "wire" && tool.points.length > 0) finishWire(tool.points);
+      }}
       onContextMenu={(event) => event.preventDefault()}
       onAuxClick={(event) => event.preventDefault()}
     >
       <p id={helpId} className="sr-only">
         Choose a part in the toolbar and click to place it; R rotates, X and Y mirror, Escape stops.
-        Click to select, Shift or Control click to add, drag on empty space to box-select. Arrow
-        keys move the selection, Delete removes it. Mouse wheel zooms, middle button or Space and
-        drag pans, F fits the drawing.
+        W starts the wire tool: click to start and to add corners, the wire ends on a pin or another
+        wire, Enter or a double click ends it, Backspace removes the last corner, slash switches the
+        corner direction. Click to select, Shift or Control click to add, drag on empty space to
+        box-select. Arrow keys move the selection, Delete removes it. Mouse wheel zooms, middle
+        button or Space and drag pans, F fits the drawing.
       </p>
       {viewport && drawViewport && size.width > 0 ? (
         <svg
@@ -779,6 +1002,7 @@ export function SchematicCanvas() {
               } as CSSProperties
             }
           >
+            {wires ? <WiresLayer wires={wires} junctions={connectivity.junctions} /> : null}
             {parts ? (
               <PartsLayer
                 parts={parts}
@@ -786,6 +1010,7 @@ export function SchematicCanvas() {
                 showLabels={showLabels}
                 selected={selection}
                 moveLayer={moveLayer}
+                connected={connectedByPart}
               />
             ) : null}
             {ghostSymbol && ghost && tool.kind === "place" ? (
@@ -801,6 +1026,18 @@ export function SchematicCanvas() {
                   showLabels={false}
                 />
               </g>
+            ) : null}
+            {tool.kind === "wire" && tool.points.length > 0 ? (
+              <WirePreview fixed={tool.points} route={ghost ? wireRoute([ghost.x, ghost.y]) : []} />
+            ) : null}
+            {tool.kind === "wire" && ghost ? (
+              <circle
+                cx={ghost.x}
+                cy={ghost.y}
+                r={14}
+                fill="none"
+                style={{ stroke: "var(--brand)", strokeWidth: "var(--schematic-pin-stroke)" }}
+              />
             ) : null}
             {box ? (
               <rect
@@ -829,7 +1066,9 @@ export function SchematicCanvas() {
         {store
           ? `SCHEMATIC · ${symbolStyle.toUpperCase()} · ${count} ${count === 1 ? "part" : "parts"}${
               selection.size ? ` · ${selection.size} selected` : ""
-            }${placingLabel ? ` · placing ${sentenceCase(placingLabel)}` : ""}`
+            }${placingLabel ? ` · placing ${sentenceCase(placingLabel)}` : ""}${
+              tool.kind === "wire" ? " · drawing wires" : ""
+            }`
           : "SCHEMATIC"}
       </span>
       {!store ? (
@@ -849,14 +1088,18 @@ export function SchematicCanvas() {
             type="single"
             orientation="vertical"
             className="flex-col bg-transparent p-0"
-            value={tool.kind === "place" ? tool.type : "select"}
+            value={tool.kind === "place" ? tool.type : tool.kind}
             onValueChange={(value) => {
               if (!value || value === "select") stopPlacing();
+              else if (value === "wire") startWiring();
               else startPlacing(value);
             }}
           >
             <ToolbarToggleItem value="select" label="Select" shortcut="Esc">
               <MousePointer2 />
+            </ToolbarToggleItem>
+            <ToolbarToggleItem value="wire" label="Wire" shortcut="W">
+              <WireIcon />
             </ToolbarToggleItem>
             {PLACEABLE_PARTS.map((p) => (
               <ToolbarToggleItem
