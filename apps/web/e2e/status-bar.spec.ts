@@ -24,7 +24,8 @@ test.describe("studio status bar", () => {
 
     const canvas = page.getByTestId("studio-canvas");
     await canvas.hover({ position: { x: 100, y: 50 } });
-    await expect(cursor).toHaveText(/X 100\s+Y 50/);
+    // Grid-snapped schematic position in millimetres (View → Units).
+    await expect(cursor).toHaveText(/^\S*\s*X -?\d+\.\d{2} mm\s+Y -?\d+\.\d{2} mm$/);
 
     await page.getByRole("contentinfo", { name: "Status bar" }).hover();
     await expect(cursor).toHaveText("—");

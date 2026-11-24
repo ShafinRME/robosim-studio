@@ -1,6 +1,6 @@
 # ADR 008 — Schematic canvas: our own SVG editor engine (not React Flow)
 
-- **Status:** Proposed (owner review, Day 12)
+- **Status:** Accepted (owner, 2026-11-24)
 - **Date:** 2026-11-24 (Day 12)
 - **Note:** `docs/PLAN.md` names React Flow for Day 12. This ADR evaluates it and proposes our own
   engine instead; PLAN.md is generated and is not edited — this ADR is the record of the change.
@@ -69,9 +69,11 @@ match professional EDA tools:
   fully inside, right-to-left = touching, as in KiCad/AutoCAD); Shift / Ctrl + click = add / toggle;
   **R** rotate, **X** / **Y** flip, **Delete**, arrow keys nudge one grid step; **Esc** cancels the
   current tool. Every change is one undo step ("Rotate 3 parts").
-- **Rendering:** grid drawn with an SVG `<pattern>` (dots, major lines every 10), constant-width
-  strokes at every zoom (`vector-effect: non-scaling-stroke`), colours from the design tokens (both
-  themes). Low-end mode: no hover animations, coarser grid at low zoom.
+- **Rendering:** grid drawn with an SVG `<pattern>` (dots, major lines every 10), lines with a
+  real width (6 mil, like a printed schematic) that never get thinner than ~1.4 px when zoomed out
+  (Day 12 implementation; replaces the first idea of constant-width strokes), labels hidden when
+  too small to read, colours from the design tokens (both themes). Low-end mode: no hover
+  animations, coarser grid, no major lines.
 - **Accessibility:** the canvas is focusable with a description; selection and actions are
   announced (aria-live); every action has a keyboard path; the Inspector edits the selection.
 - **Status bar:** cursor position in mm or inch (setting), grid size and zoom level.

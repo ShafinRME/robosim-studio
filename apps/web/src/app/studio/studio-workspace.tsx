@@ -22,10 +22,10 @@ import {
   InspectorValue,
 } from "@robosim/ui/components/inspector";
 import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
-import { SimReadout } from "./sim-controls";
+import { SchematicCanvas } from "./schematic-canvas";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
-import { useCanvasCursor, useStudioMessages, useStudioStatus } from "./studio-status";
+import { useStudioMessages, useStudioStatus } from "./studio-status";
 import {
   Dock,
   type DockviewApi,
@@ -66,26 +66,7 @@ function ExplorerPanel() {
 }
 
 function CanvasPanel() {
-  const { setCursor } = useCanvasCursor();
-  return (
-    <div
-      className="relative h-full bg-blueprint"
-      data-testid="studio-canvas"
-      onPointerMove={(event) => {
-        const box = event.currentTarget.getBoundingClientRect();
-        setCursor({
-          x: Math.round(event.clientX - box.left),
-          y: Math.round(event.clientY - box.top),
-        });
-      }}
-      onPointerLeave={() => setCursor(null)}
-    >
-      <span className="absolute top-2 left-2 font-mono text-2xs text-faint-foreground">
-        CANVAS · empty
-      </span>
-      <SimReadout />
-    </div>
-  );
+  return <SchematicCanvas />;
 }
 
 /**

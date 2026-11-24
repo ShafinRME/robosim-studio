@@ -258,3 +258,56 @@ export {
   sortIssues,
 } from "./circuit/issues";
 export type { CircuitIssue, DefinitionLookup, IssueCode, IssueSeverity } from "./circuit/issues";
+export {
+  DEFAULT_ZOOM,
+  FINE_GRID,
+  MAX_ZOOM,
+  MILS_PER_INCH,
+  MIN_ZOOM,
+  MM_PER_MIL,
+  PX_PER_MIL,
+  SCHEMATIC_GRID,
+  ZOOM_STEPS,
+  centerOn,
+  clampZoom,
+  fitBounds,
+  formatLength,
+  gridLevel,
+  panBy,
+  scaleOf,
+  snapToGrid,
+  stepZoom,
+  toScreen,
+  toWorld,
+  unionRects,
+  visibleRect,
+  wheelZoom,
+  zoomTo,
+} from "./schematic/viewport";
+export type { LengthUnit, Point, Rect, Size, Viewport } from "./schematic/viewport";
+export {
+  DC_CURRENT_SYMBOL,
+  DC_VOLTAGE_SYMBOL,
+  GROUND_SYMBOL,
+  RESISTOR_SYMBOL,
+  SYMBOLS,
+  SYMBOL_STYLES,
+  designatorPrefix,
+  nextDesignator,
+  placeLabel,
+  placeLabels,
+  placePoint,
+  placedBounds,
+  placedPins,
+  placementTransform,
+  symbolFor,
+} from "./schematic/symbols";
+export type {
+  PlacedLabel,
+  Placement,
+  Primitive,
+  SymbolDefinition,
+  SymbolPin,
+  SymbolStyle,
+} from "./schematic/symbols";
+export { DEFAULT_GRID } from "./project-store";

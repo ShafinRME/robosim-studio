@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 12 · Step 2/8 done — Schematic canvas (Phase 1 · Circuit Lab)
+**Current:** Day 12 · Step 4/8 done — Schematic canvas (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-12-schematic-canvas` (from `develop` after Day 11 merge `0b9d3c3`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
@@ -8,17 +8,17 @@
 ## Day 12 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; evaluate React Flow vs own SVG canvas → ADR 008 | ✅ done (Proposed, owner review) |
+| 1/8 | Day branch; evaluate React Flow vs own SVG canvas → ADR 008 | ✅ done (Accepted by owner) |
 | 2/8 | Project format v2 (`flip`) + migration; group move / rotate / flip / delete edits + tests | ✅ done |
-| 3/8 | Canvas panel: grid, pan/zoom (wheel, middle/Space drag, F fit, zoom %), cursor position, Low-end | ⏳ next |
-| 4/8 | Own part symbols R / V / I / ground (IEC + ANSI), pins, designator + value labels, auto designators | ⬜ |
-| 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ⬜ |
+| 3/8 | Canvas panel: grid, pan/zoom (wheel, middle/Space drag, F fit, zoom %), cursor position, Low-end | ✅ done |
+| 4/8 | Own part symbols R / V / I / ground (IEC + ANSI), pins, designator + value labels, auto designators | ✅ done |
+| 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ⏳ next |
 | 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ⬜ |
 | 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ⬜ |
 | 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 12)
-- **ADR 008** (`docs/adr/008-schematic-canvas.md`, **Proposed**): our own SVG schematic engine instead of React Flow
+- **ADR 008** (`docs/adr/008-schematic-canvas.md`, **Accepted by the owner 2026-11-24**): our own SVG schematic engine instead of React Flow
   (PLAN names React Flow). React Flow 13.0.3 is MIT but a node graph (no wire-to-wire T-junctions, HTML nodes awkward to
   rotate/flip), pulls `d3-zoom/drag/selection/interpolate` (**ISC** — outside our MIT/Apache/BSD rule) and is a new major
   from 2026-11-16. Conventions: 1 unit = 1 mil, grid 100 mil (2.54 mm) / fine 50; y down; transform = rotate(cw 90° steps)
@@ -29,6 +29,18 @@
   `flipParts(ids, "x" | "y")` — one undo step each, labels "Rotate R1" / "Rotate 3 parts". Group centre is snapped to the
   grid with half-to-even rounding, so flipping twice is an exact undo; four rotations of an odd-sized group can end one
   grid step away (same as other EDA tools), always on the grid. 600 unit tests.
+- Step 3 — `core/schematic/viewport.ts`: 1 mil units, 100 % = real size at 96 dpi, zoom 10–3 200 % about the cursor,
+  wheel step limited per event, zoom steps, fit (max 400 %), grid level (×5/×2 when dots < 8 px; 16 px in Low-end),
+  grid snap, mm/inch formatting. Web `schematic-canvas.tsx`: one `<svg>`, one viewport matrix, memoised parts layer,
+  dot grid + major lines as screen-space patterns, origin cross, wheel zoom (Shift+wheel pans), middle / Space + drag
+  pan, F / Home fit, + / − keys, floating zoom toolbar (−, %, 100 %, +, fit), header "SCHEMATIC · IEC · n parts".
+  Status bar: grid-snapped cursor in mm or inch. Tokens `--schematic-*` in both themes.
+- Step 4 — `core/schematic/symbols.ts`: our own artwork as primitives for resistor, DC V source, DC I source, ground in
+  IEC 60617 and ANSI/IEEE 315; pins on the 100-mil grid; `placePoint` (mirror → rotate cw → move), SVG transform,
+  placed pins / bounds; upright labels, stacked when on one side ("V1" over "9 V"); designator prefixes and lowest free
+  number (R1, R2…). Lines have a real 6-mil width, ≥ 1.4 px when zoomed out; labels hidden when too small.
+  View → Schematic: IEC / ANSI symbols, units mm / inch (remembered, `lib/schematic-prefs.ts`). Symbol gallery on
+  `/ui-kit#schematic-symbols`. 632 unit, 83 e2e (new `schematic.spec.ts`: zoom, fit, pan, style, units).
 
 ## Day 11 steps
 | Step | Task | State |
@@ -141,8 +153,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 12 · Steps 3–4** (after the owner reviews ADR 008): canvas panel (grid, pan/zoom, cursor position), own symbols;
-done when 50 parts place smoothly.
+**Day 12 · Steps 5–6:** place parts from a temporary list (ghost preview, grid snap, Esc); selection and editing
+(click, Shift/Ctrl, box select, drag, arrows, R, X/Y, Delete — undoable), Inspector shows the selection.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_VERSION, type MessageLevel } from "@robosim/core";
+import { APP_VERSION, formatLength, type MessageLevel } from "@robosim/core";
 import { cn } from "@robosim/ui/lib/utils";
 import {
   CircleAlert,
@@ -11,6 +11,7 @@ import {
   MousePointer2,
   type LucideIcon,
 } from "lucide-react";
+import { useSchematicPrefs } from "../../lib/schematic-prefs";
 import { SimStatus } from "./sim-controls";
 import { useCanvasCursor, useStudioMessages, useStudioStatus } from "./studio-status";
 
@@ -23,14 +24,17 @@ const LEVEL: Record<MessageLevel, { icon: LucideIcon; className: string }> = {
 
 function CursorReadout() {
   const { cursor } = useCanvasCursor();
+  const { lengthUnit } = useSchematicPrefs();
   return (
     <span
-      className="tabular flex w-28 items-center gap-1.5"
-      title="Pointer position on the canvas, in pixels"
+      className="tabular flex w-48 items-center gap-1.5"
+      title="Pointer position on the schematic grid (View → Units: mm or inch)"
       data-testid="status-cursor"
     >
       <MousePointer2 className="size-3" aria-hidden />
-      {cursor ? `X ${cursor.x}  Y ${cursor.y}` : "—"}
+      {cursor
+        ? `X ${formatLength(cursor.x, lengthUnit)}  Y ${formatLength(cursor.y, lengthUnit)}`
+        : "—"}
     </span>
   );
 }

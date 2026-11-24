@@ -32,7 +32,7 @@ type StudioStatus = {
   lowEndAuto: boolean;
 };
 
-/** Canvas pointer position in canvas pixels, or null when the pointer is outside. */
+/** Pointer position on the schematic (mils, grid-snapped), or null when it is outside. */
 type Cursor = { x: number; y: number } | null;
 
 const StatusContext = createContext<StudioStatus | null>(null);
