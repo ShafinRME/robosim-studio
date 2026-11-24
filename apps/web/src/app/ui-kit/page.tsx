@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@robosim/core";
 import type { Metadata } from "next";
 import { Logo, LogoMark } from "@robosim/ui/components/logo";
 import { ThemeSwitcher } from "@robosim/ui/components/theme-switcher";
@@ -168,7 +169,7 @@ export default function UiKitPage() {
           <div className="flex flex-col gap-2">
             <p className="flex items-center gap-2 font-mono text-2xs tracking-[0.2em] text-brand uppercase">
               <span className="size-1.5 rounded-full bg-brand shadow-glow" aria-hidden />
-              Design system · v0.0.0
+              Design system · v{APP_VERSION}
             </p>
             <h1 className="text-3xl font-semibold tracking-tight">Signal UI kit</h1>
             <p className="max-w-2xl text-sm text-muted-foreground">

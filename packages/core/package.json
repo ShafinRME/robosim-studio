@@ -1,6 +1,6 @@
 {
   "name": "@robosim/core",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Framework-free core logic for RoboSim Studio (no React, no DOM).",
   "type": "module",

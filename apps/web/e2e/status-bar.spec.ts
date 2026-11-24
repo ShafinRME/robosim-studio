@@ -13,7 +13,7 @@ test.describe("studio status bar", () => {
 
   test("shows the simulation state, version and Low-end mode", async ({ page }) => {
     await expect(statusBar(page)).toContainText("Idle");
-    await expect(statusBar(page)).toContainText("v0.0.0");
+    await expect(statusBar(page)).toContainText("v0.0.1");
     await expect(lowEndButton(page)).toHaveText("Low-end off");
     await expect(lowEndButton(page)).toHaveAttribute("aria-pressed", "false");
   });
