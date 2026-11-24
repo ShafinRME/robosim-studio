@@ -25,7 +25,7 @@ import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
-import { useCanvasCursor, useStudioStatus } from "./studio-status";
+import { useCanvasCursor, useStudioMessages, useStudioStatus } from "./studio-status";
 import {
   Dock,
   type DockviewApi,
@@ -34,7 +34,7 @@ import {
   type SerializedDockview,
 } from "@robosim/ui/components/dock";
 import { FolderTree, SlidersHorizontal, SquareTerminal, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState, type FunctionComponent } from "react";
+import { memo, useEffect, useRef, useState, type FunctionComponent } from "react";
 
 /** Empty state shown until a lab fills the panel. Says honestly what will appear here. */
 function EmptyPanel({
@@ -142,6 +142,8 @@ function InspectorPanel() {
   const lab = LABS.find((l) => l.id === project.lab)?.name ?? "None yet";
   return (
     <div className="h-full overflow-auto">
+      {/* Headings in order for assistive tech: h1 (workspace) → h2 (panel) → h3 (section). */}
+      <h2 className="sr-only">Inspector</h2>
       <Inspector defaultOpen={["project"]}>
         <InspectorSection id="project" title="Project">
           <InspectorRow label="Name">
@@ -179,37 +181,39 @@ const LEVEL_CLASS: Record<MessageLevel, string> = {
 
 /** Studio message log, newest at the bottom. */
 function ConsolePanel() {
-  const { messages } = useStudioStatus();
+  const messages = useStudioMessages();
   const end = useRef<HTMLLIElement>(null);
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: "end" });
   }, [messages.length]);
 
+  // The log role sits on a wrapper: on the <ol> itself it would hide the list from assistive tech.
   return (
-    <ol
+    <div
       role="log"
       aria-label="Studio messages"
       className="h-full overflow-auto p-2 font-mono text-2xs leading-5 text-muted-foreground"
     >
-      <li>
-        <SquareTerminal className="mr-1.5 inline size-3.5 align-[-2px]" aria-hidden />
-        Studio ready.
-      </li>
-      {messages.map((message) => (
-        <li key={message.id} className="flex gap-2">
-          <time className="shrink-0 text-faint-foreground">{formatClock(message.time)}</time>
-          <span className={cn("w-12 shrink-0 uppercase", LEVEL_CLASS[message.level])}>
-            {message.level === "warning" ? "warn" : message.level}
-          </span>
-          <span className="min-w-0 text-foreground">{message.text}</span>
+      <ol>
+        <li>
+          <SquareTerminal className="mr-1.5 inline size-3.5 align-[-2px]" aria-hidden />
+          Studio ready.
         </li>
-      ))}
-      <li ref={end} aria-hidden />
-    </ol>
+        {messages.map((message) => (
+          <li key={message.id} className="flex gap-2">
+            <time className="shrink-0 text-faint-foreground">{formatClock(message.time)}</time>
+            <span className={cn("w-12 shrink-0 uppercase", LEVEL_CLASS[message.level])}>
+              {message.level === "warning" ? "warn" : message.level}
+            </span>
+            <span className="min-w-0 text-foreground">{message.text}</span>
+          </li>
+        ))}
+        <li ref={end} aria-hidden />
+      </ol>
+    </div>
   );
 }
 
-/** Panel registry: Dockview creates panels by these ids. Labs will add their own later. */
 /** Wraps a panel so a crash inside it stays inside it (see PanelErrorBoundary). */
 function guarded(title: string, Panel: FunctionComponent): FunctionComponent<IDockviewPanelProps> {
   function GuardedPanel() {
@@ -223,6 +227,7 @@ function guarded(title: string, Panel: FunctionComponent): FunctionComponent<IDo
   return GuardedPanel;
 }
 
+/** Panel registry: Dockview creates panels by these ids. Labs will add their own later. */
 const PANELS: Record<string, FunctionComponent<IDockviewPanelProps>> = {
   explorer: guarded("Explorer", ExplorerPanel),
   canvas: guarded("Canvas", CanvasPanel),
@@ -365,7 +370,11 @@ export type StudioWorkspaceControls = {
   togglePanel: (id: StudioPanelId) => void;
 };
 
-export function StudioWorkspace({
+/**
+ * The docking workspace. Memoised: the studio around it re-renders often (tabs, menus, status),
+ * and re-rendering Dockview each time cost start-up time (Lighthouse, Day 10).
+ */
+export const StudioWorkspace = memo(function StudioWorkspace({
   onControls,
   onOpenPanelsChange,
 }: {
@@ -442,4 +451,4 @@ export function StudioWorkspace({
   }, [api]);
 
   return <Dock components={PANELS} onReady={onReady} />;
-}
+});

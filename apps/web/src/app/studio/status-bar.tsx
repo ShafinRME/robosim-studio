@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SimStatus } from "./sim-controls";
-import { useCanvasCursor, useStudioStatus } from "./studio-status";
+import { useCanvasCursor, useStudioMessages, useStudioStatus } from "./studio-status";
 
 const LEVEL: Record<MessageLevel, { icon: LucideIcon; className: string }> = {
   info: { icon: Info, className: "text-info" },
@@ -37,7 +37,8 @@ function CursorReadout() {
 
 /** Bottom status bar: simulation state, latest message, canvas cursor, Low-end mode, version. */
 export function StatusBar() {
-  const { messages, lowEnd, setLowEnd, lowEndAuto, lowEndReasons } = useStudioStatus();
+  const { lowEnd, setLowEnd, lowEndAuto, lowEndReasons } = useStudioStatus();
+  const messages = useStudioMessages();
   const autoWhy = lowEndAuto && lowEndReasons.length ? ` (${lowEndReasons.join(", ")})` : "";
   const latest = messages.at(-1);
   const level = latest ? LEVEL[latest.level] : null;

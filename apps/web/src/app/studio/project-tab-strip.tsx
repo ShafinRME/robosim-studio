@@ -7,8 +7,9 @@ import { Box, Plus, X } from "lucide-react";
 import { useRef, type KeyboardEvent } from "react";
 
 /**
- * Open projects as tabs. Each tab is a `tab` button plus a separate close button
- * (a button cannot sit inside another). ←/→ move between tabs, Home/End jump to the ends.
+ * Open projects as tabs. ←/→ move between tabs, Home/End jump to the ends, Delete closes the
+ * focused tab. A tab list may only contain tabs (WCAG / ARIA), so the × next to each tab is for the
+ * mouse only: hidden from assistive technology and skipped by Tab — the keyboard uses Delete.
  */
 export function ProjectTabStrip({
   state,
@@ -40,6 +41,17 @@ export function ProjectTabStrip({
       Home: 0,
       End: state.tabs.length - 1,
     };
+    if (event.key === "Delete" || event.key === "Backspace") {
+      const tab = state.tabs[index];
+      if (!tab) return;
+      event.preventDefault();
+      onClose(tab.id);
+      // Keep keyboard focus in the strip: on the tab that becomes active.
+      requestAnimationFrame(() => {
+        tabRefs.current.get(state.tabs[index + 1]?.id ?? state.tabs[index - 1]?.id ?? "")?.focus();
+      });
+      return;
+    }
     const target = moves[event.key];
     if (target === undefined) return;
     event.preventDefault();
@@ -54,6 +66,7 @@ export function ProjectTabStrip({
           return (
             <div
               key={tab.id}
+              role="presentation"
               data-testid="project-tab"
               className={cn(
                 "group relative -mb-px flex h-7 max-w-48 min-w-0 items-center rounded-t-md border border-b-0 pr-1",
@@ -77,6 +90,7 @@ export function ProjectTabStrip({
                 type="button"
                 role="tab"
                 aria-selected={active}
+                aria-keyshortcuts="Delete"
                 tabIndex={active ? 0 : -1}
                 onClick={() => onActivate(tab.id)}
                 className="flex h-full min-w-0 items-center gap-1.5 pr-1 pl-2.5 text-xs outline-none focus-visible:outline-2 focus-visible:-outline-offset-2"
@@ -86,9 +100,10 @@ export function ProjectTabStrip({
               </button>
               <IconButton
                 label={`Close ${tab.name}`}
+                aria-hidden
                 size="icon-sm"
-                tabIndex={active ? 0 : -1}
-                className="size-5 opacity-60 group-hover:opacity-100 [&_svg]:size-3"
+                tabIndex={-1}
+                className="size-6 opacity-60 group-hover:opacity-100 [&_svg]:size-3.5"
                 onClick={() => onClose(tab.id)}
               >
                 <X />

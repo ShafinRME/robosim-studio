@@ -5,7 +5,14 @@ import { Button } from "@robosim/ui/components/button";
 import { CommandPalette } from "@robosim/ui/components/command-palette";
 import { FilePlus2, History } from "lucide-react";
 import { useSetTheme } from "@robosim/ui/components/theme-provider";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ProjectTabStrip } from "./project-tab-strip";
 import { StatusBar } from "./status-bar";
 import { useStudioCommands } from "./studio-commands";
@@ -57,6 +64,11 @@ function StudioWindow() {
   const sim = useSimController();
   const projects = open.tabs;
   const [openPanels, setOpenPanels] = useState<ReadonlySet<string>>(new Set());
+  // Stable callbacks, so the memoised workspace does not re-render with the studio around it.
+  const onWorkspaceControls = useCallback((c: StudioWorkspaceControls) => {
+    controls.current = c;
+  }, []);
+  const onOpenPanels = useCallback((ids: string[]) => setOpenPanels(new Set(ids)), []);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [systemOpen, setSystemOpen] = useState(false);
@@ -179,10 +191,7 @@ function StudioWindow() {
         <h1 className="sr-only">RoboSim Studio workspace</h1>
         {/* The workspace stays mounted with no project open, so the layout is kept. */}
         <ActiveProjectProvider store={activeStore}>
-          <StudioWorkspace
-            onControls={(c) => (controls.current = c)}
-            onOpenPanelsChange={(ids) => setOpenPanels(new Set(ids))}
-          />
+          <StudioWorkspace onControls={onWorkspaceControls} onOpenPanelsChange={onOpenPanels} />
         </ActiveProjectProvider>
         {!open.restored ? (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-blueprint">
