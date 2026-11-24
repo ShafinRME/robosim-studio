@@ -1,8 +1,8 @@
 # Status
 
-**Current:** Day 10 — Low-end mode & v0.0.1 · Step 7/8 (owner review, then merge)
-**Branch:** `feat/day-10-low-end-release` (from `develop`)
-**Session:** Days 06–10 – Studio core (last Day of the block)
+**Current:** Day 10 complete · **v0.0.1 released** · Phase 0 done — next: Day 11 (new session, Days 11–15)
+**Branch:** `develop` (Day 11 branch `feat/day-11-…` is created at the start of Day 11)
+**Session:** Days 06–10 – Studio core (finished); next session: Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
 
 ## Day 10 steps
@@ -14,8 +14,8 @@
 | 4/8 | Landing page v0 | ✅ done |
 | 5/8 | Lighthouse check (≥ 90) and fixes | ✅ done (studio performance 85–88 accepted by owner) |
 | 6/8 | e2e tests; User Manual; `pnpm manual` | ✅ done |
-| 7/8 | Owner review → DEVLOG, merge into `develop` | 🔄 DEVLOG done, waiting for owner approval |
-| 8/8 | Release v0.0.1 to `main` (only with owner's explicit OK), Vercel check, phase review; next-session instructions | ⏳ |
+| 7/8 | Owner review → DEVLOG, merge into `develop` | ✅ done (PR #11) |
+| 8/8 | Release v0.0.1 to `main` (owner's OK), Vercel check, phase review; next-session instructions | ✅ done |
 
 ## Decisions (Day 10)
 - `packages/core/src/capabilities.ts`: `assessCapabilities(hints)` → memory, cores, WebGL2, renderer (≤ 200 chars),
@@ -57,10 +57,21 @@
 - Step 6: User Manual — chapter 3 rewritten for the new home page; 7.3 Delete closes a tab; 7.7 automatic Low-end mode
   + System information (screenshot); shortcut table; new chapter 8 "If something goes wrong" (screenshot); PDF rebuilt.
   464 unit, 77 e2e.
+- **Release v0.0.1 (owner's OK, 2026-11-24):** `release/v0.0.1` (version 0.0.1 everywhere, CHANGELOG.md, manual, ignore
+  `apps/web/AGENTS.md`) → squash into `develop` (PR #12) → **merge commit** `develop` → `main` (PR #13, `d799331`) → tag
+  + GitHub release `v0.0.1`. Owner changed GitHub settings: `protect-main` allows Merge (linear history off) and the
+  repo allows merge commits. Live check on robosim-studio-lemon.vercel.app: v0.0.1, /studio, 404, headers, simulation
+  worker 1002 steps/s, no console errors.
+- **Security catch:** CodeQL alert #2 (high, js/incomplete-multi-character-sanitization in `scripts/build-manual.mjs`)
+  had been open on `develop` since Day 04 — fixed in PR #12 (heading ids via marked's TextRenderer, HTML-escaped).
+  Open alerts now 0. New rule: check open CodeQL alerts before every merge/release.
+- Phase review: `docs/reviews/phase-0-review.md`.
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-Day 10 · Step 7/8 — owner review of the whole Day; DEVLOG; merge into `develop`. Then Step 8: release v0.0.1 to `main` only with the owner's explicit OK.
+**Day 11 — Circuit model ADR** (new session "Days 11–15 – Circuit Lab foundations"): netlist data model, component
+interface (MNA stamp + state), units and SI prefixes, beginner-friendly error model; ADR 007 committed.
+Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
 - **Studio start-up performance (owner: accepted 85–88 for v0.0.1, 2026-11-24 — "optimize in future when needed").**
