@@ -1,9 +1,29 @@
 # Status
 
-**Current:** Day 10 complete · **v0.0.1 released** · Phase 0 done — next: Day 11 (new session, Days 11–15)
-**Branch:** `develop` (Day 11 branch `feat/day-11-…` is created at the start of Day 11)
-**Session:** Days 06–10 – Studio core (finished); next session: Days 11–15 – Circuit Lab foundations
+**Current:** Day 11 · Step 2/7 done — Circuit model ADR (Phase 1 · Circuit Lab)
+**Branch:** `feat/day-11-circuit-model` (from `develop`)
+**Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
+
+## Day 11 steps
+| Step | Task | State |
+|---|---|---|
+| 1/7 | Day branch; study old RoboSim (read-only) and scope the model | ✅ done |
+| 2/7 | Draft ADR 007 — Circuit model | ✅ done (Proposed, owner review) |
+| 3/7 | Netlist types + Zod schema in `packages/core/src/circuit/` + tests | ⏳ next |
+| 4/7 | Component interface (`MnaContext`, `stamp()`, state) + reference R/V/I stamps as fixtures | ⬜ |
+| 5/7 | Units: RKM code ("4k7"), quantity-aware `parseQuantity` with range checks + tests | ⬜ |
+| 6/7 | Beginner error model: issue codes, messages, netlist graph checks + tests | ⬜ |
+| 7/7 | Lint/typecheck/tests; owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+
+## Decisions (Day 11)
+- Old RoboSim has **no circuit simulator** (no MNA/netlist code) — nothing to port; new design.
+- **ADR 007** (`docs/adr/007-circuit-model.md`, Proposed): circuit document (saved: parts + wires/labels/ground;
+  wires added Day 13 with a format bump) → derived **netlist** (`buildNetlist`, union-find, deterministic node
+  numbering, ground = node 0); part = **definition** (pins, typed properties) + **device** (`branches`, `stateSize`,
+  `stamp`, `stampNonlinear?`, `stampTransient?`, `accept?`, `report`) writing only via `MnaContext`; state in one
+  `Float64Array`; SI numbers inside and in files, text only at input/display (RKM "4k7" added); `CircuitIssue`
+  with 11 codes, graph checks before solving, results never NaN. PLAN's "ADR-002" name → 007 (002 was taken).
 
 ## Day 10 steps
 | Step | Task | State |
@@ -69,8 +89,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 11 — Circuit model ADR** (new session "Days 11–15 – Circuit Lab foundations"): netlist data model, component
-interface (MNA stamp + state), units and SI prefixes, beginner-friendly error model; ADR 007 committed.
+**Day 11 · Steps 3–4** (after the owner's review of ADR 007): netlist types + Zod schema; component interface
+(`MnaContext`, stamps, state) with reference R/V/I stamps as test fixtures.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
