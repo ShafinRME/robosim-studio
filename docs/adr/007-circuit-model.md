@@ -48,7 +48,7 @@ not step-by-step real time — kept as a cross-check on Day 28); hand-written pe
 (cannot scale). A part has two halves:
 
 - **Definition** (static data, used by the UI and the solver): `type`, display name, category, pins
-  (id, name, electrical role), properties (key, label, **quantity/unit**, default, min, max), and
+  (id, name, ERC electrical type — §5), reference-designator prefix, properties (key, label, **quantity/unit**, default, min, max), and
   later the SVG symbol and breadboard footprint (Day 14). Validated by a Zod schema.
 - **Device** (created per part instance by `definition.create(props)`; pure, no I/O):
   - `branches`: how many extra current unknowns it needs (V source = 1, inductor = 1, resistor = 0);
@@ -110,12 +110,45 @@ not step-by-step real time — kept as a cross-check on Day 28); hand-written pe
   | `no-convergence` | error | Newton–Raphson did not converge | solver (Day 17) |
   | `over-limit` | warning | part beyond its rating (LED current, resistor power) | device `report` |
   | `model-error` | error | internal bug (non-finite stamp) — "please report" | solver |
+  | `duplicate-designator` | warning | two parts share a reference designator (e.g. two "R1") | netlist check |
+  | `erc-conflict` | warning | pin types clash (two outputs on one net, unpowered power-in) — Phase 2 | ERC |
 
 - **Check before solving:** the cheap graph checks run on the netlist first, so the common beginner
   mistakes get a precise message (which part, which pin) instead of the generic `singular-matrix`.
   The checks are deterministic and unit-tested per code. A fully ideal short (wire across a battery)
   is a `voltage-source-loop`; a near-short through a tiny resistor solves and is flagged by
   `over-limit`.
+
+### 5. Industry conventions (so results and files feel like professional EDA / SPICE tools)
+- **Reference designators** are assigned automatically by part kind, as on real schematics and BOMs
+  (IEEE 315 / IEC 81346 style): R resistor, C capacitor, L inductor, D diode/LED, Q transistor,
+  U IC/op-amp/regulator, V voltage source, I current source, SW switch, J connector, M motor,
+  BZ buzzer, K relay, F fuse, BT battery. Next free number per prefix (R1, R2…); renaming is
+  allowed, duplicates are an issue. The same designators go into SPICE netlists and the BOM (Day 29).
+- **Net names:** a net takes its label (`VCC`, `SDA`) or, unlabelled, an automatic name from its
+  lowest pin (`N_R1_2`), stable across edits — like EDA tools — so probes and scope traces keep
+  their names. `0`/`GND` is reserved for ground (SPICE node 0).
+- **Sign conventions as in SPICE:** passive sign convention (current into the "+"/first pin is
+  positive, power > 0 = absorbed); a voltage source's branch current flows from + through the source
+  to −, so a battery delivering power reads negative current in raw results — the UI shows
+  "delivering 12 mW" instead of a confusing minus sign.
+- **Solver tolerances with SPICE defaults:** RELTOL 1e-3, ABSTOL 1 pA, VNTOL 1 µV, GMIN 1e-12 S,
+  nominal temperature 27 °C (TNOM). Convergence aids **gmin stepping** and **source stepping**
+  (Days 16–17). Advanced users can change them in simulation settings; beginners never see them.
+- **Model parameters named like SPICE `.model` cards** (diode IS, N, RS, BV; BJT BF, IS, VAF; MOSFET
+  VTO, KP, LAMBDA), so the ngspice cross-check (Day 28), SPICE export (Day 29) and datasheet values
+  map 1:1. A part may carry a vendor SPICE model later.
+- **Real-part properties:** resistors have tolerance and power rating, capacitors a voltage rating,
+  LEDs colour/forward voltage/max current; value entry offers the **E-series** (E12/E24/E96) like a
+  parts catalogue. Ratings feed `over-limit` warnings ("R2 dissipates 0.6 W, rated 0.25 W").
+- **Electrical rules check (ERC)** as in KiCad/Altium: every pin has an electrical type (passive,
+  input, output, bidirectional, power-in, power-out, open-collector, not-connected). Beyond the
+  analog checks above, ERC flags "two outputs driving one net" and "power-in pin not powered" —
+  needed once microcontrollers and logic arrive (Phase 2). Pins marked not-connected never warn.
+- **Symbols:** both **IEC 60617** (zig-zag-free box resistor) and **ANSI/IEEE 315** (zig-zag) styles,
+  chosen in settings, drawn as our own artwork (Day 14).
+- **Units displayed per ISO 80000 / SI brochure:** a space between number and unit ("4.7 kΩ"),
+  "µ" (not "u") on screen, unit symbols never pluralised; input accepts the common shortcuts.
 
 ## Consequences
 - One file per part = definition + device; the registry, inspector, solver and exports all read it.

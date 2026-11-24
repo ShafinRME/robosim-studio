@@ -23,7 +23,11 @@
   numbering, ground = node 0); part = **definition** (pins, typed properties) + **device** (`branches`, `stateSize`,
   `stamp`, `stampNonlinear?`, `stampTransient?`, `accept?`, `report`) writing only via `MnaContext`; state in one
   `Float64Array`; SI numbers inside and in files, text only at input/display (RKM "4k7" added); `CircuitIssue`
-  with 11 codes, graph checks before solving, results never NaN. PLAN's "ADR-002" name → 007 (002 was taken).
+  with 13 codes, graph checks before solving, results never NaN. PLAN's "ADR-002" name → 007 (002 was taken).
+- Owner rule (2026-11-24): design everything to world-class industry standard. ADR 007 §5 adds: reference
+  designators (R1, C1, U1…), stable net names, SPICE sign conventions + default tolerances (RELTOL/ABSTOL/VNTOL/GMIN,
+  27 °C), gmin/source stepping, SPICE `.model` parameter names, ratings/tolerance/E-series, ERC pin types,
+  IEC 60617 + ANSI symbol styles, ISO 80000 unit display.
 
 ## Day 10 steps
 | Step | Task | State |
