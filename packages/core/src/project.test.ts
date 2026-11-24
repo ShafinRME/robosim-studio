@@ -50,6 +50,8 @@ describe("createProject", () => {
       createdAt: "2026-11-23T10:00:00.000Z",
       updatedAt: "2026-11-23T10:00:00.000Z",
       parts: [],
+      wires: [],
+      labels: [],
     });
   });
 
@@ -162,7 +164,7 @@ describe("project validation", () => {
 
   it("rejects duplicate part ids", () => {
     const issues = issuesOf(project({ parts: [part(), part({ name: "copy" })] }));
-    expect(issues).toEqual(['parts.1.id: duplicate part id "r1"']);
+    expect(issues).toEqual(['parts.1.id: duplicate id "r1"']);
   });
 
   it("rejects more parts than the limit", () => {
@@ -265,7 +267,7 @@ describe("format v2 (Day 12): parts can be flipped", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.fromVersion).toBe(1);
-    expect(result.project.version).toBe(2);
+    expect(result.project.version).toBe(PROJECT_VERSION);
     expect(result.project.parts.map((p) => p.flip)).toEqual([false, false]);
     expect(result.project.parts[0]?.rotation).toBe(90);
   });
@@ -278,5 +280,90 @@ describe("format v2 (Day 12): parts can be flipped", () => {
   it("requires flip in v2 files", () => {
     const { flip: _flip, ...noFlip } = part();
     expect(issuesOf({ ...project(), parts: [noFlip] }).join()).toMatch(/parts\.0\.flip/);
+  });
+});
+
+describe("format v3 (Day 13): wires and net labels", () => {
+  const wire = (points: [number, number][], id = "w1") => ({ id, points });
+
+  it("upgrades a v2 project with no wires or labels", () => {
+    const { wires: _w, labels: _l, ...v2 } = { ...project(), version: 2 };
+    const result = loadProject(v2);
+    expect(result).toMatchObject({ ok: true, fromVersion: 2, project: { wires: [], labels: [] } });
+  });
+
+  it("accepts orthogonal wires on the 50-mil grid and labels", () => {
+    const p = {
+      ...project(),
+      wires: [
+        wire([
+          [0, 0],
+          [500, 0],
+          [500, -250],
+        ]),
+      ],
+      labels: [{ id: "l1", x: 500, y: -250, name: "VCC", rotation: 0 }],
+    };
+    expect(loadProject(p).ok).toBe(true);
+  });
+
+  it.each([
+    [
+      "a diagonal segment",
+      [
+        [0, 0],
+        [100, 100],
+      ],
+      /horizontally or vertically/,
+    ],
+    [
+      "a repeated point",
+      [
+        [0, 0],
+        [0, 0],
+        [100, 0],
+      ],
+      /repeats/,
+    ],
+    [
+      "an off-grid corner",
+      [
+        [0, 0],
+        [125, 0],
+      ],
+      /50-mil grid/,
+    ],
+    ["a single point", [[0, 0]], /points/],
+  ] as const)("refuses %s", (_name, points, message) => {
+    const issues = issuesOf({
+      ...project(),
+      wires: [wire(points.map((p) => [...p]) as [number, number][])],
+    });
+    expect(issues.join("\n")).toMatch(message);
+  });
+
+  it("refuses ids shared between parts, wires and labels", () => {
+    const issues = issuesOf({
+      ...project(),
+      parts: [part({ id: "x" })],
+      wires: [
+        wire(
+          [
+            [0, 0],
+            [100, 0],
+          ],
+          "x",
+        ),
+      ],
+    });
+    expect(issues).toEqual(['wires.0.id: duplicate id "x"']);
+  });
+
+  it("refuses bad label names and rotations", () => {
+    const label = { id: "l1", x: 0, y: 0, name: "my net", rotation: 0 };
+    expect(issuesOf({ ...project(), labels: [label] }).join()).toMatch(/labels\.0\.name/);
+    expect(
+      issuesOf({ ...project(), labels: [{ ...label, name: "A", rotation: 45 }] }).join(),
+    ).toMatch(/labels\.0\.rotation/);
   });
 });

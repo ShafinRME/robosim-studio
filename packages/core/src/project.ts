@@ -14,7 +14,7 @@ import { LABS, type LabId } from "./labs";
 
 export const PROJECT_FORMAT = "robosim-project";
 /** Current project format version. Bump it together with a migration in `PROJECT_MIGRATIONS`. */
-export const PROJECT_VERSION = 2;
+export const PROJECT_VERSION = 3;
 /** Project files larger than this are refused before parsing. */
 export const MAX_PROJECT_CHARS = 5_000_000;
 export const MAX_PROJECT_PARTS = 2_000;
@@ -22,6 +22,12 @@ export const MAX_PART_PROPS = 64;
 export const MAX_NAME_CHARS = 100;
 /** Canvas coordinates are limited to ±this many units (schematic: mils, ADR 008). */
 export const MAX_COORDINATE = 1_000_000;
+/** Wires and net labels (ADR 009). */
+export const MAX_PROJECT_WIRES = 4_000;
+export const MAX_WIRE_POINTS = 64;
+export const MAX_PROJECT_LABELS = 2_000;
+/** Wire corners and label points sit on the 50-mil fine grid (pins are on the 100-mil grid). */
+export const WIRE_GRID = 50;
 const MAX_TEXT_PROP_CHARS = 1_000;
 const MAX_REPORTED_ISSUES = 10;
 
@@ -67,6 +73,50 @@ export const partSchema = z.strictObject({
     }),
 });
 
+const gridCoordinate = coordinateSchema
+  .int()
+  .refine((v) => v % WIRE_GRID === 0, `must be on the ${WIRE_GRID}-mil grid`);
+
+/** A wire: an orthogonal polyline on the fine grid (ADR 009). */
+export const wireSchema = z
+  .strictObject({
+    id: idSchema,
+    points: z
+      .array(z.tuple([gridCoordinate, gridCoordinate]))
+      .min(2)
+      .max(MAX_WIRE_POINTS),
+  })
+  .superRefine((wire, ctx) => {
+    wire.points.forEach((point, i) => {
+      const next = wire.points[i + 1];
+      if (!next) return;
+      const [x1, y1] = point;
+      const [x2, y2] = next;
+      if (x1 === x2 && y1 === y2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["points", i + 1],
+          message: "repeats the point before",
+        });
+      } else if (x1 !== x2 && y1 !== y2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["points", i + 1],
+          message: "must continue horizontally or vertically",
+        });
+      }
+    });
+  });
+
+/** A net label: a name attached at one grid point (ADR 009; names as in ADR 007). */
+export const netLabelSchema = z.strictObject({
+  id: idSchema,
+  x: gridCoordinate,
+  y: gridCoordinate,
+  name: z.string().regex(/^[A-Za-z0-9_+.-]{1,32}$/, "must be 1–32 letters, digits or '_+.-'"),
+  rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
+});
+
 export const projectSchema = z
   .strictObject({
     format: z.literal(PROJECT_FORMAT),
@@ -77,23 +127,31 @@ export const projectSchema = z
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     parts: z.array(partSchema).max(MAX_PROJECT_PARTS),
+    wires: z.array(wireSchema).max(MAX_PROJECT_WIRES),
+    labels: z.array(netLabelSchema).max(MAX_PROJECT_LABELS),
   })
   .superRefine((project, ctx) => {
+    // Ids are unique across parts, wires and labels: a selection can hold any of them.
     const seen = new Set<string>();
-    project.parts.forEach((part, index) => {
-      if (seen.has(part.id)) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["parts", index, "id"],
-          message: `duplicate part id "${part.id}"`,
-        });
-      }
-      seen.add(part.id);
-    });
+    for (const key of ["parts", "wires", "labels"] as const) {
+      project[key].forEach((item, index) => {
+        if (seen.has(item.id)) {
+          ctx.addIssue({
+            code: "custom",
+            path: [key, index, "id"],
+            message: `duplicate id "${item.id}"`,
+          });
+        }
+        seen.add(item.id);
+      });
+    }
   });
 
 export type PartValue = z.infer<typeof propValueSchema>;
 export type Part = z.infer<typeof partSchema>;
+export type Wire = z.infer<typeof wireSchema>;
+export type WirePoint = Wire["points"][number];
+export type NetLabel = z.infer<typeof netLabelSchema>;
 export type Project = z.infer<typeof projectSchema>;
 
 /** Upgrades raw project data from format version `n` to `n + 1`. Must be pure. */
@@ -111,6 +169,8 @@ export const PROJECT_MIGRATIONS: Readonly<Record<number, ProjectMigration>> = {
         )
       : data.parts,
   }),
+  /** v3 (Day 13, ADR 009): wires and net labels — a v2 project has none yet. */
+  2: (data) => ({ ...data, wires: data.wires ?? [], labels: data.labels ?? [] }),
 };
 
 export type ProjectRejection =
@@ -249,6 +309,8 @@ export function createProject(options: {
     createdAt: time,
     updatedAt: time,
     parts: [],
+    wires: [],
+    labels: [],
   });
 }
 

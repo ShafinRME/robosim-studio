@@ -1,9 +1,33 @@
 # Status
 
-**Current:** Day 12 complete — Schematic canvas (Phase 1 · Circuit Lab) · next: Day 13 — Wiring
-**Branch:** `develop` (Day 13 branch `feat/day-13-wiring` is created at the start of Day 13)
+**Current:** Day 13 · Step 2/8 done — Wiring (Phase 1 · Circuit Lab)
+**Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
+
+## Day 13 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; ADR 009 — wires and connectivity | ✅ done (Proposed, owner review) |
+| 2/8 | Project format v3 (wires, net labels) + migration; wire / label / group edits + tests | ✅ done |
+| 3/8 | Connectivity in core: drawing → `CircuitInput` → netlist; junction dots; "nets computed correctly" tests | ⏳ next |
+| 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ⬜ |
+| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ⬜ |
+| 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ⬜ |
+| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ⬜ |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+
+## Decisions (Day 13)
+- **ADR 009** (`docs/adr/009-wires-and-connectivity.md`, **Proposed**): geometric connectivity like KiCad / Altium /
+  LTspice — a wire end connects to a pin end, a wire end or the inside of another wire (T-junction, dot); two pins at
+  one point connect; crossing wires do not; labels with the same name join; `GND` / `0` = ground. Wire tool W
+  (L-preview, `/` switches posture), labels L, rubber-banding, copy/paste through a validated `robosim-clipboard` JSON.
+- **Project format v3:** `wires: [{ id, points }]` (2–64 points, orthogonal, 50-mil grid, no repeats) and
+  `labels: [{ id, x, y, name, rotation }]`; ids unique across parts, wires and labels; migration v2 → v3 adds empty
+  lists. Limits 4 000 wires, 2 000 labels. `core/schematic/wires.ts`: `simplifyWire` (repeats, straight runs,
+  back-tracking), `routeL`, `isOrthogonal`, `onSegment`, `segmentAt`. Edits: `addWire` (cleaned + validated),
+  `setWirePoints`, `addLabel`, `renameLabel`, `removeItems` / `moveItems` (parts + wires + labels, one undo step,
+  moves in whole 50-mil steps); `addPart` now checks ids across all three. 667 unit, 85 e2e.
 
 ## Day 12 steps
 | Step | Task | State |
@@ -175,9 +199,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 13 — Wiring:** wires as their own objects (orthogonal routing, corners), wire-to-wire T-junctions with dots,
-net labels, copy/paste, rubber-band wires when parts move; project format v3 (wires, labels) with migration; netlist
-from the drawing via `buildNetlist` (Day 11). Done when nets are computed correctly in tests.
+**Day 13 · Steps 3–4** (after the owner reviews ADR 009): connectivity in core (drawing → netlist, junction dots,
+"nets computed correctly" tests); wire tool on the canvas.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
