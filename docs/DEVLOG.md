@@ -9,6 +9,24 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 12 — Schematic canvas (2026-11-25)
+- Built: ADR 008 (accepted) — our own SVG schematic engine instead of React Flow (node-graph model, ISC-licensed d3
+  dependencies, brand-new major). Project format v2 (`flip`, migration) and group edits (move / rotate / flip / delete,
+  one undo step). In core: viewport maths (mils, 100-mil grid, zoom about the cursor, fit, grid levels), our own
+  IEC 60617 and ANSI symbols for R, DC V, DC I and ground with upright, stacked labels, designators (R1, R2…),
+  hit-testing, box selection, part factory. In the studio: schematic canvas with dot grid, wheel / middle / Space
+  pan, F fit, zoom bar; place tool with ghost (R / X / Y while placing); click, Shift/Ctrl and box select (inside /
+  touching), drag by grid steps, arrows, R, X/Y, Delete, Ctrl+A; Inspector part section (value typed like "4k7");
+  View → Schematic (IEC / ANSI, mm / inch); symbol gallery in the UI kit. User Manual chapter 8. 645 unit, 91 e2e.
+- Learned: a measured "done when" pays off again — the 50-part test showed 68 / 122 frames while dragging and 67 while
+  panning; fixed with editor techniques (move a selection layer directly, pan the already-drawn picture with a CSS
+  transform and a margin, never re-render the canvas for the status-bar cursor) → 121 / 122 in both, also in Low-end.
+  Visual checks in the browser caught what tests did not: labels sharing one line on a rotated source, a selection
+  that would not narrow on click, and a tooltip hiding the toolbar's "on" state. React Flow looked like a shortcut
+  but would have fought T-junctions, rotation and the breadboard view.
+- Next: Day 13 — wiring (orthogonal wires, junction dots, net labels, copy/paste, rubber-band dragging; nets computed
+  correctly in tests).
+
 ## Day 11 — Circuit model (2026-11-24)
 - Built: ADR 007 (accepted) — circuit document → derived netlist; part = definition (pins with ERC types, typed
   properties, designator prefix) + device writing MNA stamps only through `MnaContext`; SI numbers inside, text only

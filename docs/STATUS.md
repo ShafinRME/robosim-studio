@@ -1,7 +1,7 @@
 # Status
 
-**Current:** Day 12 · Step 7/8 done — Schematic canvas (Phase 1 · Circuit Lab)
-**Branch:** `feat/day-12-schematic-canvas` (from `develop` after Day 11 merge `0b9d3c3`)
+**Current:** Day 12 complete — Schematic canvas (Phase 1 · Circuit Lab) · next: Day 13 — Wiring
+**Branch:** `develop` (Day 13 branch `feat/day-13-wiring` is created at the start of Day 13)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
 
@@ -15,7 +15,7 @@
 | 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ✅ done |
 | 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ✅ done |
 | 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ✅ done |
-| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⏳ next |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner approved; PR #16) |
 
 ## Decisions (Day 12)
 - **ADR 008** (`docs/adr/008-schematic-canvas.md`, **Accepted by the owner 2026-11-24**): our own SVG schematic engine instead of React Flow
@@ -175,8 +175,9 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 12 · Step 8:** owner's final review (studio + User Manual chapter 8) → DEVLOG, mark PR #16 ready, check CodeQL
-alerts, squash-merge into `develop`; then the note for Day 13 (wiring).
+**Day 13 — Wiring:** wires as their own objects (orthogonal routing, corners), wire-to-wire T-junctions with dots,
+net labels, copy/paste, rubber-band wires when parts move; project format v3 (wires, labels) with migration; netlist
+from the drawing via `buildNetlist` (Day 11). Done when nets are computed correctly in tests.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
