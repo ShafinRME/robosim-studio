@@ -4,16 +4,27 @@
  * Schematic canvas (ADR 008): our own SVG editor surface.
  *
  * One <svg> with one viewport transform: panning and zooming change a single matrix, the parts
- * layer is memoised and does not re-render. Controls follow EDA conventions — wheel zooms about the
- * cursor, middle-drag or Space + drag pans, F (or Home) fits the drawing, + / − step the zoom.
- * The status bar shows the grid-snapped cursor position in mm or inches.
+ * layer is memoised. Controls follow EDA conventions — wheel zooms about the cursor, middle-drag or
+ * Space + drag pans, F fits; a place tool drops parts on the grid (R / X / Y turn the ghost, Esc or
+ * right-click ends it); the select tool clicks, Shift/Ctrl-clicks and box-selects (left → right:
+ * inside, right → left: touching), drags, nudges with the arrows, rotates (R), mirrors (X / Y) and
+ * deletes. Every change is one undoable edit.
  */
 import {
+  PLACEABLE_PARTS,
+  ProjectEditError,
   SCHEMATIC_GRID,
+  boxModeOf,
+  createPart,
   fitBounds,
   gridLevel,
+  hitTest,
+  newId,
   panBy,
-  placedBounds,
+  partBounds,
+  partsInRect,
+  projectEdits,
+  rectFromPoints,
   scaleOf,
   snapToGrid,
   stepZoom,
@@ -23,14 +34,31 @@ import {
   wheelZoom,
   zoomTo,
   type Part,
-  type Rect,
+  type Point,
+  type ProjectEdit,
+  type ProjectStore,
   type Size,
   type SymbolStyle,
   type Viewport,
 } from "@robosim/core";
-import { Toolbar, ToolbarButton } from "@robosim/ui/components/toolbar";
+import {
+  Toolbar,
+  ToolbarButton,
+  ToolbarSeparator,
+  ToolbarToggleGroup,
+  ToolbarToggleItem,
+} from "@robosim/ui/components/toolbar";
 import { cn } from "@robosim/ui/lib/utils";
-import { Maximize, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  FlipHorizontal2,
+  FlipVertical2,
+  Maximize,
+  MousePointer2,
+  RotateCw,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import {
   memo,
   useCallback,
@@ -43,78 +71,157 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
-import { DESIGNATOR_SIZE, PlacedSymbol } from "../../components/schematic/schematic-symbol";
+import {
+  DESIGNATOR_SIZE,
+  PlacedSymbol,
+  SymbolBody,
+} from "../../components/schematic/schematic-symbol";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
+import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
 import { useCanvasCursor, useStudioStatus } from "./studio-status";
 
-/** Size of the box drawn for a part type without a symbol (mils). */
-const UNKNOWN_HALF = 200;
+/** Pointer travel (px) before a press becomes a drag. */
+const DRAG_THRESHOLD = 3;
 
-function partBounds(part: Part): Rect {
-  const symbol = symbolFor(part.type);
-  if (symbol) return placedBounds(part, symbol);
-  return {
-    minX: part.x - UNKNOWN_HALF,
-    minY: part.y - UNKNOWN_HALF / 2,
-    maxX: part.x + UNKNOWN_HALF,
-    maxY: part.y + UNKNOWN_HALF / 2,
-  };
+type Tool = { kind: "select" } | { kind: "place"; type: string; rotation: number; flip: boolean };
+const SELECT_TOOL: Tool = { kind: "select" };
+
+type Drag =
+  | { kind: "pan"; last: Point }
+  | {
+      kind: "move";
+      ids: readonly string[];
+      startScreen: Point;
+      startWorld: Point;
+      active: boolean;
+      delta: Point;
+      /** Part to select alone if the press ends without dragging (click inside a group). */
+      narrowTo: string | null;
+    }
+  | { kind: "box"; startScreen: Point; startWorld: Point; additive: boolean; active: boolean };
+
+function UnknownPart({ part, showLabels }: { part: Part; showLabels: boolean }) {
+  const b = partBounds(part);
+  return (
+    <>
+      <rect
+        x={b.minX}
+        y={b.minY}
+        width={b.maxX - b.minX}
+        height={b.maxY - b.minY}
+        fill="none"
+        strokeDasharray="20 16"
+        style={{ stroke: "var(--schematic-ink)", strokeWidth: "var(--schematic-stroke)" }}
+      />
+      {showLabels ? (
+        <text
+          x={part.x}
+          y={part.y}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={50}
+          className="fill-muted-foreground"
+        >
+          {part.name || part.type}
+        </text>
+      ) : null}
+    </>
+  );
 }
+
+const PartView = memo(function PartView({
+  part,
+  style,
+  showLabels,
+  selected,
+}: {
+  part: Part;
+  style: SymbolStyle;
+  showLabels: boolean;
+  selected: boolean;
+}) {
+  const symbol = symbolFor(part.type);
+  const b = partBounds(part);
+  return (
+    <g
+      data-part={part.id}
+      data-selected={selected || undefined}
+      className="schematic-part"
+      style={selected ? ({ "--schematic-ink": "var(--brand)" } as CSSProperties) : undefined}
+    >
+      {/* Invisible hit area: thin symbols are easy to point at. */}
+      <rect
+        x={b.minX - 20}
+        y={b.minY - 20}
+        width={b.maxX - b.minX + 40}
+        height={b.maxY - b.minY + 40}
+        fill="transparent"
+      />
+      {selected ? (
+        <rect
+          x={b.minX - 30}
+          y={b.minY - 30}
+          width={b.maxX - b.minX + 60}
+          height={b.maxY - b.minY + 60}
+          rx={12}
+          style={{
+            fill: "var(--brand-soft)",
+            stroke: "var(--brand)",
+            strokeWidth: "var(--schematic-pin-stroke)",
+          }}
+        />
+      ) : null}
+      {symbol ? (
+        <PlacedSymbol
+          symbol={symbol}
+          style={style}
+          placement={part}
+          designator={part.name}
+          value={symbol.value ? part.props[symbol.value.key] : undefined}
+          showLabels={showLabels}
+        />
+      ) : (
+        <UnknownPart part={part} showLabels={showLabels} />
+      )}
+    </g>
+  );
+});
 
 const PartsLayer = memo(function PartsLayer({
   parts,
   style,
   showLabels,
+  selected,
+  moveDelta,
 }: {
   parts: readonly Part[];
   style: SymbolStyle;
   showLabels: boolean;
+  selected: ReadonlySet<string>;
+  moveDelta: Point | null;
 }) {
+  const offset = moveDelta && (moveDelta.x !== 0 || moveDelta.y !== 0) ? moveDelta : null;
   return (
     <g data-testid="schematic-parts">
       {parts.map((part) => {
-        const symbol = symbolFor(part.type);
-        if (!symbol) {
-          // A part type this version cannot draw: shown honestly, never hidden.
-          return (
-            <g key={part.id} data-part={part.id}>
-              <rect
-                x={part.x - UNKNOWN_HALF}
-                y={part.y - UNKNOWN_HALF / 2}
-                width={UNKNOWN_HALF * 2}
-                height={UNKNOWN_HALF}
-                fill="none"
-                strokeDasharray="20 16"
-                style={{ stroke: "var(--schematic-ink)", strokeWidth: "var(--schematic-stroke)" }}
-              />
-              {showLabels ? (
-                <text
-                  x={part.x}
-                  y={part.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={50}
-                  className="fill-muted-foreground"
-                >
-                  {part.name || part.type}
-                </text>
-              ) : null}
-            </g>
-          );
-        }
-        return (
-          <g key={part.id} data-part={part.id}>
-            <PlacedSymbol
-              symbol={symbol}
-              style={style}
-              placement={part}
-              designator={part.name}
-              value={symbol.value ? part.props[symbol.value.key] : undefined}
-              showLabels={showLabels}
-            />
+        const isSelected = selected.has(part.id);
+        const view = (
+          <PartView
+            key={part.id}
+            part={part}
+            style={style}
+            showLabels={showLabels}
+            selected={isSelected}
+          />
+        );
+        return isSelected && offset ? (
+          <g key={part.id} transform={`translate(${offset.x} ${offset.y})`}>
+            {view}
           </g>
+        ) : (
+          view
         );
       })}
     </g>
@@ -177,6 +284,30 @@ function OriginMark({ viewport }: { viewport: Viewport }) {
   );
 }
 
+/** A tiny drawing of the symbol itself as the tool icon (our artwork, not a stock icon). */
+function SymbolIcon({ type, style }: { type: string; style: SymbolStyle }) {
+  const symbol = symbolFor(type);
+  if (!symbol) return null;
+  const { minX, minY, maxX, maxY } = symbol.bounds;
+  const size = Math.max(maxX - minX, maxY - minY) + 40;
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  return (
+    <svg
+      viewBox={`${cx - size / 2} ${cy - size / 2} ${size} ${size}`}
+      aria-hidden
+      style={{ "--schematic-ink": "currentColor", "--schematic-stroke": 26 } as CSSProperties}
+    >
+      <SymbolBody symbol={symbol} style={style} />
+    </svg>
+  );
+}
+
+/** "Resistor" → "resistor", "DC voltage source" stays (acronyms keep their capitals). */
+function sentenceCase(text: string): string {
+  return /^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
+
 function percent(zoom: number): string {
   return `${Math.round(zoom * 100)} %`;
 }
@@ -186,19 +317,36 @@ export function SchematicCanvas() {
   const parts = state?.project.parts;
   const projectId = state?.project.id ?? null;
   const { symbolStyle } = useSchematicPrefs();
-  const { lowEnd } = useStudioStatus();
+  const { lowEnd, post } = useStudioStatus();
   const { setCursor } = useCanvasCursor();
+  const selectedIds = useSelection(projectId);
 
   const helpId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
   const [viewport, setViewport] = useState<Viewport | null>(null);
   const [spaceHeld, setSpaceHeld] = useState(false);
+  // The tool belongs to the project it was chosen in: another tab starts with the select tool.
+  const [toolState, setToolState] = useState<{ projectId: string | null; tool: Tool }>({
+    projectId: null,
+    tool: SELECT_TOOL,
+  });
+  const tool = toolState.projectId === projectId ? toolState.tool : SELECT_TOOL;
+  const setTool = (next: Tool) => setToolState({ projectId, tool: next });
+  const [ghost, setGhost] = useState<Point | null>(null);
+  const [moveDelta, setMoveDelta] = useState<Point | null>(null);
+  const [box, setBox] = useState<{ start: Point; end: Point } | null>(null);
   const [panning, setPanning] = useState(false);
-  const panFrom = useRef<{ x: number; y: number } | null>(null);
+  const drag = useRef<Drag | null>(null);
   const fittedFor = useRef<string | null | undefined>(undefined);
 
   const bounds = useMemo(() => unionRects((parts ?? []).map(partBounds)), [parts]);
+  // Only ids of parts that still exist (after Undo, delete elsewhere…).
+  const selection = useMemo(() => {
+    const existing = new Set((parts ?? []).map((p) => p.id));
+    return new Set(selectedIds.filter((id) => existing.has(id)));
+  }, [parts, selectedIds]);
+  const select = useCallback((ids: readonly string[]) => setSelection(projectId, ids), [projectId]);
 
   // Track the panel size.
   useEffect(() => {
@@ -240,9 +388,9 @@ export function SchematicCanvas() {
     if (!element) return;
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
-      const box = element.getBoundingClientRect();
-      const at = { x: event.clientX - box.left, y: event.clientY - box.top };
-      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? box.height : 1;
+      const rect = element.getBoundingClientRect();
+      const at = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1;
       setViewport((v) => {
         if (!v) return v;
         if (event.shiftKey) return panBy(v, -event.deltaY * unit, 0);
@@ -253,61 +401,254 @@ export function SchematicCanvas() {
     return () => element.removeEventListener("wheel", onWheel);
   }, []);
 
+  /** Runs an edit; a refused edit (e.g. off the canvas) becomes a status message, not a crash. */
+  const apply = useCallback(
+    (target: ProjectStore | null, edit: () => ProjectEdit) => {
+      if (!target) return false;
+      try {
+        return target.getState().apply(edit());
+      } catch (error) {
+        if (!(error instanceof ProjectEditError)) throw error;
+        post("warning", "That change would move parts off the drawing area.");
+        return false;
+      }
+    },
+    [post],
+  );
+
+  const ids = useMemo(() => [...selection], [selection]);
+  const rotate = (turns: number) => apply(store, () => projectEdits.rotateParts(ids, turns));
+  const flip = (axis: "x" | "y") => apply(store, () => projectEdits.flipParts(ids, axis));
+  const remove = () => {
+    if (apply(store, () => projectEdits.removeParts(ids))) select([]);
+  };
+
+  const startPlacing = (type: string) => {
+    setTool({ kind: "place", type, rotation: 0, flip: false });
+    select([]);
+    ref.current?.focus({ preventScroll: true });
+  };
+  const stopPlacing = () => {
+    setTool({ kind: "select" });
+    setGhost(null);
+  };
+
   const localPoint = (event: PointerEvent<HTMLDivElement>) => {
-    const box = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - box.left, y: event.clientY - box.top };
+    const rect = event.currentTarget.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     event.currentTarget.focus({ preventScroll: true });
+    if (!viewport) return;
+    const screen = localPoint(event);
+    const world = toWorld(viewport, screen);
+
     if (event.button === 1 || (event.button === 0 && spaceHeld)) {
       event.preventDefault(); // no middle-click autoscroll
       event.currentTarget.setPointerCapture(event.pointerId);
-      panFrom.current = localPoint(event);
+      drag.current = { kind: "pan", last: screen };
       setPanning(true);
+      return;
     }
+    if (event.button === 2) {
+      if (tool.kind === "place") stopPlacing();
+      return;
+    }
+    if (event.button !== 0 || !parts || !store) return;
+
+    if (tool.kind === "place") {
+      const at = snapToGrid(world, SCHEMATIC_GRID);
+      const part = createPart(tool.type, at, parts, {
+        id: newId(),
+        rotation: tool.rotation,
+        flip: tool.flip,
+      });
+      apply(store, () => projectEdits.addPart(part));
+      return;
+    }
+
+    const hit = hitTest(parts, world, 6 / scaleOf(viewport));
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (hit) {
+      const toggle = event.ctrlKey || event.metaKey;
+      let next: string[];
+      if (toggle) {
+        next = selection.has(hit.id) ? ids.filter((id) => id !== hit.id) : [...ids, hit.id];
+      } else if (event.shiftKey) {
+        next = selection.has(hit.id) ? ids : [...ids, hit.id];
+      } else {
+        next = selection.has(hit.id) ? ids : [hit.id];
+      }
+      select(next);
+      drag.current = toggle
+        ? null
+        : {
+            kind: "move",
+            ids: next,
+            startScreen: screen,
+            startWorld: world,
+            active: false,
+            delta: { x: 0, y: 0 },
+            narrowTo:
+              !event.shiftKey && selection.has(hit.id) && selection.size > 1 ? hit.id : null,
+          };
+      return;
+    }
+    drag.current = {
+      kind: "box",
+      startScreen: screen,
+      startWorld: world,
+      additive: event.shiftKey || event.ctrlKey || event.metaKey,
+      active: false,
+    };
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const point = localPoint(event);
-    if (panFrom.current) {
-      const from = panFrom.current;
-      panFrom.current = point;
-      setViewport((v) => (v ? panBy(v, point.x - from.x, point.y - from.y) : v));
+    if (!viewport) return;
+    const screen = localPoint(event);
+    const world = toWorld(viewport, screen);
+    const d = drag.current;
+    if (d?.kind === "pan") {
+      const last = d.last;
+      d.last = screen;
+      setViewport((v) => (v ? panBy(v, screen.x - last.x, screen.y - last.y) : v));
+    } else if (d && (d.kind === "move" || d.kind === "box")) {
+      if (
+        !d.active &&
+        Math.hypot(screen.x - d.startScreen.x, screen.y - d.startScreen.y) > DRAG_THRESHOLD
+      ) {
+        d.active = true;
+      }
+      if (d.active && d.kind === "move") {
+        d.delta = snapToGrid(
+          { x: world.x - d.startWorld.x, y: world.y - d.startWorld.y },
+          SCHEMATIC_GRID,
+        );
+        setMoveDelta(d.delta);
+      }
+      if (d.active && d.kind === "box") setBox({ start: d.startWorld, end: world });
     }
-    if (viewport) setCursor(snapToGrid(toWorld(viewport, point), SCHEMATIC_GRID));
+    if (tool.kind === "place") setGhost(snapToGrid(world, SCHEMATIC_GRID));
+    setCursor(snapToGrid(world, SCHEMATIC_GRID));
   };
 
-  const endPan = (event: PointerEvent<HTMLDivElement>) => {
-    if (!panFrom.current) return;
-    panFrom.current = null;
-    setPanning(false);
+  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    drag.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (!d) return;
+    if (d.kind === "pan") {
+      setPanning(false);
+      return;
+    }
+    if (d.kind === "move") {
+      const delta = d.delta;
+      setMoveDelta(null);
+      if (!d.active && d.narrowTo) select([d.narrowTo]);
+      if (d.active && (delta.x !== 0 || delta.y !== 0)) {
+        apply(store, () => projectEdits.moveParts(d.ids, delta.x, delta.y));
+      }
+      return;
+    }
+    setBox(null);
+    if (!d.active || !viewport || !parts) {
+      if (!d.additive) select([]);
+      return;
+    }
+    const end = toWorld(viewport, localPoint(event));
+    const found = partsInRect(
+      parts,
+      rectFromPoints(d.startWorld, end),
+      boxModeOf(d.startWorld, end),
+    );
+    select(d.additive ? [...ids, ...found] : found);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const mod = event.ctrlKey || event.metaKey;
+    if (mod && !event.altKey && event.key.toLowerCase() === "a") {
+      event.preventDefault();
+      select((parts ?? []).map((p) => p.id));
+      return;
+    }
+    if (mod || event.altKey) return;
+    const placing = tool.kind === "place" ? tool : null;
+    const hasSelection = ids.length > 0;
+    const step = event.shiftKey ? SCHEMATIC_GRID * 10 : SCHEMATIC_GRID;
+    const handled = () => event.preventDefault();
     switch (event.key) {
       case " ":
-        event.preventDefault();
+        handled();
         setSpaceHeld(true);
+        return;
+      case "Escape":
+        if (placing) {
+          handled();
+          stopPlacing();
+        } else if (hasSelection) {
+          handled();
+          select([]);
+        }
+        return;
+      case "r":
+      case "R":
+        handled();
+        if (placing)
+          setTool({ ...placing, rotation: (placing.rotation + (event.shiftKey ? 270 : 90)) % 360 });
+        else if (hasSelection) rotate(event.shiftKey ? -1 : 1);
+        return;
+      case "x":
+      case "X":
+      case "y":
+      case "Y": {
+        handled();
+        const axis = event.key.toLowerCase() as "x" | "y";
+        if (placing) {
+          // Same composition rule as flipParts: mirror-X → rotate(−r); mirror-Y → rotate(180 − r).
+          const rotation =
+            ((axis === "x" ? -placing.rotation : 180 - placing.rotation) + 360) % 360;
+          setTool({ ...placing, flip: !placing.flip, rotation });
+        } else if (hasSelection) flip(axis);
+        return;
+      }
+      case "Delete":
+      case "Backspace":
+        if (hasSelection) {
+          handled();
+          remove();
+        }
+        return;
+      case "ArrowLeft":
+      case "ArrowRight":
+      case "ArrowUp":
+      case "ArrowDown":
+        if (!hasSelection) return;
+        handled();
+        apply(store, () =>
+          projectEdits.moveParts(
+            ids,
+            event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0,
+            event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0,
+          ),
+        );
         return;
       case "f":
       case "F":
       case "Home":
-        event.preventDefault();
+        handled();
         fit();
         return;
       case "+":
       case "=":
-        event.preventDefault();
+        handled();
         zoomStep(1);
         return;
       case "-":
       case "_":
-        event.preventDefault();
+        handled();
         zoomStep(-1);
         return;
     }
@@ -316,6 +657,9 @@ export function SchematicCanvas() {
   const scale = viewport ? scaleOf(viewport) : 1;
   const showLabels = DESIGNATOR_SIZE * scale >= 6;
   const count = parts?.length ?? 0;
+  const ghostSymbol = tool.kind === "place" ? symbolFor(tool.type) : undefined;
+  const placingLabel =
+    tool.kind === "place" ? PLACEABLE_PARTS.find((p) => p.type === tool.type)?.label : null;
 
   return (
     <div
@@ -326,26 +670,40 @@ export function SchematicCanvas() {
       aria-label="Schematic"
       aria-describedby={helpId}
       data-testid="studio-canvas"
+      data-tool={tool.kind === "place" ? `place:${tool.type}` : "select"}
       className={cn(
         "relative h-full overflow-hidden bg-canvas outline-none select-none",
         "focus-visible:ring-1 focus-visible:ring-brand/60 focus-visible:ring-inset",
-        panning ? "cursor-grabbing" : spaceHeld ? "cursor-grab" : "cursor-crosshair",
+        panning
+          ? "cursor-grabbing"
+          : spaceHeld
+            ? "cursor-grab"
+            : tool.kind === "place"
+              ? "cursor-crosshair"
+              : "cursor-default",
+        tool.kind === "select" && !lowEnd && "schematic-hover",
       )}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={endPan}
-      onPointerCancel={endPan}
-      onPointerLeave={() => setCursor(null)}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onPointerLeave={() => {
+        setCursor(null);
+        setGhost(null);
+      }}
       onKeyDown={onKeyDown}
       onKeyUp={(event) => {
         if (event.key === " ") setSpaceHeld(false);
       }}
       onBlur={() => setSpaceHeld(false)}
+      onContextMenu={(event) => event.preventDefault()}
       onAuxClick={(event) => event.preventDefault()}
     >
       <p id={helpId} className="sr-only">
-        Mouse wheel zooms, middle button or Space and drag pans, F fits the drawing, plus and minus
-        zoom in and out.
+        Choose a part in the toolbar and click to place it; R rotates, X and Y mirror, Escape stops.
+        Click to select, Shift or Control click to add, drag on empty space to box-select. Arrow
+        keys move the selection, Delete removes it. Mouse wheel zooms, middle button or Space and
+        drag pans, F fits the drawing.
       </p>
       {viewport && size.width > 0 ? (
         <svg
@@ -367,21 +725,128 @@ export function SchematicCanvas() {
             }
           >
             {parts ? (
-              <PartsLayer parts={parts} style={symbolStyle} showLabels={showLabels} />
+              <PartsLayer
+                parts={parts}
+                style={symbolStyle}
+                showLabels={showLabels}
+                selected={selection}
+                moveDelta={moveDelta}
+              />
+            ) : null}
+            {ghostSymbol && ghost && tool.kind === "place" ? (
+              <g
+                opacity={0.7}
+                data-testid="schematic-ghost"
+                style={{ "--schematic-ink": "var(--brand)" } as CSSProperties}
+              >
+                <PlacedSymbol
+                  symbol={ghostSymbol}
+                  style={symbolStyle}
+                  placement={{ ...ghost, rotation: tool.rotation, flip: tool.flip }}
+                  showLabels={false}
+                />
+              </g>
+            ) : null}
+            {box ? (
+              <rect
+                data-testid="selection-box"
+                {...(() => {
+                  const r = rectFromPoints(box.start, box.end);
+                  return { x: r.minX, y: r.minY, width: r.maxX - r.minX, height: r.maxY - r.minY };
+                })()}
+                strokeDasharray={
+                  boxModeOf(box.start, box.end) === "touch"
+                    ? `${6 / scale} ${4 / scale}`
+                    : undefined
+                }
+                style={{
+                  fill: "var(--brand-soft)",
+                  stroke: "var(--brand)",
+                  strokeWidth: 1 / scale,
+                }}
+              />
             ) : null}
           </g>
         </svg>
       ) : null}
 
-      <span className="pointer-events-none absolute top-2 left-2 font-mono text-2xs text-faint-foreground">
+      <span className="pointer-events-none absolute top-2 left-12 font-mono text-2xs text-faint-foreground">
         {store
-          ? `SCHEMATIC · ${symbolStyle.toUpperCase()} · ${count} ${count === 1 ? "part" : "parts"}`
+          ? `SCHEMATIC · ${symbolStyle.toUpperCase()} · ${count} ${count === 1 ? "part" : "parts"}${
+              selection.size ? ` · ${selection.size} selected` : ""
+            }${placingLabel ? ` · placing ${sentenceCase(placingLabel)}` : ""}`
           : "SCHEMATIC"}
       </span>
       {!store ? (
         <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-faint-foreground">
           Create or open a project to start drawing.
         </p>
+      ) : null}
+
+      {store ? (
+        <Toolbar
+          aria-label="Schematic tools"
+          orientation="vertical"
+          className="absolute top-2 left-2 h-auto flex-col gap-0.5 rounded-md border bg-surface-1/90 p-0.5 shadow-panel"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <ToolbarToggleGroup
+            type="single"
+            orientation="vertical"
+            className="flex-col bg-transparent p-0"
+            value={tool.kind === "place" ? tool.type : "select"}
+            onValueChange={(value) => {
+              if (!value || value === "select") stopPlacing();
+              else startPlacing(value);
+            }}
+          >
+            <ToolbarToggleItem value="select" label="Select" shortcut="Esc">
+              <MousePointer2 />
+            </ToolbarToggleItem>
+            {PLACEABLE_PARTS.map((p) => (
+              <ToolbarToggleItem
+                key={p.type}
+                value={p.type}
+                label={`Place ${sentenceCase(p.label)}`}
+              >
+                <SymbolIcon type={p.type} style={symbolStyle} />
+              </ToolbarToggleItem>
+            ))}
+          </ToolbarToggleGroup>
+          <ToolbarSeparator className="mx-0 my-0.5 h-px w-5 self-center" />
+          <ToolbarButton
+            label="Rotate 90°"
+            shortcut="R"
+            disabled={selection.size === 0}
+            onClick={() => rotate(1)}
+          >
+            <RotateCw />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Mirror left–right"
+            shortcut="X"
+            disabled={selection.size === 0}
+            onClick={() => flip("x")}
+          >
+            <FlipHorizontal2 />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Mirror top–bottom"
+            shortcut="Y"
+            disabled={selection.size === 0}
+            onClick={() => flip("y")}
+          >
+            <FlipVertical2 />
+          </ToolbarButton>
+          <ToolbarButton
+            label="Delete"
+            shortcut="Del"
+            disabled={selection.size === 0}
+            onClick={remove}
+          >
+            <Trash2 />
+          </ToolbarButton>
+        </Toolbar>
       ) : null}
 
       {viewport ? (

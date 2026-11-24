@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 12 · Step 4/8 done — Schematic canvas (Phase 1 · Circuit Lab)
+**Current:** Day 12 · Step 6/8 done — Schematic canvas (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-12-schematic-canvas` (from `develop` after Day 11 merge `0b9d3c3`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-24
@@ -12,9 +12,9 @@
 | 2/8 | Project format v2 (`flip`) + migration; group move / rotate / flip / delete edits + tests | ✅ done |
 | 3/8 | Canvas panel: grid, pan/zoom (wheel, middle/Space drag, F fit, zoom %), cursor position, Low-end | ✅ done |
 | 4/8 | Own part symbols R / V / I / ground (IEC + ANSI), pins, designator + value labels, auto designators | ✅ done |
-| 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ⏳ next |
-| 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ⬜ |
-| 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ⬜ |
+| 5/8 | Place parts from a temporary list: ghost preview, grid snap, Esc cancels | ✅ done |
+| 6/8 | Selection (click, Shift/Ctrl, box) and editing (drag, arrows, R, X/Y, Delete), undoable; Inspector | ✅ done |
+| 7/8 | 50-part performance test, e2e tests, User Manual section + screenshots, `pnpm manual` | ⏳ next |
 | 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 12)
@@ -41,6 +41,18 @@
   number (R1, R2…). Lines have a real 6-mil width, ≥ 1.4 px when zoomed out; labels hidden when too small.
   View → Schematic: IEC / ANSI symbols, units mm / inch (remembered, `lib/schematic-prefs.ts`). Symbol gallery on
   `/ui-kit#schematic-symbols`. 632 unit, 83 e2e (new `schematic.spec.ts`: zoom, fit, pan, style, units).
+- Step 5 — `core/schematic/selection.ts`: `PLACEABLE_PARTS` (resistor, DC V, DC I, ground — temporary until the Day 14
+  library), `createPart` (lowest free designator, definition defaults stored explicitly), `partBounds`, `hitTest`
+  (topmost part, tolerance), box select (`boxModeOf`: L→R inside, R→L touching; `partsInRect`). Canvas: vertical tool
+  palette with our own symbol icons; place tool with ghost on the grid, R / Shift+R turns and X / Y mirrors the ghost,
+  click places (stays in the tool, like EDA), Esc or right-click ends it. One undo step per part ("Add R2").
+- Step 6 — select tool: click, Shift-click (add), Ctrl-click (toggle), click inside a group narrows to that part, box
+  select (solid = inside, dashed = touching), drag by whole grid steps (one "Move" step), arrows nudge 100 mil (Shift ×10),
+  R / Shift+R rotate, X / Y mirror, Delete, Ctrl+A, Esc; palette buttons Rotate / Mirror / Delete; hover highlight;
+  selected parts in brand colour with a soft box. Selection = shared view state (`schematic-selection.ts`, never saved
+  or undone). Inspector: Part section (name, type, value typed like "4k7" with plain-word range errors, position,
+  orientation) or Selection (count, names). Fixed in the UI kit: toolbar toggle items inside tooltips now show their
+  "on" state (`aria-checked`). 645 unit, 89 e2e.
 
 ## Day 11 steps
 | Step | Task | State |
@@ -153,8 +165,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 12 · Steps 5–6:** place parts from a temporary list (ghost preview, grid snap, Esc); selection and editing
-(click, Shift/Ctrl, box select, drag, arrows, R, X/Y, Delete — undoable), Inspector shows the selection.
+**Day 12 · Step 7:** 50-part performance test (smooth placing / dragging, also in Low-end mode), remaining e2e,
+User Manual section "Schematic canvas" with screenshots, `pnpm manual`.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

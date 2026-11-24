@@ -22,7 +22,9 @@ import {
   InspectorValue,
 } from "@robosim/ui/components/inspector";
 import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
+import { PartInspector } from "./part-inspector";
 import { SchematicCanvas } from "./schematic-canvas";
+import { useSelection } from "./schematic-selection";
 import { useActiveProject } from "./studio-project";
 import { cn } from "@robosim/ui/lib/utils";
 import { useStudioMessages, useStudioStatus } from "./studio-status";
@@ -110,6 +112,7 @@ function ProjectNameField({ id, store, name }: { id: string; store: ProjectStore
 function InspectorPanel() {
   useDevCrash("inspector");
   const { store, state } = useActiveProject();
+  const selectedIds = useSelection(state?.project.id ?? null);
   if (!store || !state) {
     return (
       <EmptyPanel
@@ -125,7 +128,8 @@ function InspectorPanel() {
     <div className="h-full overflow-auto">
       {/* Headings in order for assistive tech: h1 (workspace) → h2 (panel) → h3 (section). */}
       <h2 className="sr-only">Inspector</h2>
-      <Inspector defaultOpen={["project"]}>
+      <Inspector defaultOpen={["part", "project"]}>
+        <PartInspector store={store} parts={project.parts} selectedIds={selectedIds} />
         <InspectorSection id="project" title="Project">
           <InspectorRow label="Name">
             {(id) => (
@@ -146,9 +150,11 @@ function InspectorPanel() {
           </InspectorRow>
         </InspectorSection>
       </Inspector>
-      <p className="px-2.5 py-3 text-2xs text-faint-foreground">
-        Select a part to see and edit its properties.
-      </p>
+      {selectedIds.length === 0 ? (
+        <p className="px-2.5 py-3 text-2xs text-faint-foreground">
+          Select a part to see and edit its properties.
+        </p>
+      ) : null}
     </div>
   );
 }

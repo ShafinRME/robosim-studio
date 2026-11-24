@@ -264,3 +264,8 @@
     --shadow-glow: none;
   }
 }
+
+/* Schematic (ADR 008): parts light up under the pointer with the select tool. */
+.schematic-hover .schematic-part:hover {
+  --schematic-ink: var(--brand);
+}

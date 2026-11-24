@@ -311,3 +311,14 @@ export type {
   SymbolStyle,
 } from "./schematic/symbols";
 export { DEFAULT_GRID } from "./project-store";
+export {
+  PLACEABLE_PARTS,
+  UNKNOWN_PART_HALF,
+  boxModeOf,
+  createPart,
+  hitTest,
+  partBounds,
+  partsInRect,
+  rectFromPoints,
+} from "./schematic/selection";
+export type { BoxMode, PlaceablePart } from "./schematic/selection";

@@ -128,12 +128,12 @@ test.describe("schematic canvas", () => {
   test("switches between IEC and ANSI symbols and remembers it", async ({ page }) => {
     await openDemo(page);
     const resistor = canvas(page).locator('[data-part="r1"]');
-    await expect(resistor.locator("rect")).toHaveCount(1); // IEC: box
+    await expect(resistor.locator("rect:not([fill=transparent])")).toHaveCount(1); // IEC: box
     await page.getByRole("menuitem", { name: "View" }).click();
     await page.getByRole("menuitemcheckbox", { name: "ANSI symbols" }).click();
     await expect(canvas(page)).toContainText("SCHEMATIC · ANSI");
     await expect(resistor.locator("polyline")).toHaveCount(1); // ANSI: zig-zag
-    await expect(resistor.locator("rect")).toHaveCount(0);
+    await expect(resistor.locator("rect:not([fill=transparent])")).toHaveCount(0);
 
     await page.reload();
     await expect(canvas(page)).toContainText("SCHEMATIC · ANSI");
@@ -151,5 +151,134 @@ test.describe("schematic canvas", () => {
     await page.getByRole("menuitemcheckbox", { name: "Units: inches" }).click();
     await page.mouse.move(box.x + box.width / 2 + 38.4, box.y + box.height / 2 + 1);
     await expect(cursor).toHaveText(/X 0\.200 in\s+Y 0\.000 in/);
+  });
+});
+
+test.describe("placing and editing parts", () => {
+  test.use({ viewport: { width: 1366, height: 768 } });
+
+  /** Canvas point `dx`, `dy` grid steps (100 mil = 19.2 px at 200 %) from the centre (origin). */
+  async function at(page: Page, dx: number, dy: number) {
+    const box = await canvas(page).boundingBox();
+    if (!box) throw new Error("no layout");
+    return { x: box.width / 2 + dx * 19.2, y: box.height / 2 + dy * 19.2 };
+  }
+  const header = (page: Page) => canvas(page).locator("span").filter({ hasText: "SCHEMATIC" });
+  const part = (page: Page, name: string) =>
+    canvas(page)
+      .locator("[data-part]")
+      .filter({ has: page.locator(`text="${name}"`) });
+
+  async function placeTwoResistors(page: Page) {
+    await page.goto("/studio");
+    await expect(zoomLevel(page)).toHaveText("200 %");
+    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await expect(canvas(page)).toHaveAttribute("data-tool", "place:resistor");
+    await canvas(page).click({ position: await at(page, -5, 0) });
+    await canvas(page).click({ position: await at(page, 5, 0) });
+    await page.keyboard.press("Escape");
+    await expect(canvas(page)).toHaveAttribute("data-tool", "select");
+    await expect(header(page)).toHaveText("SCHEMATIC · IEC · 2 parts");
+  }
+
+  test("places parts on the grid with automatic designators, one undo step each", async ({
+    page,
+  }) => {
+    await placeTwoResistors(page);
+    await expect(part(page, "R1")).toHaveCount(1);
+    await expect(part(page, "R2")).toHaveCount(1);
+    await expect(canvas(page).getByTestId("schematic-parts")).toContainText("1 kΩ");
+
+    await page.keyboard.press("Control+z");
+    await expect(header(page)).toHaveText("SCHEMATIC · IEC · 1 part");
+    await page.keyboard.press("Control+y");
+    await expect(header(page)).toHaveText("SCHEMATIC · IEC · 2 parts");
+  });
+
+  test("turns the part while placing (R) and shows a ghost", async ({ page }) => {
+    await page.goto("/studio");
+    await page.getByRole("radio", { name: "Place ground" }).click();
+    await canvas(page).hover({ position: await at(page, 0, 0) });
+    await expect(canvas(page).getByTestId("schematic-ghost")).toBeVisible();
+    await page.keyboard.press("r");
+    await page.keyboard.press("r");
+    await canvas(page).click({ position: await at(page, 0, 0) });
+    await page.keyboard.press("Escape");
+    await canvas(page).click({ position: await at(page, 0, -2) }); // the ground's bars (rotated 180°)
+    await expect(page.getByRole("textbox", { name: "Part name" })).toHaveValue("GND1");
+    await expect(page.getByText("180°")).toBeVisible();
+  });
+
+  test("selects, edits the value in the Inspector and refuses a bad value", async ({ page }) => {
+    await placeTwoResistors(page);
+    await canvas(page).click({ position: await at(page, -5, 0) });
+    await expect(header(page)).toContainText("1 selected");
+    const value = page.getByRole("textbox", { name: "Resistance" });
+    await expect(value).toHaveValue("1 kΩ");
+
+    await value.fill("4k7");
+    await value.press("Enter");
+    await expect(part(page, "R1")).toContainText("4.7 kΩ");
+
+    await value.fill("0");
+    await value.press("Enter");
+    await expect(page.getByRole("contentinfo", { name: "Status bar" })).toContainText(
+      "R1: Resistance must be more than 0 Ω.",
+    );
+    await expect(value).toHaveValue("4.7 kΩ");
+  });
+
+  test("box-selects, rotates, mirrors, nudges and deletes — all undoable", async ({ page }) => {
+    await placeTwoResistors(page);
+    // Left → right box around both parts.
+    const from = await at(page, -9, -3);
+    const to = await at(page, 9, 3);
+    const box = await canvas(page).boundingBox();
+    if (!box) throw new Error("no layout");
+    await page.mouse.move(box.x + from.x, box.y + from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + to.x, box.y + to.y, { steps: 5 });
+    await expect(canvas(page).getByTestId("selection-box")).toBeVisible();
+    await page.mouse.up();
+    await expect(header(page)).toContainText("2 selected");
+
+    await page.keyboard.press("r");
+    await page.keyboard.press("x");
+    await page.keyboard.press("ArrowDown");
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await expect(page.getByRole("menuitem", { name: /Undo Move 2 parts/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await canvas(page).focus();
+    await page.keyboard.press("Delete");
+    await expect(header(page)).toHaveText("SCHEMATIC · IEC · 0 parts");
+    await page.keyboard.press("Control+z");
+    await expect(header(page)).toHaveText("SCHEMATIC · IEC · 2 parts");
+  });
+
+  test("drags a part by whole grid steps", async ({ page }) => {
+    await placeTwoResistors(page);
+    await canvas(page).click({ position: await at(page, -5, 0) });
+    const position = page.getByText(/^-12\.70, 0\.00 mm$/);
+    await expect(position).toBeVisible();
+
+    const box = await canvas(page).boundingBox();
+    if (!box) throw new Error("no layout");
+    const start = await at(page, -5, 0);
+    const end = await at(page, -5, 3.2); // snaps to 3 grid steps down
+    await page.mouse.move(box.x + start.x, box.y + start.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + end.x, box.y + end.y, { steps: 6 });
+    await page.mouse.up();
+    await expect(page.getByText(/^-12\.70, 7\.62 mm$/)).toBeVisible();
+  });
+
+  test("Ctrl+A selects everything, Esc clears the selection", async ({ page }) => {
+    await placeTwoResistors(page);
+    await canvas(page).focus();
+    await page.keyboard.press("Control+a");
+    await expect(header(page)).toContainText("2 selected");
+    await page.keyboard.press("Escape");
+    await expect(header(page)).not.toContainText("selected");
   });
 });
