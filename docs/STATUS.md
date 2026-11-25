@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 13 · Step 8/8 done — Day 13 merged; next: Day 14 · Parts library & inspector — Wiring (Phase 1 · Circuit Lab)
+**Current:** Day 13 · 8/8 done, merged — Wiring (Phase 1 · Circuit Lab). **Next:** Day 14 · Parts library & inspector
 **Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
