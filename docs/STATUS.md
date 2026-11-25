@@ -1,9 +1,67 @@
 # Status
 
-**Current:** Day 12 complete — Schematic canvas (Phase 1 · Circuit Lab) · next: Day 13 — Wiring
-**Branch:** `develop` (Day 13 branch `feat/day-13-wiring` is created at the start of Day 13)
+**Current:** Day 13 · 8/8 done, merged — Wiring (Phase 1 · Circuit Lab). **Next:** Day 14 · Parts library & inspector
+**Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
+
+## Day 13 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; ADR 009 — wires and connectivity | ✅ done (Accepted by owner) |
+| 2/8 | Project format v3 (wires, net labels) + migration; wire / label / group edits + tests | ✅ done |
+| 3/8 | Connectivity in core: drawing → `CircuitInput` → netlist; junction dots; "nets computed correctly" tests | ✅ done |
+| 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ✅ done |
+| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ✅ done |
+| 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ✅ done |
+| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner approved; PR #17) |
+
+## Decisions (Day 13)
+- **ADR 009** (`docs/adr/009-wires-and-connectivity.md`, **Accepted by the owner 2026-11-25**): geometric connectivity like KiCad / Altium /
+  LTspice — a wire end connects to a pin end, a wire end or the inside of another wire (T-junction, dot); two pins at
+  one point connect; crossing wires do not; labels with the same name join; `GND` / `0` = ground. Wire tool W
+  (L-preview, `/` switches posture), labels L, rubber-banding, copy/paste through a validated `robosim-clipboard` JSON.
+- **Project format v3:** `wires: [{ id, points }]` (2–64 points, orthogonal, 50-mil grid, no repeats) and
+  `labels: [{ id, x, y, name, rotation }]`; ids unique across parts, wires and labels; migration v2 → v3 adds empty
+  lists. Limits 4 000 wires, 2 000 labels. `core/schematic/wires.ts`: `simplifyWire` (repeats, straight runs,
+  back-tracking), `routeL`, `isOrthogonal`, `onSegment`, `segmentAt`. Edits: `addWire` (cleaned + validated),
+  `setWirePoints`, `addLabel`, `renameLabel`, `removeItems` / `moveItems` (parts + wires + labels, one undo step,
+  moves in whole 50-mil steps); `addPart` now checks ids across all three. 667 unit, 85 e2e.
+- Step 3 — `core/schematic/connectivity.ts`: `connectivityOf(project)` → `CircuitInput` for `buildNetlist` + junction
+  dots + connected pins + wire/label groups (`groupOf`, `groupPin` for naming a wire's net). Union-find over pins,
+  wires and labels; pins by point (hash map); segments indexed by row / column, so lookups are fast (500 parts +
+  1 000 wires well under 1 s). Rules exactly as ADR 009: wire ends connect to pins, wire ends and segment insides;
+  pin-on-pin; crossings and a wire merely passing over a pin do not; labels on pins / wire ends / segments; same name
+  joins; GND label grounds. Dots where ≥ 3 arms meet (wire end 1, wire through / corner 2, pin 1). Parts without a
+  symbol are left out; unusable names become X1… for the netlist. 15 "nets computed correctly" tests.
+- Step 4 — wire tool (W, palette button with our own icon): click to start, dashed L-preview to the pointer
+  (horizontal first, `/` switches), click fixes a corner, reaching a pin or a wire ends the wire by itself, double-click
+  or Enter ends it, Backspace undoes exactly the last click (the tool keeps its own click history — first version
+  dropped merged corners, caught by e2e), Esc cancels / a second Esc leaves the tool, right-click cancels. Wires in a
+  new `--schematic-wire` green, junction dots 40 mil, open pin circles hidden once connected. 682 unit, 95 e2e.
+- Step 5 — rubber-banding (`core/schematic/rubber-band.ts`, inside the move / rotate / mirror edits, one undo step):
+  a wire END on a moved pin, or on a wire that moves with the selection, follows it; one corner is added next to the
+  moved end so the neighbouring segment keeps its direction; a wire whose two ends move alike is translated; a wire
+  that shrinks to a point is removed; a point that is also an unmoved part's pin stays. Free labels on such points
+  follow. Live preview while dragging (recomputed per grid step only; parts still move by transform). Wires are
+  selectable (click, Shift/Ctrl, box, Ctrl+A), highlighted, move with arrows / drag, Delete; undo labels say
+  "Move 2 parts" / "Delete 1 wire" / "… items". Inspector: Wire → net name, pins on the net (R1.2, V1.+), length,
+  corners; mixed selection → counts. `hitTestWire`, `wiresInRect`, `netNameOf`.
+- Step 6 — net labels: tool L (palette button, own icon) asks for the name in an inline box (Enter, Esc; checked like
+  the file format), then each click places a label; names ending in a number count up (D0 → D1); R turns the next
+  label, N / Enter asks for a new name. KiCad-style local label: name along the wire, small square at its point, own
+  `--schematic-label` violet in both themes; selectable / movable / rotatable (R); the Inspector renames it and shows
+  how many labels share the name. Copy / cut / paste use the browser's copy / paste events (no clipboard permission
+  needed): plain-text `robosim-clipboard` JSON, read back size-limited (2 MB) and strictly validated with the
+  project schemas (`core/schematic/clipboard.ts`); pasted items get new ids and free designators (R1 → R3), land
+  centred on the pointer (else +200 mil) and are selected; Ctrl+D duplicates. Edits `addItems`, `rotateLabels`.
+  706 unit, 99 e2e.
+- Step 7 — performance: 50 parts + 45 wires opened from a share link, half box-selected and dragged for 2 s while
+  5 wires stretch live: frame rate kept, no long tasks, all pins still connected afterwards (isolated e2e). Manual
+  8.6 wires, 8.7 moving / editing wires (Inspector net), 8.8 net labels and copy / paste, 4 new screenshots, PDF
+  rebuilt. The label name box sits at the bottom centre of the canvas so it never hides the drawing's top.
+  706 unit, 100 e2e.
 
 ## Day 12 steps
 | Step | Task | State |
@@ -175,9 +233,8 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 13 — Wiring:** wires as their own objects (orthogonal routing, corners), wire-to-wire T-junctions with dots,
-net labels, copy/paste, rubber-band wires when parts move; project format v3 (wires, labels) with migration; netlist
-from the drawing via `buildNetlist` (Day 11). Done when nets are computed correctly in tests.
+**Day 13 · Steps 5–6:** rubber-band wires when parts move; select / move / delete wires (and mixed selections);
+Inspector shows a wire's net; net labels (L) and copy / cut / paste / duplicate.
 Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues

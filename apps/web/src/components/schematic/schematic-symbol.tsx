@@ -90,6 +90,8 @@ export type PlacedSymbolProps = {
   showLabels?: boolean;
   /** Show the small circles at unconnected pin ends. */
   showPins?: boolean;
+  /** Pin ids that are connected (wire, pin or label): their open circles are hidden. Comma-separated so the memo compares cheaply. */
+  connectedPins?: string;
 };
 
 export function formatSymbolValue(
@@ -110,6 +112,7 @@ export const PlacedSymbol = memo(function PlacedSymbol({
   value,
   showLabels = true,
   showPins = true,
+  connectedPins = "",
 }: PlacedSymbolProps) {
   const valueText = formatSymbolValue(symbol, value);
   const labels = showLabels ? placeLabels(placement, symbol) : null;
@@ -119,19 +122,21 @@ export const PlacedSymbol = memo(function PlacedSymbol({
         <SymbolBody symbol={symbol} style={style} />
       </g>
       {showPins
-        ? placedPins(placement, symbol).map((pin) => (
-            <circle
-              key={pin.id}
-              cx={pin.x}
-              cy={pin.y}
-              r={12}
-              fill="none"
-              style={{
-                stroke: "var(--schematic-pin)",
-                strokeWidth: "var(--schematic-pin-stroke, 6)",
-              }}
-            />
-          ))
+        ? placedPins(placement, symbol)
+            .filter((pin) => !connectedPins.split(",").includes(pin.id))
+            .map((pin) => (
+              <circle
+                key={pin.id}
+                cx={pin.x}
+                cy={pin.y}
+                r={12}
+                fill="none"
+                style={{
+                  stroke: "var(--schematic-pin)",
+                  strokeWidth: "var(--schematic-pin-stroke, 6)",
+                }}
+              />
+            ))
         : null}
       {labels && designator ? (
         <SymbolLabel label={labels.designator} size={DESIGNATOR_SIZE} strong>

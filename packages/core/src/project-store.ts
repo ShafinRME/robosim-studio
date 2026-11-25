@@ -20,15 +20,109 @@ import {
 import {
   MAX_NAME_CHARS,
   MAX_PART_PROPS,
+  MAX_PROJECT_LABELS,
   MAX_PROJECT_PARTS,
+  MAX_PROJECT_WIRES,
+  WIRE_GRID,
   coordinateSchema,
+  netLabelSchema,
   partSchema,
   propKeySchema,
   propValueSchema,
+  wireSchema,
+  type NetLabel,
   type Part,
   type PartValue,
   type Project,
+  type Wire,
+  type WirePoint,
 } from "./project";
+import { pinKey, placedPinsOf } from "./schematic/connectivity";
+import { rubberBandWire, type PointMover } from "./schematic/rubber-band";
+import { segmentAt, simplifyWire } from "./schematic/wires";
+
+const pointKey = (x: number, y: number) => `${x},${y}`;
+
+/**
+ * Runs `change`, which moves the parts in `movedParts` (any way) and the wires / labels in `rigid`
+ * by `delta`, then rubber-bands (ADR 009): every other wire whose END sat on a moved pin or on a
+ * rigidly moved wire follows it, and free labels on such points move too. A point that is also an
+ * unmoved part's pin stays put. All in the same draft, so it is one undo step.
+ */
+function withRubberBand(
+  draft: Draft<Project>,
+  movedParts: ReadonlySet<string>,
+  rigid: ReadonlySet<string>,
+  delta: Point | null,
+  change: () => void,
+): void {
+  const moving = draft.parts.filter((p) => movedParts.has(p.id));
+  const rigidWires =
+    delta && rigid.size
+      ? draft.wires
+          .filter((w) => rigid.has(w.id))
+          .map((w) => w.points.map(([x, y]): WirePoint => [x, y]))
+      : [];
+  if (moving.length === 0 && rigidWires.length === 0) return change();
+  const oldPins = placedPinsOf(moving);
+  const fixed = new Set(
+    placedPinsOf(draft.parts.filter((p) => !movedParts.has(p.id))).map((p) => pointKey(p.x, p.y)),
+  );
+  change();
+  const newPins = new Map(placedPinsOf(moving).map((p) => [pinKey(p.part, p.pin), p]));
+  const anchors = new Map<string, WirePoint>();
+  for (const p of oldPins) {
+    const to = newPins.get(pinKey(p.part, p.pin));
+    const k = pointKey(p.x, p.y);
+    if (to && !anchors.has(k)) anchors.set(k, [to.x, to.y]);
+  }
+  const move: PointMover = ([x, y]) => {
+    const k = pointKey(x, y);
+    if (fixed.has(k)) return null;
+    const anchor = anchors.get(k);
+    if (anchor) return anchor;
+    if (delta && rigidWires.some((points) => segmentAt(points, [x, y]) >= 0)) {
+      return [x + delta.x, y + delta.y];
+    }
+    return null;
+  };
+  const kept = draft.wires.filter((wire) => {
+    if (rigid.has(wire.id)) return true;
+    const points = rubberBandWire(wire.points, move);
+    if (points === null) return false;
+    if (points !== wire.points)
+      wire.points = checkWire({ id: wire.id, points: [...points] }).points;
+    return true;
+  });
+  if (kept.length !== draft.wires.length) draft.wires = kept;
+  for (const label of draft.labels) {
+    if (rigid.has(label.id)) continue;
+    const to = move([label.x, label.y]);
+    if (to) [label.x, label.y] = to;
+  }
+}
+
+/** Any id in the project (part, wire or label) is free: ids are unique across all three. */
+function idTaken(draft: Draft<Project>, id: string): boolean {
+  return (
+    draft.parts.some((p) => p.id === id) ||
+    draft.wires.some((w) => w.id === id) ||
+    draft.labels.some((l) => l.id === id)
+  );
+}
+
+function checkWire(wire: Wire): Wire {
+  const simplified = { id: wire.id, points: simplifyWire(wire.points) };
+  const parsed = wireSchema.safeParse(simplified);
+  if (!parsed.success) {
+    throw new ProjectEditError(`Invalid wire: ${parsed.error.issues[0]?.message ?? "bad points"}`);
+  }
+  return parsed.data;
+}
+
+function countLabel(verb: string, count: number, noun = "item"): string {
+  return `${verb} ${count} ${noun}${count === 1 ? "" : "s"}`;
+}
 
 export class ProjectEditError extends Error {
   override name = "ProjectEditError";
@@ -109,7 +203,7 @@ function groupEdit(
   const wanted = new Set(unique);
   const recipe = (draft: Draft<Project>) => {
     const parts = draft.parts.filter((part) => wanted.has(part.id));
-    if (parts.length) change(parts);
+    if (parts.length) withRubberBand(draft, wanted, new Set(), null, () => change(parts));
   };
   if (unique.length === 1) return { label: verb, part: unique[0], recipe };
   return { label: `${verb} ${unique.length} parts`, recipe };
@@ -135,7 +229,7 @@ export const projectEdits = {
     return {
       label: `Add ${value.name || value.type}`,
       recipe: (draft) => {
-        if (findPart(draft, value.id)) throw new ProjectEditError(`Part id "${value.id}" is taken`);
+        if (idTaken(draft, value.id)) throw new ProjectEditError(`Part id "${value.id}" is taken`);
         if (draft.parts.length >= MAX_PROJECT_PARTS) {
           throw new ProjectEditError(`A project can have at most ${MAX_PROJECT_PARTS} parts`);
         }
@@ -262,6 +356,185 @@ export const projectEdits = {
         part.rotation = normalizeRotation(axis === "x" ? -part.rotation : 180 - part.rotation);
       }
     });
+  },
+
+  /** Draws a wire (cleaned: no repeats, straight runs merged). Refuses diagonals and off-grid points. */
+  addWire(wire: Wire): ProjectEdit {
+    const value = checkWire(wire);
+    return {
+      label: "Draw wire",
+      recipe: (draft) => {
+        if (idTaken(draft, value.id)) throw new ProjectEditError(`Id "${value.id}" is taken`);
+        if (draft.wires.length >= MAX_PROJECT_WIRES) {
+          throw new ProjectEditError(`A project can have at most ${MAX_PROJECT_WIRES} wires`);
+        }
+        draft.wires.push(value);
+      },
+    };
+  },
+
+  /** Replaces a wire's points (rubber-banding, editing corners). */
+  setWirePoints(id: string, points: readonly WirePoint[]): ProjectEdit {
+    const value = checkWire({ id, points: [...points] });
+    return {
+      label: "Edit wire",
+      recipe: (draft) => {
+        const wire = draft.wires.find((w) => w.id === id);
+        if (wire) wire.points = value.points;
+      },
+    };
+  },
+
+  addLabel(label: NetLabel): ProjectEdit {
+    const parsed = netLabelSchema.safeParse(label);
+    if (!parsed.success) {
+      throw new ProjectEditError(`Invalid net label: ${parsed.error.issues[0]?.message ?? ""}`);
+    }
+    const value = parsed.data;
+    return {
+      label: `Add label ${value.name}`,
+      recipe: (draft) => {
+        if (idTaken(draft, value.id)) throw new ProjectEditError(`Id "${value.id}" is taken`);
+        if (draft.labels.length >= MAX_PROJECT_LABELS) {
+          throw new ProjectEditError(`A project can have at most ${MAX_PROJECT_LABELS} labels`);
+        }
+        draft.labels.push(value);
+      },
+    };
+  },
+
+  /** Turns labels by `quarterTurns` × 90° about their own point (the text follows its wire). */
+  rotateLabels(ids: readonly string[], quarterTurns: number): ProjectEdit {
+    if (!Number.isInteger(quarterTurns)) throw new ProjectEditError("quarter turns must be whole");
+    const turn = new Set(ids);
+    return {
+      label: countLabel("Rotate", turn.size, "label"),
+      recipe: (draft) => {
+        for (const label of draft.labels) {
+          if (!turn.has(label.id)) continue;
+          label.rotation = normalizeRotation(
+            label.rotation + quarterTurns * 90,
+          ) as NetLabel["rotation"];
+        }
+      },
+    };
+  },
+
+  /**
+   * Adds parts, wires and labels as one undo step (paste, duplicate). Every item is checked with
+   * the project schemas; ids must be free.
+   */
+  addItems(
+    items: {
+      readonly parts?: readonly Part[];
+      readonly wires?: readonly Wire[];
+      readonly labels?: readonly NetLabel[];
+    },
+    verb = "Paste",
+  ): ProjectEdit {
+    const parts = (items.parts ?? []).map((part) => {
+      const parsed = partSchema.safeParse(part);
+      if (!parsed.success)
+        throw new ProjectEditError(`Invalid part: ${parsed.error.issues[0]?.message}`);
+      return parsed.data;
+    });
+    const wires = (items.wires ?? []).map(checkWire);
+    const labels = (items.labels ?? []).map((label) => {
+      const parsed = netLabelSchema.safeParse(label);
+      if (!parsed.success)
+        throw new ProjectEditError(`Invalid net label: ${parsed.error.issues[0]?.message}`);
+      return parsed.data;
+    });
+    const ids = [...parts, ...wires, ...labels].map((item) => item.id);
+    if (new Set(ids).size !== ids.length) throw new ProjectEditError("Duplicate ids");
+    return {
+      label: countLabel(verb, ids.length),
+      recipe: (draft) => {
+        for (const id of ids)
+          if (idTaken(draft, id)) throw new ProjectEditError(`Id "${id}" is taken`);
+        if (
+          draft.parts.length + parts.length > MAX_PROJECT_PARTS ||
+          draft.wires.length + wires.length > MAX_PROJECT_WIRES ||
+          draft.labels.length + labels.length > MAX_PROJECT_LABELS
+        ) {
+          throw new ProjectEditError("The project would be too big");
+        }
+        draft.parts.push(...parts);
+        draft.wires.push(...wires);
+        draft.labels.push(...labels);
+      },
+    };
+  },
+
+  renameLabel(id: string, name: string): ProjectEdit {
+    if (!netLabelSchema.shape.name.safeParse(name).success) {
+      throw new ProjectEditError("A net name has 1–32 letters, digits or _ + . -");
+    }
+    return {
+      label: `Rename label to ${name}`,
+      recipe: (draft) => {
+        const label = draft.labels.find((l) => l.id === id);
+        if (label) label.name = name;
+      },
+    };
+  },
+
+  /** Deletes parts, wires and labels with these ids as one undo step ("Delete 2 parts": `noun`). */
+  removeItems(ids: readonly string[], noun = "item"): ProjectEdit {
+    const remove = new Set(ids);
+    return {
+      label: countLabel("Delete", remove.size, noun),
+      recipe: (draft) => {
+        const touches =
+          draft.parts.some((p) => remove.has(p.id)) ||
+          draft.wires.some((w) => remove.has(w.id)) ||
+          draft.labels.some((l) => remove.has(l.id));
+        if (!touches) return;
+        draft.parts = draft.parts.filter((p) => !remove.has(p.id));
+        draft.wires = draft.wires.filter((w) => !remove.has(w.id));
+        draft.labels = draft.labels.filter((l) => !remove.has(l.id));
+      },
+    };
+  },
+
+  /**
+   * Moves parts, wires and labels rigidly by (dx, dy) as one undo step; other wires attached to
+   * them stretch (rubber-banding, ADR 009). `noun` names what is counted in the undo label.
+   */
+  moveItems(ids: readonly string[], dx: number, dy: number, noun = "item"): ProjectEdit {
+    if (dx % WIRE_GRID !== 0 || dy % WIRE_GRID !== 0) {
+      throw new ProjectEditError(`moves must be whole ${WIRE_GRID}-mil grid steps`);
+    }
+    checkCoordinate(dx, "dx");
+    checkCoordinate(dy, "dy");
+    const move = new Set(ids);
+    const moveRigidly = (draft: Draft<Project>) => {
+      for (const part of draft.parts) {
+        if (!move.has(part.id)) continue;
+        part.x = checkCoordinate(part.x + dx, "x");
+        part.y = checkCoordinate(part.y + dy, "y");
+      }
+      for (const wire of draft.wires) {
+        if (!move.has(wire.id)) continue;
+        wire.points = wire.points.map(([x, y]) => [
+          checkCoordinate(x + dx, "x"),
+          checkCoordinate(y + dy, "y"),
+        ]);
+      }
+      for (const label of draft.labels) {
+        if (!move.has(label.id)) continue;
+        label.x = checkCoordinate(label.x + dx, "x");
+        label.y = checkCoordinate(label.y + dy, "y");
+      }
+    };
+    return {
+      label: countLabel("Move", move.size, noun),
+      recipe: (draft) => {
+        if (dx === 0 && dy === 0) return;
+        const movedParts = new Set(draft.parts.filter((p) => move.has(p.id)).map((p) => p.id));
+        withRubberBand(draft, movedParts, move, { x: dx, y: dy }, () => moveRigidly(draft));
+      },
+    };
   },
 
   renamePart(id: string, name: string): ProjectEdit {

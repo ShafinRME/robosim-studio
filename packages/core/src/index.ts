@@ -77,6 +77,12 @@ export {
   PROJECT_FORMAT,
   PROJECT_MIGRATIONS,
   PROJECT_VERSION,
+  MAX_PROJECT_LABELS,
+  MAX_PROJECT_WIRES,
+  MAX_WIRE_POINTS,
+  WIRE_GRID,
+  netLabelSchema,
+  wireSchema,
   copyProject,
   createProject,
   loadProject,
@@ -89,7 +95,10 @@ export {
 } from "./project";
 export type {
   MigrationResult,
+  NetLabel,
   Part,
+  Wire,
+  WirePoint,
   PartValue,
   Project,
   ProjectLoadResult,
@@ -317,8 +326,31 @@ export {
   boxModeOf,
   createPart,
   hitTest,
+  LABEL_GAP,
+  LABEL_TEXT_SIZE,
+  hitTestLabel,
+  hitTestWire,
+  labelBounds,
+  labelsInRect,
   partBounds,
   partsInRect,
   rectFromPoints,
+  wiresInRect,
 } from "./schematic/selection";
 export type { BoxMode, PlaceablePart } from "./schematic/selection";
+export { isOrthogonal, onSegment, routeL, segmentAt, simplifyWire } from "./schematic/wires";
+export type { Posture } from "./schematic/wires";
+export { connectivityOf, netNameOf, pinKey, placedPinsOf } from "./schematic/connectivity";
+export type { Connectivity, PlacedPin } from "./schematic/connectivity";
+export { rubberBandWire } from "./schematic/rubber-band";
+export type { PointMover } from "./schematic/rubber-band";
+export {
+  CLIPBOARD_FORMAT,
+  MAX_CLIPBOARD_CHARS,
+  clipboardSchema,
+  copyItems,
+  parseClipboard,
+  preparePaste,
+  serializeClipboard,
+} from "./schematic/clipboard";
+export type { SchematicClipboard } from "./schematic/clipboard";

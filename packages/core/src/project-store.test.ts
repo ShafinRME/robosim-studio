@@ -336,3 +336,145 @@ describe("group edits (schematic, ADR 008)", () => {
     expect(projectSchema.safeParse(store.getState().project).success).toBe(true);
   });
 });
+
+describe("wire and label edits (ADR 009)", () => {
+  const wire = (id: string, points: [number, number][]) => ({ id, points });
+  const label = (id: string, x: number, y: number, name = "VCC") => ({
+    id,
+    x,
+    y,
+    name,
+    rotation: 0 as const,
+  });
+
+  it("draws a wire as one undo step, cleaned of extra points", () => {
+    const store = storeWithResistor();
+    store.getState().apply(
+      edits.addWire(
+        wire("w1", [
+          [200, 0],
+          [400, 0],
+          [600, 0],
+          [600, 300],
+        ]),
+      ),
+    );
+    expect(store.getState().project.wires).toEqual([
+      {
+        id: "w1",
+        points: [
+          [200, 0],
+          [600, 0],
+          [600, 300],
+        ],
+      },
+    ]);
+    expect(store.getState().history.past.at(-1)?.label).toBe("Draw wire");
+    store.getState().undo();
+    expect(store.getState().project.wires).toEqual([]);
+  });
+
+  it("refuses diagonal, off-grid or empty wires and taken ids", () => {
+    expect(() =>
+      edits.addWire(
+        wire("w1", [
+          [0, 0],
+          [100, 100],
+        ]),
+      ),
+    ).toThrow(ProjectEditError);
+    expect(() =>
+      edits.addWire(
+        wire("w1", [
+          [0, 0],
+          [130, 0],
+        ]),
+      ),
+    ).toThrow(/grid/);
+    expect(() =>
+      edits.addWire(
+        wire("w1", [
+          [0, 0],
+          [300, 0],
+          [0, 0],
+        ]),
+      ),
+    ).toThrow(ProjectEditError);
+    const store = storeWithResistor();
+    expect(() =>
+      store.getState().apply(
+        edits.addWire(
+          wire("r1", [
+            [0, 0],
+            [100, 0],
+          ]),
+        ),
+      ),
+    ).toThrow(/taken/);
+    expect(() => store.getState().apply(edits.addPart(resistor()))).toThrow(/taken/);
+  });
+
+  it("replaces a wire's points", () => {
+    const store = storeWithResistor();
+    store.getState().apply(
+      edits.addWire(
+        wire("w1", [
+          [0, 0],
+          [100, 0],
+        ]),
+      ),
+    );
+    store.getState().apply(
+      edits.setWirePoints("w1", [
+        [0, 0],
+        [0, 200],
+        [100, 200],
+      ]),
+    );
+    expect(store.getState().project.wires[0]?.points).toEqual([
+      [0, 0],
+      [0, 200],
+      [100, 200],
+    ]);
+  });
+
+  it("adds and renames net labels", () => {
+    const store = storeWithResistor();
+    store.getState().apply(edits.addLabel(label("l1", 200, 0)));
+    expect(store.getState().history.past.at(-1)?.label).toBe("Add label VCC");
+    store.getState().apply(edits.renameLabel("l1", "5V"));
+    expect(store.getState().project.labels[0]?.name).toBe("5V");
+    expect(() => edits.renameLabel("l1", "my net")).toThrow(ProjectEditError);
+    expect(() => edits.addLabel({ ...label("l2", 25, 0) })).toThrow(ProjectEditError);
+  });
+
+  it("moves and deletes parts, wires and labels together", () => {
+    const store = storeWithResistor();
+    store.getState().apply(
+      edits.addWire(
+        wire("w1", [
+          [200, 0],
+          [400, 0],
+        ]),
+      ),
+    );
+    store.getState().apply(edits.addLabel(label("l1", 400, 0)));
+    store.getState().apply(edits.moveItems(["r1", "w1", "l1"], 100, -100));
+    const { parts, wires, labels } = store.getState().project;
+    expect([parts[0]?.x, parts[0]?.y]).toEqual([100, -100]);
+    expect(wires[0]?.points).toEqual([
+      [300, -100],
+      [500, -100],
+    ]);
+    expect([labels[0]?.x, labels[0]?.y]).toEqual([500, -100]);
+    expect(store.getState().history.past.at(-1)?.label).toBe("Move 3 items");
+    expect(() => edits.moveItems(["w1"], 25, 0)).toThrow(/grid/);
+
+    store.getState().apply(edits.removeItems(["w1", "l1"]));
+    expect(store.getState().history.past.at(-1)?.label).toBe("Delete 2 items");
+    expect(store.getState().project.wires).toEqual([]);
+    expect(store.getState().project.labels).toEqual([]);
+    expect(store.getState().apply(edits.removeItems(["nope"]))).toBe(false);
+    expect(projectSchema.safeParse(store.getState().project).success).toBe(true);
+  });
+});

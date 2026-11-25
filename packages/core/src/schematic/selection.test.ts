@@ -5,9 +5,11 @@ import {
   boxModeOf,
   createPart,
   hitTest,
+  hitTestWire,
   partBounds,
   partsInRect,
   rectFromPoints,
+  wiresInRect,
 } from "./selection";
 
 const part = (id: string, x: number, y: number, overrides: Partial<Part> = {}): Part => ({
@@ -109,5 +111,41 @@ describe("createPart", () => {
       flip: true,
     });
     expect(g).toMatchObject({ name: "GND2", props: {}, rotation: 180, flip: true });
+  });
+});
+
+describe("wire selection", () => {
+  const wires = [
+    {
+      id: "a",
+      points: [
+        [0, 0],
+        [500, 0],
+        [500, 500],
+      ] as [number, number][],
+    },
+    {
+      id: "b",
+      points: [
+        [1000, 0],
+        [1000, 500],
+      ] as [number, number][],
+    },
+  ];
+
+  it("hits a wire near any of its segments", () => {
+    expect(hitTestWire(wires, { x: 250, y: 10 })?.id).toBe("a");
+    expect(hitTestWire(wires, { x: 510, y: 300 })?.id).toBe("a");
+    expect(hitTestWire(wires, { x: 990, y: 250 })?.id).toBe("b");
+    expect(hitTestWire(wires, { x: 250, y: 100 })).toBeNull();
+  });
+
+  it("box-selects wires fully inside, or touched when dragging right to left", () => {
+    const rect = { minX: -10, minY: -10, maxX: 600, maxY: 200 };
+    expect(wiresInRect(wires, rect, "inside")).toEqual([]);
+    expect(wiresInRect(wires, rect, "touch")).toEqual(["a"]);
+    expect(wiresInRect(wires, { minX: -10, minY: -10, maxX: 600, maxY: 600 }, "inside")).toEqual([
+      "a",
+    ]);
   });
 });

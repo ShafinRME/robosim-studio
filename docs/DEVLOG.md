@@ -9,6 +9,26 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 13 — Wiring (2026-11-26)
+- Built: ADR 009 (accepted) — geometric connectivity like KiCad / Altium / LTspice: a wire END connects to a pin,
+  a wire end or the inside of a wire (T-junction, dot); pin-on-pin connects; crossings and a wire merely passing over
+  a pin do not; same-name labels join; GND = ground. Project format v3 (`wires`, `labels`, migration). In core:
+  wire geometry (`simplifyWire`, `routeL`), `connectivityOf` (union-find, row / column segment index, junction
+  dots, connected pins, wire groups → net names; 500 parts + 1 000 wires well under 1 s), rubber-banding inside the
+  move / rotate / mirror edits, wire / label hit-testing and box selection, validated `robosim-clipboard`
+  (size-limited, strict schemas, new ids, free designators), `addItems`, `rotateLabels`. In the studio: wire tool W
+  (L-preview, `/`, corners, ends by itself on pins / wires, Backspace, Enter, Esc), connected pins lose their circle,
+  live rubber-band preview while dragging, selectable / movable / deletable wires and labels, Inspector wire net with
+  its pins, net label tool L (inline name box, D0 → D1), Ctrl+C / X / V / D through browser copy / paste events (no
+  clipboard permission). User Manual 8.6–8.8. 706 unit, 100 e2e (new: 50 parts + 45 wires drag test).
+- Learned: e2e caught that Backspace must undo a *click*, not the last stored corner (corners merge when simplified),
+  so the tool keeps its own click history. Rubber-banding is simplest as part of the edit itself (one undo step), and
+  the drag preview can just run that same edit on a copy once per grid step — no second algorithm. Using the
+  browser's copy / paste events instead of the Clipboard API avoids a permission prompt and keeps clipboard reads
+  tied to a real user action. Looking at the screenshots moved the name box off the drawing.
+- Next: Day 14 — parts library & inspector (component registry: symbol + model + properties; searchable parts
+  drawer replacing the temporary palette list; property inspector; adding a part = 1 file).
+
 ## Day 12 — Schematic canvas (2026-11-25)
 - Built: ADR 008 (accepted) — our own SVG schematic engine instead of React Flow (node-graph model, ISC-licensed d3
   dependencies, brand-new major). Project format v2 (`flip`, migration) and group edits (move / rotate / flip / delete,

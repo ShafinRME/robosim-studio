@@ -129,7 +129,13 @@ function InspectorPanel() {
       {/* Headings in order for assistive tech: h1 (workspace) → h2 (panel) → h3 (section). */}
       <h2 className="sr-only">Inspector</h2>
       <Inspector defaultOpen={["part", "project"]}>
-        <PartInspector store={store} parts={project.parts} selectedIds={selectedIds} />
+        <PartInspector
+          store={store}
+          parts={project.parts}
+          wires={project.wires}
+          labels={project.labels}
+          selectedIds={selectedIds}
+        />
         <InspectorSection id="project" title="Project">
           <InspectorRow label="Name">
             {(id) => (
