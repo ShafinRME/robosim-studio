@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 13 · Step 4/8 done — Wiring (Phase 1 · Circuit Lab)
+**Current:** Day 13 · Step 6/8 done — Wiring (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
@@ -12,9 +12,9 @@
 | 2/8 | Project format v3 (wires, net labels) + migration; wire / label / group edits + tests | ✅ done |
 | 3/8 | Connectivity in core: drawing → `CircuitInput` → netlist; junction dots; "nets computed correctly" tests | ✅ done |
 | 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ✅ done |
-| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ⏳ next |
-| 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ⬜ |
-| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ⬜ |
+| 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ✅ done |
+| 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ✅ done |
+| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ⏳ next |
 | 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 13)
@@ -40,6 +40,23 @@
   or Enter ends it, Backspace undoes exactly the last click (the tool keeps its own click history — first version
   dropped merged corners, caught by e2e), Esc cancels / a second Esc leaves the tool, right-click cancels. Wires in a
   new `--schematic-wire` green, junction dots 40 mil, open pin circles hidden once connected. 682 unit, 95 e2e.
+- Step 5 — rubber-banding (`core/schematic/rubber-band.ts`, inside the move / rotate / mirror edits, one undo step):
+  a wire END on a moved pin, or on a wire that moves with the selection, follows it; one corner is added next to the
+  moved end so the neighbouring segment keeps its direction; a wire whose two ends move alike is translated; a wire
+  that shrinks to a point is removed; a point that is also an unmoved part's pin stays. Free labels on such points
+  follow. Live preview while dragging (recomputed per grid step only; parts still move by transform). Wires are
+  selectable (click, Shift/Ctrl, box, Ctrl+A), highlighted, move with arrows / drag, Delete; undo labels say
+  "Move 2 parts" / "Delete 1 wire" / "… items". Inspector: Wire → net name, pins on the net (R1.2, V1.+), length,
+  corners; mixed selection → counts. `hitTestWire`, `wiresInRect`, `netNameOf`.
+- Step 6 — net labels: tool L (palette button, own icon) asks for the name in an inline box (Enter, Esc; checked like
+  the file format), then each click places a label; names ending in a number count up (D0 → D1); R turns the next
+  label, N / Enter asks for a new name. KiCad-style local label: name along the wire, small square at its point, own
+  `--schematic-label` violet in both themes; selectable / movable / rotatable (R); the Inspector renames it and shows
+  how many labels share the name. Copy / cut / paste use the browser's copy / paste events (no clipboard permission
+  needed): plain-text `robosim-clipboard` JSON, read back size-limited (2 MB) and strictly validated with the
+  project schemas (`core/schematic/clipboard.ts`); pasted items get new ids and free designators (R1 → R3), land
+  centred on the pointer (else +200 mil) and are selected; Ctrl+D duplicates. Edits `addItems`, `rotateLabels`.
+  711 unit, 99 e2e.
 
 ## Day 12 steps
 | Step | Task | State |

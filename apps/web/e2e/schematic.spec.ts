@@ -293,6 +293,7 @@ test.describe("wiring (ADR 009)", () => {
     return { x: box.width / 2 + dx * 19.2, y: box.height / 2 + dy * 19.2 };
   }
   const wires = (page: Page) => canvas(page).locator("[data-wire]");
+  const header = (page: Page) => canvas(page).locator("span").filter({ hasText: "SCHEMATIC" });
   const pinCircles = (page: Page) => canvas(page).locator('[data-part] circle[r="12"]');
 
   /** V1 at (−5, 0): + at (−5, −2), − at (−5, 2). R1 at (0, −2): pins at (−2, −2) and (2, −2). */
@@ -371,5 +372,118 @@ test.describe("wiring (ADR 009)", () => {
     await page.keyboard.press("Escape");
     await expect(canvas(page)).toHaveAttribute("data-tool", "select");
     await expect(wires(page)).toHaveCount(0);
+  });
+  test("dragging a part stretches its wires; a wire can be selected, nudged and deleted", async ({
+    page,
+  }) => {
+    await setUp(page);
+    // V1 + (−5, −2) → R1 pin 1 (−2, −2); then back to the select tool.
+    await canvas(page).click({ position: await at(page, -5, -2) });
+    await canvas(page).click({ position: await at(page, -2, -2) });
+    await expect(wires(page)).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(canvas(page)).toHaveAttribute("data-tool", "select");
+
+    // Drag R1 three grid steps down: the wire end follows with a new corner (rubber-banding).
+    const box = await canvas(page).boundingBox();
+    if (!box) throw new Error("no layout");
+    const from = await at(page, 0, -2);
+    const to = await at(page, 0, 1);
+    await page.mouse.move(box.x + from.x, box.y + from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + to.x, box.y + to.y, { steps: 6 });
+    await expect(wires(page).first()).toHaveAttribute("points", "-500,-200 -200,-200 -200,100");
+    await page.mouse.up();
+    await expect(wires(page).first()).toHaveAttribute("points", "-500,-200 -200,-200 -200,100");
+    await expect(pinCircles(page)).toHaveCount(2);
+
+    // Click the wire: it is selected and the Inspector shows its net.
+    await page.keyboard.press("Escape");
+    await canvas(page).click({ position: await at(page, -3.5, -2) });
+    await expect(wires(page).first()).toHaveAttribute("data-selected", "true");
+    await expect(header(page)).toContainText("1 selected");
+    const inspector = page.getByRole("region", { name: "Wire" });
+    await expect(inspector).toContainText("R1.1, V1.+");
+
+    // Arrow keys move the wire itself (it comes off the pins); Delete removes it; Undo brings it back.
+    await page.keyboard.press("ArrowUp");
+    await expect(wires(page).first()).toHaveAttribute("points", "-500,-300 -200,-300 -200,0");
+    await expect(pinCircles(page)).toHaveCount(4);
+    await page.keyboard.press("Delete");
+    await expect(wires(page)).toHaveCount(0);
+    await page.keyboard.press("Control+z");
+    await expect(wires(page)).toHaveCount(1);
+  });
+
+  test("box selection takes parts and wires together and moves them as one", async ({ page }) => {
+    await setUp(page);
+    await canvas(page).click({ position: await at(page, -5, -2) });
+    await canvas(page).click({ position: await at(page, -2, -2) });
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Control+a");
+    await expect(header(page)).toContainText("3 selected");
+    await page.keyboard.press("ArrowRight");
+    await expect(wires(page).first()).toHaveAttribute("points", "-400,-200 -100,-200");
+    await expect(pinCircles(page)).toHaveCount(2);
+  });
+  test("net labels with the same name join two wires into one net", async ({ page }) => {
+    await setUp(page);
+    // Wire A from R1 pin 2 (2, −2) to (5, −2); wire B from V1 − (−5, 2) to (−2, 2).
+    await canvas(page).click({ position: await at(page, 2, -2) });
+    await canvas(page).dblclick({ position: await at(page, 5, -2) });
+    await canvas(page).click({ position: await at(page, -5, 2) });
+    await canvas(page).dblclick({ position: await at(page, -2, 2) });
+    await expect(wires(page)).toHaveCount(2);
+
+    await page.keyboard.press("l");
+    const name = page.getByRole("textbox", { name: "Net label name" });
+    await expect(name).toBeFocused();
+    await name.fill("OUT");
+    await name.press("Enter");
+    await expect(header(page)).toContainText("net label OUT");
+    await canvas(page).click({ position: await at(page, 5, -2) });
+    await canvas(page).click({ position: await at(page, -2, 2) });
+    await expect(canvas(page).locator('[data-label="OUT"]')).toHaveCount(2);
+    await page.keyboard.press("Escape");
+    await expect(canvas(page)).toHaveAttribute("data-tool", "select");
+
+    // The wire on V1 − is now on net OUT together with R1 pin 2.
+    await canvas(page).click({ position: await at(page, -3.5, 2) });
+    const inspector = page.getByRole("region", { name: "Wire" });
+    await expect(inspector).toContainText("OUT");
+    await expect(inspector).toContainText("R1.2, V1.-");
+
+    // A label can be renamed in the Inspector; then it no longer joins.
+    await canvas(page).click({ position: await at(page, -1.5, 1.6) });
+    const rename = page.getByRole("textbox", { name: "Net name" });
+    await expect(rename).toHaveValue("OUT");
+    await rename.fill("SENSE");
+    await rename.press("Enter");
+    await expect(canvas(page).locator('[data-label="SENSE"]')).toHaveCount(1);
+  });
+
+  test("copy, paste and duplicate with new designators", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await setUp(page);
+    await canvas(page).click({ position: await at(page, -5, -2) });
+    await canvas(page).click({ position: await at(page, -2, -2) });
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Control+a");
+    await page.keyboard.press("Control+c");
+    await canvas(page).hover({ position: await at(page, 0, 8) });
+    await page.keyboard.press("Control+v");
+    await expect(header(page)).toContainText("4 parts");
+    await expect(header(page)).toContainText("3 selected");
+    await expect(wires(page)).toHaveCount(2);
+    await expect(canvas(page).getByText("R2", { exact: true })).toBeVisible();
+    await expect(canvas(page).getByText("V2", { exact: true })).toBeVisible();
+
+    await page.keyboard.press("Control+d");
+    await expect(header(page)).toContainText("6 parts");
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("Control+z");
+    await expect(header(page)).toContainText("2 parts");
+    await expect(wires(page)).toHaveCount(1);
   });
 });

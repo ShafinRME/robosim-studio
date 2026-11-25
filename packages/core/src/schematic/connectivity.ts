@@ -14,8 +14,8 @@
  * dots and which pins are connected (their open circles are hidden).
  */
 import { REFERENCE_PARTS } from "../circuit/reference-parts";
-import type { CircuitInput, CircuitPart, PinRef } from "../circuit/netlist";
-import type { NetLabel, Part, Project, Wire, WirePoint } from "../project";
+import type { CircuitInput, CircuitPart, Netlist, PinRef } from "../circuit/netlist";
+import type { NetLabel, Part, Wire, WirePoint } from "../project";
 import { placedPins, symbolFor } from "./symbols";
 
 const DEFINITION_PINS = new Map(REFERENCE_PARTS.map((d) => [d.type, d.pins.map((p) => p.id)]));
@@ -79,7 +79,11 @@ function indexSegments(wires: readonly Wire[]) {
   };
 }
 
-export function connectivityOf(project: Pick<Project, "parts" | "wires" | "labels">): Connectivity {
+export function connectivityOf(project: {
+  readonly parts: readonly Part[];
+  readonly wires: readonly Wire[];
+  readonly labels: readonly NetLabel[];
+}): Connectivity {
   const { parts, wires, labels } = project;
   const pins = placedPinsOf(parts);
 
@@ -241,4 +245,27 @@ export function connectivityOf(project: Pick<Project, "parts" | "wires" | "label
     groupOf,
     groupPin,
   };
+}
+
+/**
+ * Name of the net a wire or label belongs to, for the Inspector: the netlist name of the net its
+ * group reaches through a pin, else the name of a label in the group, else null (a loose wire).
+ */
+export function netNameOf(
+  c: Connectivity,
+  netlist: Netlist,
+  labels: readonly NetLabel[],
+  id: string,
+): string | null {
+  const group = c.groupOf.get(id);
+  if (group === undefined) return null;
+  const pin = c.groupPin.get(group);
+  if (pin) {
+    const node = netlist.components
+      .find((x) => x.id === pin.part)
+      ?.pins.find((p) => p.id === pin.pin)?.node;
+    const net = netlist.nets.find((n) => n.node === node);
+    if (net) return net.name;
+  }
+  return labels.find((l) => c.groupOf.get(l.id) === group)?.name ?? null;
 }

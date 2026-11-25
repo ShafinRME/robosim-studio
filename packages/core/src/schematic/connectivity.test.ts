@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildNetlist, GROUND_NODE } from "../circuit/netlist";
 import type { NetLabel, Part, Wire, WirePoint } from "../project";
-import { connectivityOf, pinKey, placedPinsOf } from "./connectivity";
+import { connectivityOf, netNameOf, pinKey, placedPinsOf } from "./connectivity";
 
 /**
  * "Nets computed correctly" (Day 13): every connection rule of ADR 009, checked through the real
@@ -216,5 +216,21 @@ describe("connectivityOf — nets computed correctly", () => {
     const { netlist } = nets(parts, wires);
     expect(Date.now() - start).toBeLessThan(1_000);
     expect(netlist.components).toHaveLength(500);
+  });
+
+  it("names a wire's net for the Inspector", () => {
+    const labels = [label("l", 2100, 0, "SENSE")];
+    const { c, netlist } = nets(
+      [resistor("r1", 0, 0), ground("g", 600, 0)],
+      [
+        wire("a", [200, 0], [600, 0]),
+        wire("b", [2000, 0], [2100, 0]),
+        wire("c", [3000, 0], [3100, 0]),
+      ],
+      labels,
+    );
+    expect(netNameOf(c, netlist, labels, "a")).toBe("GND");
+    expect(netNameOf(c, netlist, labels, "b")).toBe("SENSE");
+    expect(netNameOf(c, netlist, labels, "c")).toBeNull();
   });
 });
