@@ -584,7 +584,7 @@ function LabelNameBox({
   const id = useId();
   return (
     <form
-      className="absolute top-2 left-1/2 z-10 flex w-72 -translate-x-1/2 flex-col gap-1 rounded-md border bg-surface-1 p-2 shadow-panel"
+      className="absolute bottom-2 left-1/2 z-10 flex w-72 -translate-x-1/2 flex-col gap-1 rounded-md border bg-surface-1 p-2 shadow-panel"
       onPointerDown={(event) => event.stopPropagation()}
       onSubmit={(event) => {
         event.preventDefault();

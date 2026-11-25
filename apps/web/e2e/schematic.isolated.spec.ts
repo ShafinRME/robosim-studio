@@ -147,3 +147,99 @@ test.describe("schematic performance (50 parts)", () => {
     check("pan 50 parts (Low-end)", idle, pan);
   });
 });
+
+/**
+ * Day 13: 50 parts with 45 wires (a 10 × 5 grid, each row chained by short wires), opened from a
+ * share link. Half of the parts are dragged: the 5 wires between the halves rubber-band live.
+ */
+async function openWiredFifty(page: Page) {
+  await page.goto("/studio");
+  await expect(canvas(page)).toBeVisible();
+  const url = await page.evaluate(async () => {
+    const parts = [];
+    const wires = [];
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 10; col++) {
+        const x = (col - 4.5) * 500;
+        const y = (row - 2) * 400;
+        parts.push({
+          id: `r${row}-${col}`,
+          type: "resistor",
+          name: `R${row * 10 + col + 1}`,
+          x,
+          y,
+          rotation: 0,
+          flip: false,
+          props: { resistance: 1000 },
+        });
+        if (col < 9)
+          wires.push({
+            id: `w${row}-${col}`,
+            points: [
+              [x + 200, y],
+              [x + 300, y],
+            ],
+          });
+      }
+    }
+    const project = {
+      format: "robosim-project",
+      version: 3,
+      id: "e2e-wired-fifty",
+      name: "Wired fifty",
+      lab: "circuit",
+      createdAt: "2026-11-25T00:00:00.000Z",
+      updatedAt: "2026-11-25T00:00:00.000Z",
+      parts,
+      wires,
+      labels: [],
+    };
+    const bytes = new TextEncoder().encode(JSON.stringify(project));
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
+    let binary = "";
+    for (const b of compressed) binary += String.fromCharCode(b);
+    const token = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return `/studio#share=${token}`;
+  });
+  await page.goto("/");
+  await page.goto(url);
+  await expect(header(page)).toContainText("50 parts");
+  await expect(canvas(page).locator("[data-wire]")).toHaveCount(45);
+  await page.getByRole("button", { name: "Zoom to 100 %" }).click();
+  const box = await canvas(page).boundingBox();
+  if (!box) throw new Error("no layout");
+  return box;
+}
+
+test.describe("schematic performance (50 parts + 45 wires)", () => {
+  test.use({ viewport: { width: 1366, height: 768 } });
+
+  test("drags half of a wired drawing smoothly while its wires stretch", async ({ page }) => {
+    const box = await openWiredFifty(page);
+    await page.waitForTimeout(500);
+    const idle = await measure(page, 2000);
+
+    // Box-select the left five columns (left → right: parts and wires fully inside).
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx - 4.5 * 48 - 40, cy - 2 * 38.4 - 40);
+    await page.mouse.down();
+    await page.mouse.move(cx - 2, cy + 2 * 38.4 + 40, { steps: 5 });
+    await page.mouse.up();
+    await expect(header(page)).toContainText("45 selected"); // 25 parts + 20 wires
+
+    const grab = { x: cx - 4.5 * 48, y: cy - 2 * 38.4 };
+    await page.mouse.move(grab.x, grab.y);
+    await page.mouse.down();
+    const dragging = measure(page, 2000);
+    await sweep(page, grab, 2000);
+    const drag = await dragging;
+    await page.mouse.up();
+    check("drag 25 parts with 5 stretching wires", idle, drag);
+
+    // Every wire is still there and every pin between the halves still connected.
+    await expect(canvas(page).locator("[data-wire]")).toHaveCount(45);
+    await expect(canvas(page).locator('[data-part] circle[r="12"]')).toHaveCount(10);
+  });
+});

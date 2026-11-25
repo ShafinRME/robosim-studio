@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 13 · Step 6/8 done — Wiring (Phase 1 · Circuit Lab)
+**Current:** Day 13 · Step 7/8 done — Wiring (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-13-wiring` (from `develop` after Day 12 merge `39f2d82`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-25
@@ -14,8 +14,8 @@
 | 4/8 | Wire tool (W): L-preview, corners, auto-finish on pins / wires, Backspace, Esc; connected pins lose their circle | ✅ done |
 | 5/8 | Rubber-band wires when parts move; select / move / delete wires; Inspector shows the net | ✅ done |
 | 6/8 | Net labels (L) and copy / cut / paste / duplicate (validated clipboard JSON) | ✅ done |
-| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ⏳ next |
-| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+| 7/8 | e2e + 50 parts with wires performance test; User Manual 8.6–8.8, screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⏳ next (owner final test) |
 
 ## Decisions (Day 13)
 - **ADR 009** (`docs/adr/009-wires-and-connectivity.md`, **Accepted by the owner 2026-11-25**): geometric connectivity like KiCad / Altium /
@@ -56,7 +56,12 @@
   needed): plain-text `robosim-clipboard` JSON, read back size-limited (2 MB) and strictly validated with the
   project schemas (`core/schematic/clipboard.ts`); pasted items get new ids and free designators (R1 → R3), land
   centred on the pointer (else +200 mil) and are selected; Ctrl+D duplicates. Edits `addItems`, `rotateLabels`.
-  711 unit, 99 e2e.
+  706 unit, 99 e2e.
+- Step 7 — performance: 50 parts + 45 wires opened from a share link, half box-selected and dragged for 2 s while
+  5 wires stretch live: frame rate kept, no long tasks, all pins still connected afterwards (isolated e2e). Manual
+  8.6 wires, 8.7 moving / editing wires (Inspector net), 8.8 net labels and copy / paste, 4 new screenshots, PDF
+  rebuilt. The label name box sits at the bottom centre of the canvas so it never hides the drawing's top.
+  706 unit, 100 e2e.
 
 ## Day 12 steps
 | Step | Task | State |

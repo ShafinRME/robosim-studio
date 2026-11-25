@@ -411,7 +411,7 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 The **Canvas** is a schematic editor that works like professional circuit software. Parts sit on a
 grid of **2.54 mm (0.1 inch)** — the standard spacing of component pins — so their connection points
-always line up. Wires (to connect the parts) come in the next version of this manual.
+always line up. Wires and net labels connect the parts (sections 8.6–8.8).
 
 ## 8.1 Moving around: zoom and pan
 
@@ -448,12 +448,12 @@ a sensible starting value (for example 1 kΩ, 5 V, 1 mA).
 
 | Do this | To |
 |---|---|
-| Click a part | Select it (it turns teal with a soft box around it) |
+| Click a part | Select it (it turns teal with a soft box around it). Wires and labels are selected the same way (8.7). |
 | **Shift** + click | Add a part to the selection |
 | **Ctrl** + click | Add or remove one part |
 | Drag on empty canvas **from left to right** | Select the parts **fully inside** the box (solid outline) |
 | Drag on empty canvas **from right to left** | Select every part the box **touches** (dashed outline) |
-| **Ctrl + A** | Select all parts |
+| **Ctrl + A** | Select everything |
 | **Esc**, or click empty canvas | Select nothing |
 | Drag a selected part | Move the selection, by whole grid steps |
 | **Arrow keys** | Move the selection one grid step (**Shift** + arrow: ten steps) |
@@ -492,6 +492,89 @@ the old value back.
 Your choice is remembered in this browser. Part names and values always stay upright and readable,
 however a part is turned.
 
+## 8.6 Connecting parts with wires
+
+![Drawing a wire: the solid part is fixed, the dashed part follows the pointer to R2's pin](images/schematic-wiring.png)
+
+1. Press **W**, or click the **wire tool** (second button of the tool palette).
+2. Click on a part's **pin end** (the small orange circle) to start the wire.
+3. Move the mouse: a dashed **L-shaped** preview follows the pointer. Press **/** to switch it between
+   *across first* and *down first*.
+4. Click on empty grid to fix a **corner**, as many times as you need.
+5. Click on another **pin** or on another **wire**: the wire ends there by itself. To end it anywhere
+   else, **double-click** or press **Enter**.
+6. You stay in the wire tool for the next wire. **Esc** drops the wire you are drawing; a second
+   **Esc** goes back to the arrow tool.
+
+| Key | While drawing a wire |
+|---|---|
+| **Backspace** | Remove the last corner you clicked |
+| **/** | Switch the corner direction |
+| **Enter** or double-click | End the wire here |
+| **Esc** or right-click | Drop this wire |
+
+**What is connected, and what is not** (the same rules as professional circuit software):
+
+- A wire is connected where one of its **ends** touches a pin, the end of another wire, or the middle
+  of another wire. Where three or more connections meet, a **dot** is drawn.
+- Two wires that only **cross** are **not** connected (no dot). A wire that only passes over a pin is
+  not connected either.
+- A connected pin loses its small circle, so open (unconnected) pins are easy to see.
+
+## 8.7 Moving and editing wires
+
+![R2 being dragged to the right: its wires stretch and stay connected](images/schematic-rubber-band.png)
+
+- **Wires follow the parts.** Drag a part, turn it (**R**) or mirror it (**X** / **Y**): the wires
+  connected to it stretch and add a corner where needed, so nothing comes loose. You see this live
+  while you drag.
+- **Select a wire** with the arrow tool: click it (it turns teal), **Shift** / **Ctrl** + click to add
+  more, or drag a selection box: wires, parts and labels are selected together. **Ctrl + A** selects
+  everything.
+- A selected wire **moves** with the arrow keys or by dragging, and **Delete** removes it. Moving a
+  wire on its own takes it off its pins; move it together with its parts to keep everything connected.
+- As always, every change is one step for **Undo** (**Ctrl + Z**), for example *Undo Delete 1 wire*.
+
+![A selected wire in the Inspector: it is on net VOUT, which connects R1 pin 2 and R2 pin 1](images/schematic-net-inspector.png)
+
+Select **one wire** and the Inspector shows:
+
+| Row | Meaning |
+|---|---|
+| **Net** | The name of the connection the wire belongs to: a label name (here **VOUT**), **GND**, or a name made from the first pin, for example `N_V1_+`. *Not connected* means the wire touches no pin. |
+| **Pins on net** | Every pin on this connection, written *part.pin*, for example `R1.2` (pin 2 of R1) or `V1.+`. |
+| **Length**, **Corners** | Size and shape of the wire. |
+
+## 8.8 Net labels, copy and paste
+
+![The net label tool asks for the name first](images/schematic-label-name.png)
+
+A **net label** gives a connection a name. **All labels with the same name are connected**, even when
+no wire joins them, which keeps big drawings tidy. A label named **GND** connects to ground.
+
+1. Press **L**, or click the **net label tool** (third button of the tool palette).
+2. Type the name (1–32 letters, digits or `_ + . -`, for example `VOUT`, `SDA`, `5V`) and press **Enter**.
+3. Click on a wire or a pin end to place the label there. You can place more: a name ending in a
+   number counts up by itself (`D0`, `D1`, `D2`…).
+4. **R** turns the next label (for vertical wires). **N** asks for a new name. **Esc** stops.
+
+A label is selected, moved, turned (**R**) and deleted like a part. Select one label and the Inspector
+lets you **rename** it and shows how many labels share its name.
+
+**Copy, cut, paste and duplicate** work on everything you select (parts, wires and labels):
+
+| Keys | Does |
+|---|---|
+| **Ctrl + C** | Copy |
+| **Ctrl + X** | Cut (copy, then delete) |
+| **Ctrl + V** | Paste at the mouse pointer |
+| **Ctrl + D** | Duplicate next to the original |
+
+Pasted parts get new free names (if R1 and R2 exist, a copied R1 becomes R3), and the pasted items are
+selected so you can move them straight away. You can copy between project tabs and browser windows.
+The studio only pastes RoboSim drawings: anything else on the clipboard is ignored with a message, and
+nothing from the clipboard is used without being checked.
+
 # 9. If something goes wrong
 
 RoboSim Studio tries hard never to leave you with a blank or frozen page.
@@ -528,3 +611,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.0 · Day 10 | 2026-11-24 | Chapter 3 rewritten for the new home page; automatic Low-end mode and **System information** (7.7); Delete closes a project tab; new chapter 8, *If something goes wrong*. |
 | 0.0.1 | 2026-11-24 | **First public release (v0.0.1).** Version numbers updated throughout; no other changes. |
 | 0.0.1 · Day 12 | 2026-11-24 | New chapter 8, *Drawing a schematic*: zoom and pan, placing parts, selecting and editing, the Inspector, IEC / ANSI symbols and units. Canvas, Inspector and pointer position updated in chapter 7; *If something goes wrong* is now chapter 9. |
+| 0.0.1 · Day 13 | 2026-11-25 | New sections 8.6–8.8: wires (wire tool, what connects), moving and editing wires (wires follow parts, the wire's net in the Inspector), net labels, copy / paste / duplicate. |

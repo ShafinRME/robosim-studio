@@ -262,6 +262,90 @@ test.describe("schematic canvas", () => {
     await page.screenshot({ path: shot("schematic-box-select"), clip: box });
     await page.mouse.up();
   });
+
+  /** Wires the divider with the wire tool: V1 + → R1, R1 → R2, V1 − → ground, R2 → ground. */
+  async function wireDivider(page: Page) {
+    const canvas = page.getByTestId("studio-canvas");
+    await page.getByTestId("studio-canvas").focus();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("w");
+    const click = async (dx: number, dy: number) =>
+      canvas.click({ position: await at(page, dx, dy) });
+    await click(-8, -2);
+    await click(-8, -4);
+    await click(-5, -4); // ends on R1 pin 1
+    await click(-1, -4);
+    await click(2, -4);
+    await click(2, -2); // ends on R2 pin 1
+    await click(-8, 2);
+    await click(-8, 4); // ends on the ground pin
+    await click(2, 2);
+    await click(2, 4);
+    await expect(canvas.locator("[data-wire]")).toHaveCount(4);
+    await page.keyboard.press("Escape");
+    return canvas;
+  }
+
+  async function canvasClip(page: Page) {
+    const box = await page.getByTestId("studio-canvas").boundingBox();
+    if (!box) throw new Error("no layout");
+    return box;
+  }
+
+  test("drawing a wire", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await page.getByTestId("studio-canvas").focus();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("w");
+    await canvas.click({ position: await at(page, -8, -2) });
+    await canvas.click({ position: await at(page, -8, -4) });
+    await canvas.click({ position: await at(page, -5, -4) });
+    await canvas.click({ position: await at(page, -1, -4) });
+    await canvas.hover({ position: await at(page, 2, -2) });
+    await expect(canvas.getByTestId("wire-preview")).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-wiring"), clip: await canvasClip(page) });
+  });
+
+  test("rubber-banding while a part is dragged", async ({ page }) => {
+    await drawDivider(page);
+    await wireDivider(page);
+    const box = await canvasClip(page);
+    const from = await at(page, 2, 0);
+    const to = await at(page, 6, 1);
+    await page.mouse.move(box.x + from.x, box.y + from.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + to.x, box.y + to.y, { steps: 6 });
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-rubber-band"), clip: box });
+    await page.mouse.up();
+  });
+
+  test("net label name box", async ({ page }) => {
+    await drawDivider(page);
+    await wireDivider(page);
+    await page.keyboard.press("l");
+    const name = page.getByRole("textbox", { name: "Net label name" });
+    await name.fill("VOUT");
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-label-name"), clip: await canvasClip(page) });
+  });
+
+  test("a wire's net in the Inspector", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    await page.keyboard.press("l");
+    const name = page.getByRole("textbox", { name: "Net label name" });
+    await name.fill("VOUT");
+    await name.press("Enter");
+    await canvas.click({ position: await at(page, 0, -4) });
+    await page.keyboard.press("Escape");
+    await canvas.click({ position: await at(page, 2, -3) });
+    await expect(page.getByRole("region", { name: "Wire" })).toContainText("VOUT");
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("schematic-net-inspector") });
+  });
 });
 
 test("schematic symbols: IEC and ANSI", async ({ page }) => {
