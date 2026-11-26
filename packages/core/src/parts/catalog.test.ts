@@ -46,6 +46,13 @@ describe("parts catalogue", () => {
     expect(types("2mA")).toEqual(["source.dc-current"]);
   });
 
+  it("reads ohms written as a word or as RKM codes", () => {
+    expect(searchParts("220R")[0]?.preset).toEqual({ key: "resistance", value: 220, text: "220R" });
+    expect(searchParts("4R7")[0]?.preset?.value).toBeCloseTo(4.7);
+    expect(searchParts("10kohm")[0]?.preset?.value).toBe(10_000);
+    expect(searchParts("10k")[0]?.score).toBeLessThan(searchParts("10kohm")[0]?.score ?? 0);
+  });
+
   it("ignores values a part cannot take", () => {
     expect(types("0r")).not.toContain("resistor");
   });

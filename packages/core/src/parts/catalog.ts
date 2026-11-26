@@ -88,7 +88,9 @@ function valueMatch(
   if (!parsed.ok && fixed !== token) parsed = parseQuantity(fixed, property.quantity, property);
   if (!parsed.ok) return null;
   const unit = symbol.toLowerCase();
-  const namesUnit = token.toLowerCase().includes(unit) || (unit === "ω" && /ohm|r$/i.test(token));
+  // Ohms can also be written as a word ("10kohm") or as the R letter of RKM codes ("220R", "4R7").
+  const namesOhms = /ohm/i.test(token) || /^[0-9.]+r[0-9]*$/i.test(token);
+  const namesUnit = token.toLowerCase().includes(unit) || (unit === "ω" && namesOhms);
   // "10k" with no unit means ohms (the usual shorthand); other quantities need their unit.
   const score = namesUnit ? 70 : property.quantity === "resistance" ? 65 : 0;
   return score ? { key: property.key, value: parsed.value, text: token, score } : null;
