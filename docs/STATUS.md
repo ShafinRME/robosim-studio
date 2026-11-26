@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 14 · Step 6/8 done — Parts library & inspector (Phase 1 · Circuit Lab)
+**Current:** Day 14 · Step 7/8 done — Parts library & inspector (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-14-parts-library` (from `develop` after Day 13 merge `a3eb283`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -14,8 +14,8 @@
 | 4/8 | Parts drawer: searchable panel, categories, symbol previews, keyboard | ✅ done |
 | 5/8 | Place from the drawer (click, drag and drop), recently used; palette keeps Select / Wire / Label | ✅ done |
 | 6/8 | Property inspector from the part's properties (numbers, choices, switches; multi-edit) | ✅ done |
-| 7/8 | e2e + unit; User Manual (parts library, inspector), screenshots, `pnpm manual` | ⏳ next |
-| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
+| 7/8 | e2e + unit; User Manual (parts library, inspector), screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⏳ next (owner final test) |
 
 ## Decisions (Day 14)
 - **ADR 010** (`docs/adr/010-part-registry.md`, **Accepted by the owner 2026-11-26**): one TypeScript file per part in
@@ -58,6 +58,12 @@
   "Selection · 2 × Resistor", the same rows, "Mixed" where values differ, one undo step (`setPartsProp`, "Set
   resistance of 2 parts"). Symbols can change with a property (`states`, `bodyFor`): the switch is drawn closed when
   Closed is on; `checkPart` checks states. 736 unit, 110 e2e.
+- Step 7 — tests: parts drawer (6), inspector (4), drag data (unit), catalogue, registry, models; all e2e and
+  manual screenshots now place parts through the drawer. User Manual: 8.2 rewritten (Parts panel, search, search by
+  value, three ways to place, Add part, recently used, table of the six parts), 8.4 rewritten (every property, range
+  hints, on / off, several parts at once), tool palette, window parts and shortcuts (Alt + 5, A); 5 new screenshots,
+  all 28 re-captured, PDF rebuilt. The UI-kit symbol gallery now names and values parts from the registry (was "X1"
+  for new parts), and the manual screenshot hides the sticky section menu that covered it. 736 unit, 110 e2e.
 
 ## Day 13 steps
 | Step | Task | State |

@@ -4,6 +4,8 @@
  */
 import {
   SYMBOLS,
+  designatorPrefix,
+  partFor,
   placedBounds,
   type Placement,
   type SymbolDefinition,
@@ -12,12 +14,21 @@ import {
 import type { CSSProperties } from "react";
 import { PlacedSymbol } from "../../components/schematic/schematic-symbol";
 
-const SAMPLE: Readonly<Record<string, { designator: string; value?: number }>> = {
-  resistor: { designator: "R1", value: 4_700 },
-  "source.dc-voltage": { designator: "V1", value: 9 },
-  "source.dc-current": { designator: "I1", value: 0.002 },
-  ground: { designator: "" },
+/** Sample values that read well; other parts show their default value (ADR 010 registry). */
+const SAMPLE_VALUES: Readonly<Record<string, number>> = {
+  resistor: 4_700,
+  "source.dc-voltage": 9,
+  "source.dc-current": 0.002,
 };
+
+function sampleOf(type: string): { designator: string; value?: number } {
+  const part = partFor(type);
+  if (part?.role === "ground") return { designator: "" };
+  const key = part?.symbol.value?.key;
+  const fallback = part?.component?.properties.find((p) => p.key === key)?.default;
+  const value = SAMPLE_VALUES[type] ?? (typeof fallback === "number" ? fallback : undefined);
+  return { designator: `${designatorPrefix(type)}1`, ...(value === undefined ? {} : { value }) };
+}
 
 const VARIANTS: readonly { label: string; rotation: number; flip: boolean }[] = [
   { label: "0°", rotation: 0, flip: false },
@@ -36,7 +47,7 @@ function Cell({
   // Room for the labels around the body.
   const pad = 260;
   const viewBox = `${b.minX - pad} ${b.minY - pad} ${b.maxX - b.minX + 2 * pad} ${b.maxY - b.minY + 2 * pad}`;
-  const sample = SAMPLE[symbol.type] ?? { designator: "X1" };
+  const sample = sampleOf(symbol.type);
   return (
     <svg
       viewBox={viewBox}
