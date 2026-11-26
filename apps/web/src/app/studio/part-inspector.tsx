@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Inspector section for the schematic selection (Day 12): one part → designator, value, position
- * and orientation; several parts → how many. Fields edit on Enter or when they lose focus, Esc puts
- * the current value back; each change is one undoable edit. Values are typed like on real parts
- * ("4k7", "4.7 kΩ", "100n") and checked against the part's range with a plain-word message.
+ * Inspector section for the schematic selection. One part → name, type and **every property of its
+ * part file** (ADR 010): numbers with units and ranges, choices, on/off; then position and
+ * orientation. Several parts of the same type → the same rows, editing all of them at once ("Mixed"
+ * where they differ). Wires and net labels have their own sections. Fields edit on Enter or when
+ * they lose focus, Esc puts the current value back; each change is one undoable edit. Values are
+ * typed like on real parts ("4k7", "4.7 kΩ", "100n") and checked with a plain-word message.
  */
 import {
   NetlistError,
-  PLACEABLE_PARTS,
+  partFor,
   ProjectEditError,
   buildNetlist,
   connectivityOf,
@@ -17,15 +19,23 @@ import {
   netNameOf,
   parseQuantity,
   projectEdits,
-  symbolFor,
   type NetLabel,
-  type NumberProperty,
   type Part,
+  type PartDefinition,
+  type PropertyDefinition,
   type ProjectEdit,
   type ProjectStore,
   type Wire,
 } from "@robosim/core";
 import { Input } from "@robosim/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@robosim/ui/components/select";
+import { Switch } from "@robosim/ui/components/switch";
 import { InspectorRow, InspectorSection, InspectorValue } from "@robosim/ui/components/inspector";
 import { useMemo, useState } from "react";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
@@ -36,11 +46,13 @@ function CommitField({
   id,
   value,
   label,
+  placeholder,
   onCommit,
 }: {
   id: string;
   value: string;
   label: string;
+  placeholder?: string;
   /** Returns false to put the old value back. */
   onCommit: (text: string) => boolean;
 }) {
@@ -49,6 +61,7 @@ function CommitField({
     <Input
       id={id}
       value={draft}
+      placeholder={placeholder}
       aria-label={label}
       spellCheck={false}
       maxLength={40}
@@ -66,6 +79,119 @@ function CommitField({
         }
       }}
     />
+  );
+}
+
+type Apply = (edit: () => ProjectEdit) => boolean;
+
+/** "more than 0 Ω to 1 TΩ": the allowed range, shown as the row tooltip. */
+function rangeHint(property: PropertyDefinition): string | undefined {
+  if (property.kind !== "number") return undefined;
+  const { min, max, quantity } = property;
+  if (min === undefined && max === undefined) return undefined;
+  const from =
+    min === undefined
+      ? ""
+      : `${property.exclusiveMin ? "more than " : ""}${formatQuantity(min, quantity)}`;
+  const to = max === undefined ? "" : formatQuantity(max, quantity);
+  return from && to ? `${from} to ${to}` : from ? `at least ${from}` : `at most ${to}`;
+}
+
+/**
+ * One row per property of the part type, for one part or several of the same type. The part file
+ * describes the properties (ADR 010); nothing here is written for a particular part.
+ */
+function PropertyRows({
+  parts,
+  definition,
+  apply,
+}: {
+  parts: readonly Part[];
+  definition: PartDefinition;
+  apply: Apply;
+}) {
+  const { post } = useStudioStatus();
+  const ids = parts.map((p) => p.id);
+  const who = parts.length === 1 ? (parts[0]?.name ?? "") : `${parts.length} parts`;
+  return (
+    <>
+      {(definition.component?.properties ?? []).map((property) => {
+        const values = parts.map((p) => p.props[property.key] ?? property.default);
+        const first = values[0];
+        const same = values.every((v) => v === first);
+        const set = (value: number | string | boolean) =>
+          apply(() => projectEdits.setPartsProp(ids, property.key, value));
+        switch (property.kind) {
+          case "number":
+            return (
+              <InspectorRow key={property.key} label={property.label} hint={rangeHint(property)}>
+                {(id) => (
+                  <CommitField
+                    key={`${ids.join()}:${values.join()}`}
+                    id={id}
+                    label={property.label}
+                    value={
+                      same && typeof first === "number"
+                        ? formatQuantity(first, property.quantity, 6)
+                        : ""
+                    }
+                    placeholder={same ? undefined : "Mixed"}
+                    onCommit={(text) => {
+                      if (!text) return false;
+                      const parsed = parseQuantity(text, property.quantity, property);
+                      if (!parsed.ok) {
+                        post("warning", `${who}: ${parsed.message}`);
+                        return false;
+                      }
+                      return set(parsed.value);
+                    }}
+                  />
+                )}
+              </InspectorRow>
+            );
+          case "boolean":
+            return (
+              <InspectorRow key={property.key} label={property.label}>
+                {(id) => (
+                  <span className="flex items-center gap-2">
+                    <Switch
+                      id={id}
+                      aria-label={property.label}
+                      checked={same && first === true}
+                      onCheckedChange={(checked) => set(checked)}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {same ? (first === true ? "Yes" : "No") : "Mixed"}
+                    </span>
+                  </span>
+                )}
+              </InspectorRow>
+            );
+          case "choice":
+            return (
+              <InspectorRow key={property.key} label={property.label}>
+                {(id) => (
+                  <Select
+                    value={same && typeof first === "string" ? first : ""}
+                    onValueChange={(value) => set(value)}
+                  >
+                    <SelectTrigger id={id} size="sm" aria-label={property.label}>
+                      <SelectValue placeholder="Mixed" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {property.options.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </InspectorRow>
+            );
+        }
+      })}
+    </>
   );
 }
 
@@ -215,6 +341,29 @@ export function PartInspector({
     );
   }
 
+  const sameType =
+    selected.length > 1 &&
+    total === selected.length &&
+    selected.every((p) => p.type === selected[0]?.type)
+      ? partFor(selected[0]?.type ?? "")
+      : undefined;
+  if (sameType) {
+    return (
+      <InspectorSection id="part" title="Selection" meta={`${selected.length} × ${sameType.name}`}>
+        <InspectorRow label="Parts">
+          <InspectorValue tone="muted">
+            {selected
+              .map((p) => p.name)
+              .slice(0, 6)
+              .join(", ")}
+            {selected.length > 6 ? " …" : ""}
+          </InspectorValue>
+        </InspectorRow>
+        <PropertyRows parts={selected} definition={sameType} apply={apply} />
+      </InspectorSection>
+    );
+  }
+
   if (total > 1 || selected.length === 0) {
     const counts = [
       selected.length ? plural(selected.length, "part") : null,
@@ -242,13 +391,7 @@ export function PartInspector({
   }
 
   const part = selected[0] as Part;
-  const placeable = PLACEABLE_PARTS.find((p) => p.type === part.type);
-  const symbol = symbolFor(part.type);
-  const valueKey = symbol?.value?.key;
-  const property = placeable?.definition?.properties.find(
-    (p): p is NumberProperty => p.kind === "number" && p.key === valueKey,
-  );
-  const rawValue = valueKey ? part.props[valueKey] : undefined;
+  const definition = partFor(part.type);
 
   return (
     <InspectorSection id="part" title="Part">
@@ -275,29 +418,10 @@ export function PartInspector({
           />
         )}
       </InspectorRow>
-      <InspectorRow label="Type">
-        <InspectorValue tone="muted">{placeable?.label ?? part.type}</InspectorValue>
+      <InspectorRow label="Type" hint={definition?.description}>
+        <InspectorValue tone="muted">{definition?.name ?? part.type}</InspectorValue>
       </InspectorRow>
-      {property && typeof rawValue === "number" ? (
-        <InspectorRow label={property.label}>
-          {(id) => (
-            <CommitField
-              key={`${part.id}:${rawValue}`}
-              id={id}
-              label={property.label}
-              value={formatQuantity(rawValue, property.quantity, 6)}
-              onCommit={(text) => {
-                const parsed = parseQuantity(text, property.quantity, property);
-                if (!parsed.ok) {
-                  post("warning", `${part.name}: ${parsed.message}`);
-                  return false;
-                }
-                return apply(() => projectEdits.setPartProp(part.id, property.key, parsed.value));
-              }}
-            />
-          )}
-        </InspectorRow>
-      ) : null}
+      {definition ? <PropertyRows parts={[part]} definition={definition} apply={apply} /> : null}
       <InspectorRow label="Position">
         <InspectorValue tone="muted">
           {formatLength(part.x, lengthUnit).replace(/ (mm|in)$/, "")},{" "}

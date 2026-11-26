@@ -569,6 +569,30 @@ export const projectEdits = {
     };
   },
 
+  /** Sets one property on several parts as one undo step ("Set resistance of 3 parts"). */
+  setPartsProp(ids: readonly string[], key: string, value: PartValue): ProjectEdit {
+    if (!propKeySchema.safeParse(key).success)
+      throw new ProjectEditError(`Invalid property "${key}"`);
+    if (!propValueSchema.safeParse(value).success) {
+      throw new ProjectEditError(`Invalid value for "${key}"`);
+    }
+    const wanted = new Set(ids);
+    if (wanted.size > MAX_PROJECT_PARTS) throw new ProjectEditError("too many parts");
+    const recipe = (draft: Draft<Project>) => {
+      for (const part of draft.parts) {
+        if (!wanted.has(part.id)) continue;
+        if (!Object.hasOwn(part.props, key) && Object.keys(part.props).length >= MAX_PART_PROPS) {
+          throw new ProjectEditError(`A part can have at most ${MAX_PART_PROPS} properties`);
+        }
+        part.props[key] = value;
+      }
+    };
+    const [only] = wanted;
+    if (wanted.size === 1 && only !== undefined)
+      return { label: `Set ${key} of`, part: only, recipe };
+    return { label: `Set ${key} of ${wanted.size} parts`, recipe };
+  },
+
   removePartProp(id: string, key: string): ProjectEdit {
     return {
       label: `Remove ${key} of`,

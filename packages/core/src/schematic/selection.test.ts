@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { partSchema, type Part } from "../project";
 import {
-  PLACEABLE_PARTS,
   boxModeOf,
   createPart,
   hitTest,
@@ -78,15 +77,6 @@ describe("box selection", () => {
 });
 
 describe("createPart", () => {
-  it("offers the reference parts and ground", () => {
-    expect(PLACEABLE_PARTS.map((p) => p.type)).toEqual([
-      "resistor",
-      "source.dc-voltage",
-      "source.dc-current",
-      "ground",
-    ]);
-  });
-
   it("gives the next free designator and the default values", () => {
     const created = createPart("resistor", { x: 300, y: 400 }, [{ name: "R1" }, { name: "V1" }], {
       id: "n1",

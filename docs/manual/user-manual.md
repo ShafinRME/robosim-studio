@@ -191,10 +191,10 @@ other labs fill the panels in later versions. You can arrange the workspace the 
 | **Top bar** | Logo, the **File · Edit · View · Help** menus, the simulation buttons, **Search commands…** and the theme switch. |
 | **Simulation controls** (▶ ⏭ ■ 1×) | Run / Pause, Step, Stop and the simulation speed (see 7.6). |
 | **Project tabs** | One tab per open project. **+** adds a new one. |
-| **Explorer** (left) | Will list the files and parts of your project. |
+| **Explorer** and **Parts** (left, two tabs) | Explorer will list your project's files. **Parts** is the parts library: search it and place parts on the canvas (8.2). |
 | **Canvas** (middle) | The schematic: place, select and arrange circuit parts on a grid (chapter 8). |
 | **Console** (under the canvas) | A log of everything the studio tells you, with the time. |
-| **Inspector** (right) | Shows the selected part (name, value, position, orientation) and the open project (name, lab, parts). |
+| **Inspector** (right) | Shows the selected part with all its properties (8.4), a wire's net, a net label, and the open project (name, lab, parts). |
 | **Status bar** (bottom) | State, latest message, pointer position, Low-end mode and version. |
 
 ## 7.2 Arranging panels
@@ -395,9 +395,10 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 | **Alt + W** | Close project |
 | **Alt + ]** / **Alt + [** | Next / previous project tab |
 | **Alt + 1 … 4** | Show or hide Explorer, Canvas, Inspector, Console |
+| **Alt + 5** | Show or hide the Parts panel |
 | **Alt + Shift + R** | Reset layout |
 | **Alt + Shift + L** | Low-end mode on / off |
-| **F**, **+**, **−**, **R**, **X**, **Y**, arrows, **Delete**, **Ctrl + A** (on the canvas) | Schematic keys — see chapter 8 |
+| **A**, **W**, **L**, **F**, **+**, **−**, **R**, **X**, **Y**, arrows, **Delete**, **Ctrl + A** (on the canvas) | Schematic keys — see chapter 8 |
 
 - On a Mac use **⌘** instead of **Ctrl** and **⌥ Option** instead of **Alt**.
 - While you type in a text box (such as the palette search), only **Ctrl** shortcuts work, so your
@@ -407,11 +408,16 @@ Press **Ctrl + /** or **?** (or **Help → Keyboard shortcuts**) to see this lis
 
 # 8. Drawing a schematic
 
-![The schematic editor: tool palette on the left, a circuit on the grid, R2 selected and shown in the Inspector](images/schematic-editor.png)
+![The schematic editor: the Parts panel on the left, the tool palette on the canvas, R2 selected and shown in the Inspector](images/schematic-editor.png)
 
 The **Canvas** is a schematic editor that works like professional circuit software. Parts sit on a
 grid of **2.54 mm (0.1 inch)** — the standard spacing of component pins — so their connection points
-always line up. Wires and net labels connect the parts (sections 8.6–8.8).
+always line up. Parts come from the **Parts** panel (8.2); wires and net labels connect them
+(8.6–8.8).
+
+The **tool palette** on the left of the canvas has, from the top: **Select** (Esc), **Wire** (W),
+**Net label** (L) and **Add part** (A), then **Rotate**, **Mirror left–right**, **Mirror top–bottom**
+and **Delete** for the selection.
 
 ## 8.1 Moving around: zoom and pan
 
@@ -427,20 +433,53 @@ always line up. Wires and net labels connect the parts (sections 8.6–8.8).
 The small cross on the grid is the origin (0, 0). The status bar shows where the pointer is on the
 grid, in millimetres or inches.
 
-## 8.2 Placing parts
+## 8.2 The parts library and placing parts
+
+![The Parts panel: parts by group, each with its own symbol](images/parts-panel.png)
+
+The **Parts** panel (the tab beside Explorer; **View → Parts** or **Alt + 5**) lists every part,
+grouped like a component catalogue, each with a small drawing of its symbol, one line about what it
+does, and its name prefix (R, V, SW…).
+
+| Part | Name | What it is | You can set |
+|---|---|---|---|
+| DC voltage source | V1, V2… | A fixed voltage between + and −, like an ideal battery | Voltage |
+| DC current source | I1… | A fixed current, whatever the voltage | Current |
+| Ground | GND1… | The 0 V reference; every circuit needs one | — |
+| Resistor | R1… | Limits current (V = I × R) | Resistance, tolerance, power rating |
+| Potentiometer | RV1… | A resistor with a sliding wiper (a turnable voltage divider) | Resistance, wiper position (0–100 %) |
+| Switch (SPST) | SW1… | An on/off switch; open by default | Closed (on / off) |
+
+**Search.** Type in the box at the top: the list filters as you type — by name (`resistor`), short
+word (`pot`, `gnd`, `battery`, `toggle`) or prefix (`sw`). Every word must match.
+
+![Searching for 10k: both parts that can be 10 kΩ, with the value ready](images/parts-search.png)
+
+**Search by value.** Type a value the way it is printed on parts — `10k`, `4k7`, `220R`, `9V`,
+`2mA` — and the parts that can have it are shown with the value in a teal tag. The part you place
+then starts with that value. A number with a prefix and no unit (`10k`) means ohms.
+
+**Placing a part** — three ways:
+
+1. **Click** a part in the list, or choose it with **↑** / **↓** and press **Enter**. The canvas
+   switches to placing it: a teal outline follows the pointer and snaps to the grid.
+   - **R** turns it 90° (**Shift + R** the other way), **X** mirrors it left–right, **Y** top–bottom.
+   - Click to place it. You stay in the tool, so you can place more of the same part.
+   - **Esc** or right-click (or the arrow tool) stops placing.
+2. **Drag** a part from the list onto the canvas. A teal outline shows where it will land; let go to
+   place it. The new part is selected, ready to move or edit.
+3. On the canvas, press **A** (or click **Add part** in the tool palette): the cursor jumps to the
+   parts search. Type, press **Enter**, click to place.
+
+![Dragging a switch from the Parts panel: the teal outline shows where it will land](images/parts-drag.png)
+
+While you place a part, the **Add part** button shows that part's symbol. **Esc** in the search box
+clears it. The parts you placed last are listed first under **Recently used**.
+
+Every part gets the next free name automatically — **R1**, **R2**, … **V1**, **I1**, **SW1**,
+**GND1** — and a sensible starting value (for example 1 kΩ, 5 V, 1 mA, 10 kΩ at 50 %).
 
 ![Placing a resistor: the teal outline shows where it will go](images/schematic-placing.png)
-
-1. In the **tool palette** on the left of the canvas, click a part: **resistor**, **DC voltage
-   source**, **DC current source** or **ground**.
-2. Move the mouse over the canvas: a teal outline of the part follows the pointer and snaps to the grid.
-3. Press **R** to turn it 90° (**Shift + R** turns the other way), **X** to mirror it left–right or
-   **Y** to mirror it top–bottom.
-4. Click to place it. You stay in the tool, so you can place more of the same part.
-5. Press **Esc** or right-click (or click the arrow tool) to stop placing.
-
-Every part gets the next free name automatically — **R1**, **R2**, … **V1**, **I1**, **GND1** — and
-a sensible starting value (for example 1 kΩ, 5 V, 1 mA).
 
 ## 8.3 Selecting and editing
 
@@ -465,19 +504,29 @@ The **rotate**, **mirror** and **delete** buttons at the bottom of the tool pale
 group of parts turns and mirrors around its middle, keeping its layout. Every change is one step
 for **Undo** (**Ctrl + Z**) — the Edit menu says what will be undone, for example *Undo Move 2 parts*.
 
-## 8.4 Changing a part in the Inspector
+## 8.4 Changing parts in the Inspector
 
-Select one part and the Inspector shows:
+![A potentiometer in the Inspector: its resistance and wiper position](images/inspector-properties.png)
+
+Select one part and the Inspector shows **every property of that part**:
 
 | Row | What you can do |
 |---|---|
 | **Name** | Rename the part (it must start with a letter, for example `R_load`). |
-| **Type** | What kind of part it is. |
-| **Resistance / Voltage / Current** | Type a new value and press **Enter**. Write it the way it is printed on parts: `4.7k`, `4k7`, `4.7 kΩ`, `220R`, `100n`, `10 µF`, `500 mV`. A value that is not possible (for example `0` Ω) is refused with a message in the status bar, and the old value stays. |
+| **Type** | What kind of part it is (point at it to read what the part does). |
+| **Numbers** (Resistance, Voltage, Current, Tolerance, Power rating, Wiper position…) | Type a new value and press **Enter**. Write it the way it is printed on parts: `4.7k`, `4k7`, `4.7 kΩ`, `220R`, `100n`, `500 mV`, `25 %`. Point at the row's name to see the allowed range. A value that is not possible (for example `0` Ω or a wiper at `150 %`) is refused with a message in the status bar, and the old value stays. |
+| **On / off** (the switch's **Closed**) | Click the switch control. The symbol on the canvas changes: a closed switch is drawn closed. |
 | **Position**, **Orientation** | Where the part is (from the origin) and how it is turned and mirrored. |
 
-With several parts selected, the Inspector shows how many and their names. **Esc** in a field puts
-the old value back.
+**Esc** in a field puts the old value back. Every change is one step for **Undo**.
+
+![Two resistors selected: Resistance shows Mixed because their values differ](images/inspector-multi.png)
+
+**Several parts at once.** Select two or more parts **of the same type** (for example all
+resistors): the Inspector shows *Selection · 2 × Resistor* and the same rows. A row whose values
+differ says **Mixed**. Type a value and press **Enter** to give it to all of them — one step for
+Undo (*Undo Set resistance of 2 parts*). With different kinds of parts selected, the Inspector shows
+how many of each.
 
 ## 8.5 Symbol style and units
 
@@ -496,7 +545,7 @@ however a part is turned.
 
 ![Drawing a wire: the solid part is fixed, the dashed part follows the pointer to R2's pin](images/schematic-wiring.png)
 
-1. Press **W**, or click the **wire tool** (second button of the tool palette).
+1. Press **W**, or click **Wire** (second button of the tool palette).
 2. Click on a part's **pin end** (the small orange circle) to start the wire.
 3. Move the mouse: a dashed **L-shaped** preview follows the pointer. Press **/** to switch it between
    *across first* and *down first*.
@@ -552,7 +601,7 @@ Select **one wire** and the Inspector shows:
 A **net label** gives a connection a name. **All labels with the same name are connected**, even when
 no wire joins them, which keeps big drawings tidy. A label named **GND** connects to ground.
 
-1. Press **L**, or click the **net label tool** (third button of the tool palette).
+1. Press **L**, or click **Net label** (third button of the tool palette).
 2. Type the name (1–32 letters, digits or `_ + . -`, for example `VOUT`, `SDA`, `5V`) and press **Enter**.
 3. Click on a wire or a pin end to place the label there. You can place more: a name ending in a
    number counts up by itself (`D0`, `D1`, `D2`…).
@@ -612,3 +661,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.1 | 2026-11-24 | **First public release (v0.0.1).** Version numbers updated throughout; no other changes. |
 | 0.0.1 · Day 12 | 2026-11-24 | New chapter 8, *Drawing a schematic*: zoom and pan, placing parts, selecting and editing, the Inspector, IEC / ANSI symbols and units. Canvas, Inspector and pointer position updated in chapter 7; *If something goes wrong* is now chapter 9. |
 | 0.0.1 · Day 13 | 2026-11-25 | New sections 8.6–8.8: wires (wire tool, what connects), moving and editing wires (wires follow parts, the wire's net in the Inspector), net labels, copy / paste / duplicate. |
+| 0.0.1 · Day 14 | 2026-11-26 | Section 8.2 rewritten: the **Parts** panel (search, search by value, drag and drop, Add part, recently used) and the list of parts, with the new potentiometer and switch. Section 8.4: every property in the Inspector, editing several parts at once. Tool palette, window parts and shortcuts (Alt + 5, A) updated. |

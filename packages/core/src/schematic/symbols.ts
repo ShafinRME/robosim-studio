@@ -37,150 +37,30 @@ export interface SymbolDefinition {
   readonly labels?: { readonly designator: Point; readonly value: Point };
   /** The property shown as the value label ("4.7 kΩ"). */
   readonly value?: { readonly key: string; readonly quantity: Quantity };
+  /**
+   * Other artwork while a property has a given value (a closed switch). The first matching state
+   * wins; otherwise `body` is drawn.
+   */
+  readonly states?: readonly SymbolState[];
 }
 
-const line = (x1: number, y1: number, x2: number, y2: number): Primitive => ({
-  kind: "line",
-  x1,
-  y1,
-  x2,
-  y2,
-});
-const both = (primitives: readonly Primitive[]) => ({ iec: primitives, ansi: primitives });
-
-/** "+" and "−" signs drawn as lines (crisp at every zoom, no font needed). */
-const plus = (cx: number, cy: number, s = 22): Primitive[] => [
-  line(cx - s, cy, cx + s, cy),
-  line(cx, cy - s, cx, cy + s),
-];
-const minus = (cx: number, cy: number, s = 22): Primitive[] => [line(cx - s, cy, cx + s, cy)];
-
-/** ANSI zig-zag between x = −100 and 100: six peaks, ±40 mil. */
-const ZIGZAG: readonly (readonly [number, number])[] = [
-  [-100, 0],
-  [-83, -40],
-  [-50, 40],
-  [-17, -40],
-  [17, 40],
-  [50, -40],
-  [83, 40],
-  [100, 0],
-];
-
-/** Resistor, horizontal: pin 1 left, pin 2 right, 400 mil long. */
-export const RESISTOR_SYMBOL: SymbolDefinition = {
-  type: "resistor",
-  bounds: { minX: -200, minY: -40, maxX: 200, maxY: 40 },
-  pins: [
-    { id: "1", x: -200, y: 0 },
-    { id: "2", x: 200, y: 0 },
-  ],
-  body: {
-    iec: [
-      line(-200, 0, -100, 0),
-      { kind: "rect", x: -100, y: -40, width: 200, height: 80 },
-      line(100, 0, 200, 0),
-    ],
-    ansi: [line(-200, 0, -100, 0), { kind: "polyline", points: ZIGZAG }, line(100, 0, 200, 0)],
-  },
-  labels: { designator: { x: 0, y: -90 }, value: { x: 0, y: 90 } },
-  value: { key: "resistance", quantity: "resistance" },
-};
-
-/** DC voltage source, vertical: "+" on top. */
-export const DC_VOLTAGE_SYMBOL: SymbolDefinition = {
-  type: "source.dc-voltage",
-  bounds: { minX: -100, minY: -200, maxX: 100, maxY: 200 },
-  pins: [
-    { id: "+", x: 0, y: -200 },
-    { id: "-", x: 0, y: 200 },
-  ],
-  body: {
-    // IEC 60617: circle with the conductor drawn through it, polarity mark outside.
-    iec: [line(0, -200, 0, 200), { kind: "circle", cx: 0, cy: 0, r: 100 }, ...plus(55, -150, 18)],
-    // ANSI: circle with + and − inside.
-    ansi: [
-      line(0, -200, 0, -100),
-      { kind: "circle", cx: 0, cy: 0, r: 100 },
-      line(0, 100, 0, 200),
-      ...plus(0, -42),
-      ...minus(0, 45),
-    ],
-  },
-  labels: { designator: { x: 150, y: -40 }, value: { x: 150, y: 40 } },
-  value: { key: "voltage", quantity: "voltage" },
-};
-
-/** DC current source, vertical: current flows in at the bottom and out at the top (arrow up). */
-export const DC_CURRENT_SYMBOL: SymbolDefinition = {
-  type: "source.dc-current",
-  // Wider on the right for the IEC direction arrow.
-  bounds: { minX: -100, minY: -200, maxX: 170, maxY: 200 },
-  pins: [
-    { id: "in", x: 0, y: 200 },
-    { id: "out", x: 0, y: -200 },
-  ],
-  body: {
-    // IEC 60617: circle with a bar across the conductor; direction arrow beside it.
-    iec: [
-      line(0, -200, 0, -100),
-      { kind: "circle", cx: 0, cy: 0, r: 100 },
-      line(-100, 0, 100, 0),
-      line(0, 100, 0, 200),
-      line(150, 60, 150, -40),
-      {
-        kind: "polygon",
-        points: [
-          [150, -75],
-          [132, -35],
-          [168, -35],
-        ],
-      },
-    ],
-    // ANSI: circle with an arrow inside.
-    ansi: [
-      line(0, -200, 0, -100),
-      { kind: "circle", cx: 0, cy: 0, r: 100 },
-      line(0, 100, 0, 200),
-      line(0, 60, 0, -25),
-      {
-        kind: "polygon",
-        points: [
-          [0, -65],
-          [-20, -22],
-          [20, -22],
-        ],
-      },
-    ],
-  },
-  labels: { designator: { x: -150, y: -40 }, value: { x: -150, y: 40 } },
-  value: { key: "current", quantity: "current" },
-};
-
-/** Ground (signal / 0 V reference): pin on top, three bars. */
-export const GROUND_SYMBOL: SymbolDefinition = {
-  type: "ground",
-  bounds: { minX: -100, minY: 0, maxX: 100, maxY: 180 },
-  pins: [{ id: "1", x: 0, y: 0 }],
-  body: both([
-    line(0, 0, 0, 100),
-    line(-100, 100, 100, 100),
-    line(-60, 140, 60, 140),
-    line(-20, 180, 20, 180),
-  ]),
-};
-
-export const SYMBOLS: readonly SymbolDefinition[] = [
-  RESISTOR_SYMBOL,
-  DC_VOLTAGE_SYMBOL,
-  DC_CURRENT_SYMBOL,
-  GROUND_SYMBOL,
-];
-const BY_TYPE = new Map(SYMBOLS.map((s) => [s.type, s]));
-
-export function symbolFor(type: string): SymbolDefinition | undefined {
-  return BY_TYPE.get(type);
+export interface SymbolState {
+  readonly key: string;
+  readonly value: string | number | boolean;
+  readonly body: Readonly<Record<SymbolStyle, readonly Primitive[]>>;
 }
+
+/** The artwork to draw for a part with these property values. */
+export function bodyFor(
+  symbol: SymbolDefinition,
+  props?: Readonly<Record<string, string | number | boolean>>,
+): Readonly<Record<SymbolStyle, readonly Primitive[]>> {
+  if (!props || !symbol.states) return symbol.body;
+  return symbol.states.find((state) => props[state.key] === state.value)?.body ?? symbol.body;
+}
+
+// Symbols live in the part files (ADR 010); the registry is the one list.
+export { SYMBOLS, designatorPrefix, symbolFor } from "../parts/registry";
 
 // ─── Transforms ──────────────────────────────────────────────────────────────────────────────────
 
@@ -310,18 +190,6 @@ export function placeLabels(
 }
 
 // ─── Reference designators ───────────────────────────────────────────────────────────────────────
-
-/** Designator prefix for symbol types that are not circuit components ("ground" → "GND"). */
-const DESIGNATOR_PREFIXES: Readonly<Record<string, string>> = {
-  resistor: "R",
-  "source.dc-voltage": "V",
-  "source.dc-current": "I",
-  ground: "GND",
-};
-
-export function designatorPrefix(type: string): string {
-  return DESIGNATOR_PREFIXES[type] ?? "X";
-}
 
 /** Lowest free designator for a prefix: R1, R2, … (gaps are reused, like EDA annotation). */
 export function nextDesignator(prefix: string, existing: Iterable<string>): string {

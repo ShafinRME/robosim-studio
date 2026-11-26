@@ -21,7 +21,8 @@
     "test:e2e": "pnpm --filter @robosim/web test:e2e",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "manual:screenshots": "pnpm --filter @robosim/web manual:screenshots"
+    "manual:screenshots": "pnpm --filter @robosim/web manual:screenshots",
+    "parts": "pnpm --filter @robosim/core parts"
   },
   "devDependencies": {
     "@changesets/cli": "3.0.3",

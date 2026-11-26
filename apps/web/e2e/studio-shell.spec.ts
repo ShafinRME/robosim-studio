@@ -42,12 +42,16 @@ test.describe("studio top bar and project tabs", () => {
   });
 
   test("a closed panel can be reopened from the View menu", async ({ page }) => {
-    await page.locator(".dv-tab", { hasText: "Explorer" }).getByRole("button").click();
-    await expect(page.locator(".dv-tab", { hasText: "Explorer" })).toHaveCount(0);
+    const explorer = page.locator(".dv-tab", { hasText: "Explorer" });
+    await explorer.click(); // a tab shows its close button when it is the active one
+    await explorer.getByRole("button").click();
+    await expect(explorer).toHaveCount(0);
 
     await menu(page, "View").click();
     await page.getByRole("menuitemcheckbox", { name: "Explorer" }).click();
-    await expect(page.locator(".dv-tab", { hasText: "Explorer" })).toBeVisible();
+    await expect(explorer).toBeVisible();
+    // It goes back beside Parts (same column), not into a new one.
+    await expect(page.locator(".dv-groupview")).toHaveCount(4);
   });
 
   test("Help menu links open the project on GitHub in a new tab", async ({ page }) => {

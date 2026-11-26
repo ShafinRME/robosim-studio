@@ -248,11 +248,15 @@ export type {
 export { QUANTITIES, unitOf } from "./circuit/quantities";
 export type { Quantity } from "./circuit/quantities";
 export {
-  REFERENCE_PARTS,
-  dcCurrentSourceDefinition,
-  dcVoltageSourceDefinition,
-  resistorDefinition,
-} from "./circuit/reference-parts";
+  COMPONENTS,
+  PARTS,
+  componentFor,
+  partFor,
+  requireComponent,
+  requirePart,
+} from "./parts/registry";
+export { checkPart, definePart } from "./parts/part";
+export type { PartDefinition, PartModel, PartSpec } from "./parts/part";
 export { dcPathsOf } from "./circuit/component";
 export { formatQuantity, parseQuantity } from "./circuit/quantities";
 export type { QuantityParseResult, QuantityRange } from "./circuit/quantities";
@@ -295,11 +299,8 @@ export {
 } from "./schematic/viewport";
 export type { LengthUnit, Point, Rect, Size, Viewport } from "./schematic/viewport";
 export {
-  DC_CURRENT_SYMBOL,
-  DC_VOLTAGE_SYMBOL,
-  GROUND_SYMBOL,
-  RESISTOR_SYMBOL,
   SYMBOLS,
+  bodyFor,
   SYMBOL_STYLES,
   designatorPrefix,
   nextDesignator,
@@ -317,11 +318,11 @@ export type {
   Primitive,
   SymbolDefinition,
   SymbolPin,
+  SymbolState,
   SymbolStyle,
 } from "./schematic/symbols";
 export { DEFAULT_GRID } from "./project-store";
 export {
-  PLACEABLE_PARTS,
   UNKNOWN_PART_HALF,
   boxModeOf,
   createPart,
@@ -337,7 +338,7 @@ export {
   rectFromPoints,
   wiresInRect,
 } from "./schematic/selection";
-export type { BoxMode, PlaceablePart } from "./schematic/selection";
+export type { BoxMode } from "./schematic/selection";
 export { isOrthogonal, onSegment, routeL, segmentAt, simplifyWire } from "./schematic/wires";
 export type { Posture } from "./schematic/wires";
 export { connectivityOf, netNameOf, pinKey, placedPinsOf } from "./schematic/connectivity";
@@ -354,3 +355,5 @@ export {
   serializeClipboard,
 } from "./schematic/clipboard";
 export type { SchematicClipboard } from "./schematic/clipboard";
+export { CATEGORY_LABELS, groupParts, searchParts } from "./parts/catalog";
+export type { PartGroup, PartMatch } from "./parts/catalog";

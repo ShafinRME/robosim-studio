@@ -1,47 +1,14 @@
 import { describe, expect, it } from "vitest";
-import {
-  checkDefinition,
-  createDevice,
-  resolveProps,
-  type ComponentDefinition,
-  type Device,
-} from "./component";
-import { createDenseMna, createSolution } from "./mna";
-import { buildNetlist, type CircuitInput, type CircuitPart, type PinRef } from "./netlist";
-import {
-  REFERENCE_PARTS,
-  dcCurrentSourceDefinition,
-  dcVoltageSourceDefinition,
-  resistorDefinition,
-} from "./reference-parts";
+import { checkDefinition, createDevice, resolveProps, type ComponentDefinition } from "./component";
+import { simulate } from "./testing";
+import { buildNetlist, type CircuitPart, type PinRef } from "./netlist";
+import { COMPONENTS, requireComponent } from "../parts/registry";
 
-/** Test-only Gaussian elimination with partial pivoting (the real LU solver arrives on Day 15). */
-function solveDense(matrix: Float64Array, rhs: Float64Array, n: number): Float64Array {
-  const a = Float64Array.from(matrix);
-  const x = Float64Array.from(rhs);
-  for (let col = 0; col < n; col++) {
-    let pivot = col;
-    for (let r = col + 1; r < n; r++)
-      if (Math.abs(a[r * n + col] ?? 0) > Math.abs(a[pivot * n + col] ?? 0)) pivot = r;
-    if (Math.abs(a[pivot * n + col] ?? 0) < 1e-15) throw new Error("singular");
-    for (let c = 0; c < n; c++)
-      [a[col * n + c], a[pivot * n + c]] = [a[pivot * n + c] ?? 0, a[col * n + c] ?? 0];
-    [x[col], x[pivot]] = [x[pivot] ?? 0, x[col] ?? 0];
-    for (let r = col + 1; r < n; r++) {
-      const f = (a[r * n + col] ?? 0) / (a[col * n + col] ?? 1);
-      for (let c = col; c < n; c++) a[r * n + c] = (a[r * n + c] ?? 0) - f * (a[col * n + c] ?? 0);
-      x[r] = (x[r] ?? 0) - f * (x[col] ?? 0);
-    }
-  }
-  for (let r = n - 1; r >= 0; r--) {
-    let sum = x[r] ?? 0;
-    for (let c = r + 1; c < n; c++) sum -= (a[r * n + c] ?? 0) * (x[c] ?? 0);
-    x[r] = sum / (a[r * n + r] ?? 1);
-  }
-  return x;
-}
+const REFERENCE_PARTS = COMPONENTS;
+const resistorDefinition = requireComponent("resistor");
+const dcVoltageSourceDefinition = requireComponent("source.dc-voltage");
+const dcCurrentSourceDefinition = requireComponent("source.dc-current");
 
-const DEFINITIONS = new Map(REFERENCE_PARTS.map((d) => [d.type, d]));
 const pin = (part: string, id: string): PinRef => ({ part, pin: id });
 const part = (
   definition: ComponentDefinition,
@@ -62,33 +29,6 @@ const groundPart: CircuitPart = {
   pins: ["1"],
   props: {},
 };
-
-/** Netlist → devices → stamps → solve → reports: the whole Day 11 contract end to end. */
-function simulate(input: CircuitInput) {
-  const netlist = buildNetlist(input);
-  let branch = 0;
-  const devices = new Map<string, Device>();
-  for (const component of netlist.components) {
-    const definition = DEFINITIONS.get(component.type);
-    if (!definition) throw new Error(`unknown part ${component.type}`);
-    const created = createDevice(definition, component, branch, 0);
-    if (!created.ok) throw new Error(JSON.stringify(created.problems));
-    devices.set(component.designator, created.device);
-    branch += definition.branches;
-  }
-  const mna = createDenseMna(netlist.nets.length, branch);
-  for (const device of devices.values()) device.stamp(mna.context);
-  const solution = createSolution(
-    solveDense(mna.matrix, mna.rhs, mna.size),
-    netlist.nets.length,
-    branch,
-  );
-  const report = (designator: string) =>
-    Object.fromEntries(
-      (devices.get(designator)?.report(solution) ?? []).map((r) => [r.key, r.value]),
-    );
-  return { netlist, solution, report };
-}
 
 describe("reference parts", () => {
   it("are valid definitions", () => {

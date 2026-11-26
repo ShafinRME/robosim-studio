@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pickPart } from "./part-helpers";
 
 /**
  * Day 12 "done when": 50 parts can be placed and moved smoothly — also in Low-end mode.
@@ -57,7 +58,7 @@ async function placeFifty(page: Page) {
   const box = await canvas(page).boundingBox();
   if (!box) throw new Error("no layout");
   // 10 × 5 grid of resistors, 500 mil apart (48 px at 100 %), centred on the origin.
-  await page.getByRole("radio", { name: "Place resistor" }).click();
+  await pickPart(page, "Resistor");
   const started = Date.now();
   for (let row = 0; row < 5; row++) {
     for (let col = 0; col < 10; col++) {

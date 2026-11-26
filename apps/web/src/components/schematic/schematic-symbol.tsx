@@ -6,6 +6,7 @@
  * zoomed out. Labels are drawn outside the part's transform, so text is always upright.
  */
 import {
+  bodyFor,
   formatQuantity,
   placeLabels,
   placedPins,
@@ -62,17 +63,20 @@ function PrimitiveShape({ p }: { p: Primitive }) {
   }
 }
 
-/** The symbol's artwork at rotation 0 (no pins markers, no labels). */
+/** The symbol's artwork at rotation 0 (no pin markers, no labels), for these property values. */
 export const SymbolBody = memo(function SymbolBody({
   symbol,
   style,
+  props,
 }: {
   symbol: SymbolDefinition;
   style: SymbolStyle;
+  /** The part's properties: some symbols change with them (a closed switch). */
+  props?: Readonly<Record<string, string | number | boolean>>;
 }) {
   return (
     <>
-      {symbol.body[style].map((p, i) => (
+      {bodyFor(symbol, props)[style].map((p, i) => (
         <PrimitiveShape key={i} p={p} />
       ))}
     </>
@@ -92,6 +96,8 @@ export type PlacedSymbolProps = {
   showPins?: boolean;
   /** Pin ids that are connected (wire, pin or label): their open circles are hidden. Comma-separated so the memo compares cheaply. */
   connectedPins?: string;
+  /** The part's properties, for symbols drawn by state (a closed switch). */
+  props?: Readonly<Record<string, string | number | boolean>>;
 };
 
 export function formatSymbolValue(
@@ -113,13 +119,14 @@ export const PlacedSymbol = memo(function PlacedSymbol({
   showLabels = true,
   showPins = true,
   connectedPins = "",
+  props,
 }: PlacedSymbolProps) {
   const valueText = formatSymbolValue(symbol, value);
   const labels = showLabels ? placeLabels(placement, symbol) : null;
   return (
     <g>
       <g transform={placementTransform(placement)}>
-        <SymbolBody symbol={symbol} style={style} />
+        <SymbolBody symbol={symbol} style={style} props={props} />
       </g>
       {showPins
         ? placedPins(placement, symbol)

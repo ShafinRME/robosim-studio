@@ -5,8 +5,7 @@
  * drawn last (on top) wins. Box selection follows EDA/CAD tools: dragging left → right selects
  * parts fully inside the box, right → left selects everything the box touches.
  */
-import { REFERENCE_PARTS } from "../circuit/reference-parts";
-import type { ComponentDefinition } from "../circuit/component";
+import { partFor } from "../parts/registry";
 import type { NetLabel, Part, Wire, WirePoint } from "../project";
 import { designatorPrefix, nextDesignator, placedBounds, symbolFor } from "./symbols";
 import type { Point, Rect } from "./viewport";
@@ -188,26 +187,7 @@ export function labelsInRect(labels: readonly NetLabel[], rect: Rect, mode: BoxM
     .map((label) => label.id);
 }
 
-// ─── Placement catalogue ─────────────────────────────────────────────────────────────────────────
-
-export interface PlaceablePart {
-  readonly type: string;
-  readonly label: string;
-  readonly definition?: ComponentDefinition;
-}
-
-/**
- * Parts that can be placed today (Day 12). The searchable parts library (Day 14) replaces this
- * list with the full registry; the reference parts plus ground are enough to draw DC circuits.
- */
-export const PLACEABLE_PARTS: readonly PlaceablePart[] = [
-  ...REFERENCE_PARTS.map((definition) => ({
-    type: definition.type,
-    label: definition.name,
-    definition,
-  })),
-  { type: "ground", label: "Ground" },
-];
+// ─── Placing parts ─────────────────────────────────────────────────────────────────────────
 
 /**
  * A new part of `type` at `at` with the next free designator (R1, R2…) and the definition's
@@ -219,11 +199,10 @@ export function createPart(
   existing: readonly Pick<Part, "name">[],
   options: { id: string; rotation?: number; flip?: boolean },
 ): Part {
-  const placeable = PLACEABLE_PARTS.find((p) => p.type === type);
   const props: Part["props"] = {};
-  for (const property of placeable?.definition?.properties ?? [])
+  for (const property of partFor(type)?.component?.properties ?? [])
     props[property.key] = property.default;
-  const prefix = placeable?.definition?.designatorPrefix ?? designatorPrefix(type);
+  const prefix = designatorPrefix(type);
   return {
     id: options.id,
     type,

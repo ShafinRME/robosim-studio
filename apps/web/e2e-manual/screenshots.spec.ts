@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { pickPart } from "../e2e/part-helpers";
 
 const OUT = path.resolve(__dirname, "../../../docs/manual/images");
 const shot = (name: string) => path.join(OUT, `${name}.png`);
@@ -202,7 +203,7 @@ test.describe("schematic canvas", () => {
 
   async function place(page: Page, tool: string, dx: number, dy: number, turns = 0) {
     const canvas = page.getByTestId("studio-canvas");
-    await page.getByRole("radio", { name: tool }).click();
+    await pickPart(page, tool);
     await canvas.hover({ position: await at(page, dx, dy) });
     for (let i = 0; i < turns; i++) await page.keyboard.press("r");
     await canvas.click({ position: await at(page, dx, dy) });
@@ -214,16 +215,18 @@ test.describe("schematic canvas", () => {
     await setTheme(page, "dark");
     await page.goto("/studio");
     await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
-    await place(page, "Place DC voltage source", -8, 0);
-    await place(page, "Place resistor", -3, -4);
-    await place(page, "Place resistor", 2, 0, 1);
-    await place(page, "Place ground", -8, 4);
-    await place(page, "Place ground", 2, 4);
+    await place(page, "DC voltage source", -8, 0);
+    await place(page, "Resistor", -3, -4);
+    await place(page, "Resistor", 2, 0, 1);
+    await place(page, "Ground", -8, 4);
+    await place(page, "Ground", 2, 4);
     const canvas = page.getByTestId("studio-canvas");
     await canvas.click({ position: await at(page, 2, 0) });
     const value = page.getByRole("textbox", { name: "Resistance" });
     await value.fill("2k2");
     await value.press("Enter");
+    // Leave the Parts panel showing the whole library, not the last search.
+    await page.getByRole("combobox", { name: "Search parts" }).fill("");
     return canvas;
   }
 
@@ -237,7 +240,7 @@ test.describe("schematic canvas", () => {
 
   test("placing a part", async ({ page }) => {
     const canvas = await drawDivider(page);
-    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await pickPart(page, "Resistor");
     await canvas.hover({ position: await at(page, 9, -4) });
     await page.keyboard.press("r");
     await canvas.hover({ position: await at(page, 9, -3) });
@@ -261,6 +264,103 @@ test.describe("schematic canvas", () => {
     await settle(page);
     await page.screenshot({ path: shot("schematic-box-select"), clip: box });
     await page.mouse.up();
+  });
+
+  /** The left column (Explorer + Parts), cut off a little below the last part in the list. */
+  async function partsColumn(page: Page) {
+    const box = await page
+      .locator(".dv-groupview")
+      .filter({ has: page.getByTestId("parts-drawer") })
+      .boundingBox();
+    const last = await page.getByTestId("parts-drawer").getByRole("option").last().boundingBox();
+    if (!box || !last) throw new Error("no layout");
+    return { ...box, height: Math.min(box.height, last.y + last.height + 24 - box.y) };
+  }
+
+  test("parts panel with a value search", async ({ page }) => {
+    await setTheme(page, "dark");
+    await page.goto("/studio");
+    await page.locator(".dv-tab", { hasText: "Parts" }).click();
+    await page.getByRole("combobox", { name: "Search parts" }).fill("10k");
+    await expect(page.getByTestId("parts-drawer").getByRole("option").first()).toContainText(
+      "10 kΩ",
+    );
+    await settle(page);
+    await page.screenshot({ path: shot("parts-search"), clip: await partsColumn(page) });
+  });
+
+  test("parts panel browsing", async ({ page }) => {
+    await setTheme(page, "dark");
+    await page.goto("/studio");
+    await page.locator(".dv-tab", { hasText: "Parts" }).click();
+    await expect(page.getByTestId("parts-drawer").getByRole("option")).toHaveCount(6);
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("parts-panel"), clip: await partsColumn(page) });
+  });
+
+  test("dragging a part onto the canvas", async ({ page }) => {
+    await drawDivider(page);
+    await page.getByRole("combobox", { name: "Search parts" }).fill("switch");
+    const option = page.getByTestId("parts-drawer").getByRole("option").first();
+    const from = await option.boundingBox();
+    const canvasBox = await page.getByTestId("studio-canvas").boundingBox();
+    if (!from || !canvasBox) throw new Error("no layout");
+    const target = await at(page, 8, -4);
+    await page.mouse.move(from.x + 40, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(canvasBox.x + target.x - 60, canvasBox.y + target.y, { steps: 8 });
+    await page.mouse.move(canvasBox.x + target.x, canvasBox.y + target.y, { steps: 4 });
+    await expect(page.getByTestId("drop-ghost")).toBeVisible();
+    await settle(page);
+    await page.screenshot({ path: shot("parts-drag") });
+    await page.mouse.up();
+  });
+
+  test("a part's properties in the Inspector", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await pickPart(page, "Potentiometer");
+    await canvas.click({ position: await at(page, 9, 1) });
+    await page.keyboard.press("Escape");
+    await canvas.click({ position: await at(page, 9, 1) });
+    const wiper = page.getByRole("textbox", { name: "Wiper position" });
+    await wiper.fill("25 %");
+    await wiper.press("Enter");
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("inspector-properties") });
+  });
+
+  test("several parts edited together", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await canvas.click({ position: await at(page, -3, -4) });
+    await page.keyboard.down("Shift");
+    await canvas.click({ position: await at(page, 2, 0) });
+    await page.keyboard.up("Shift");
+    await expect(page.getByRole("textbox", { name: "Resistance" })).toHaveAttribute(
+      "placeholder",
+      "Mixed",
+    );
+    await page.mouse.move(0, 0);
+    await settle(page);
+    // The canvas with both selected resistors and the Inspector beside it, down to the
+    // Selection section (the empty rest of the column is left out).
+    const canvasGroup = await page
+      .locator(".dv-groupview")
+      .filter({ has: page.getByTestId("studio-canvas") })
+      .boundingBox();
+    const section = await page.getByRole("region", { name: "Selection" }).boundingBox();
+    const viewport = page.viewportSize();
+    if (!canvasGroup || !section || !viewport) throw new Error("no layout");
+    await page.screenshot({
+      path: shot("inspector-multi"),
+      clip: {
+        x: canvasGroup.x,
+        y: canvasGroup.y,
+        width: viewport.width - canvasGroup.x,
+        height: Math.max(section.y + section.height + 16, 430) - canvasGroup.y,
+      },
+    });
   });
 
   /** Wires the divider with the wire tool: V1 + → R1, R1 → R2, V1 − → ground, R2 → ground. */
@@ -352,6 +452,10 @@ test("schematic symbols: IEC and ANSI", async ({ page }) => {
   await setTheme(page, "dark");
   await page.goto("/ui-kit");
   await settle(page);
+  // The sticky section menu would cover the top of a tall element screenshot.
+  await page.getByRole("navigation", { name: "UI kit sections" }).evaluate((nav) => {
+    (nav as HTMLElement).style.visibility = "hidden";
+  });
   const gallery = page.locator("#schematic-symbols");
   await gallery.scrollIntoViewIfNeeded();
   await settle(page);

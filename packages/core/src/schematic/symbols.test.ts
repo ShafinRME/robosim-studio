@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { REFERENCE_PARTS } from "../circuit/reference-parts";
+import { COMPONENTS as REFERENCE_PARTS, requirePart } from "../parts/registry";
 import {
-  DC_VOLTAGE_SYMBOL,
-  GROUND_SYMBOL,
-  RESISTOR_SYMBOL,
   SYMBOLS,
   designatorPrefix,
   nextDesignator,
@@ -16,6 +13,10 @@ import {
   symbolFor,
   type Placement,
 } from "./symbols";
+
+const RESISTOR_SYMBOL = requirePart("resistor").symbol;
+const DC_VOLTAGE_SYMBOL = requirePart("source.dc-voltage").symbol;
+const GROUND_SYMBOL = requirePart("ground").symbol;
 
 const at = (x = 0, y = 0, rotation = 0, flip = false): Placement => ({ x, y, rotation, flip });
 
