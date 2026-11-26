@@ -144,6 +144,7 @@ describe("project edits check their input", () => {
     ["a __proto__ property", () => edits.setPartProp("r1", "__proto__", 1)],
     ["a 'constructor' property", () => edits.setPartProp("r1", "constructor", 1)],
     ["a long text value", () => edits.setPartProp("r1", "note", "x".repeat(1001))],
+    ["a bad property name on many parts", () => edits.setPartsProp(["r1", "r2"], "__proto__", 1)],
   ])("refuses %s", (_name, make) => {
     expect(make).toThrow(ProjectEditError);
   });
@@ -476,5 +477,21 @@ describe("wire and label edits (ADR 009)", () => {
     expect(store.getState().project.labels).toEqual([]);
     expect(store.getState().apply(edits.removeItems(["nope"]))).toBe(false);
     expect(projectSchema.safeParse(store.getState().project).success).toBe(true);
+  });
+
+  it("sets one property on several parts as one undo step", () => {
+    const store = createProjectStore({
+      ...base(),
+      parts: [resistor(), resistor({ id: "r2", name: "R2" }), resistor({ id: "r3", name: "R3" })],
+    });
+    expect(store.getState().apply(edits.setPartsProp(["r1", "r3"], "resistance", 4700))).toBe(true);
+    expect(store.getState().project.parts.map((p) => p.props.resistance)).toEqual([
+      4700, 220, 4700,
+    ]);
+    expect(store.getState().history.past.at(-1)?.label).toBe("Set resistance of 2 parts");
+    store.getState().undo();
+    expect(store.getState().project.parts.every((p) => p.props.resistance === 220)).toBe(true);
+    store.getState().apply(edits.setPartsProp(["r2"], "resistance", 10));
+    expect(store.getState().history.past.at(-1)?.label).toBe("Set resistance of R2");
   });
 });

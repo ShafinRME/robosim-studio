@@ -6,7 +6,6 @@
  * parts fully inside the box, right → left selects everything the box touches.
  */
 import { partFor } from "../parts/registry";
-import type { ComponentDefinition } from "../circuit/component";
 import type { NetLabel, Part, Wire, WirePoint } from "../project";
 import { designatorPrefix, nextDesignator, placedBounds, symbolFor } from "./symbols";
 import type { Point, Rect } from "./viewport";
@@ -188,25 +187,7 @@ export function labelsInRect(labels: readonly NetLabel[], rect: Rect, mode: BoxM
     .map((label) => label.id);
 }
 
-// ─── Placement catalogue ─────────────────────────────────────────────────────────────────────────
-
-export interface PlaceablePart {
-  readonly type: string;
-  readonly label: string;
-  readonly definition?: ComponentDefinition;
-}
-
-/**
- * The four parts on the canvas palette until the parts drawer replaces it (Day 14 Step 5), read
- * from the part registry (ADR 010).
- */
-const PALETTE = ["resistor", "source.dc-voltage", "source.dc-current", "ground"];
-export const PLACEABLE_PARTS: readonly PlaceablePart[] = PALETTE.flatMap((type) => {
-  const part = partFor(type);
-  return part
-    ? [{ type, label: part.name, ...(part.component ? { definition: part.component } : {}) }]
-    : [];
-});
+// ─── Placing parts ─────────────────────────────────────────────────────────────────────────
 
 /**
  * A new part of `type` at `at` with the next free designator (R1, R2…) and the definition's

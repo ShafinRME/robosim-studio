@@ -126,6 +126,22 @@ export function checkPart(part: PartDefinition): string[] {
     }
   }
 
+  // State artwork: an existing property, a valid value, artwork in both styles.
+  for (const state of symbol.states ?? []) {
+    const property = part.component?.properties.find((p) => p.key === state.key);
+    const valid =
+      property &&
+      (property.kind === "boolean"
+        ? typeof state.value === "boolean"
+        : property.kind === "choice"
+          ? property.options.includes(String(state.value))
+          : typeof state.value === "number");
+    if (!valid) problems.push(`${where}: symbol state "${state.key}" is not a matching property`);
+    if (state.body.iec.length === 0 || state.body.ansi.length === 0) {
+      problems.push(`${where}: symbol state "${state.key}" needs artwork in both styles`);
+    }
+  }
+
   // The value label shows a number property of the same quantity.
   if (symbol.value) {
     const property = part.component?.properties.find((p) => p.key === symbol.value?.key);

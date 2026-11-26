@@ -22,14 +22,14 @@ test.describe("studio workspace", () => {
 
     await expect(page).toHaveTitle("Studio · RoboSim Studio");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("RoboSim Studio workspace");
-    for (const name of ["Explorer", "Canvas", "Inspector", "Console"]) {
+    for (const name of ["Explorer", "Parts", "Canvas", "Inspector", "Console"]) {
       await expect(tab(page, name)).toBeVisible();
     }
-    // Four panels, each in its own group.
+    // Five panels in four groups (Explorer and Parts share the left column).
     await expect(page.locator(".dv-groupview")).toHaveCount(4);
     // Side columns open at their default widths, also on a first visit.
     const width = async (name: string) => (await groupOf(page, name).boundingBox())?.width ?? 0;
-    await expect.poll(() => width("Explorer")).toBeLessThan(260);
+    await expect.poll(() => width("Explorer")).toBeLessThan(300);
     await expect.poll(() => width("Inspector")).toBeLessThan(300);
     await expect(page.getByTestId("studio-canvas")).toBeVisible();
     expect(errors).toEqual([]);

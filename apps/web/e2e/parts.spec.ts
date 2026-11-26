@@ -62,3 +62,37 @@ test("arrow keys choose a part, click places a new part type", async ({ page }) 
   await page.keyboard.press("Escape");
   await expect(canvas(page).locator("[data-part]")).toContainText("SW1");
 });
+
+test("drag a part onto the canvas; it is placed, selected and listed as recently used", async ({
+  page,
+}) => {
+  await open(page);
+  await search(page).fill("pot");
+  await options(page)
+    .first()
+    .dragTo(canvas(page), { targetPosition: { x: 320, y: 220 } });
+  await expect(header(page)).toContainText("1 part");
+  await expect(header(page)).toContainText("1 selected");
+  await expect(canvas(page).locator("[data-part]")).toContainText("RV1");
+  await expect(canvas(page)).toHaveAttribute("data-tool", "select");
+
+  await search(page).fill("");
+  await expect(drawer(page).getByText("Recently used", { exact: true })).toBeVisible();
+  await expect(options(page).first()).toContainText("Potentiometer");
+  await expect(drawer(page)).toContainText("6 parts");
+});
+
+test("A on the canvas jumps to the parts search", async ({ page }) => {
+  await open(page);
+  await canvas(page).click({ position: { x: 300, y: 200 } });
+  await page.keyboard.press("a");
+  await expect(search(page)).toBeFocused();
+  await page.keyboard.type("gnd");
+  await page.keyboard.press("Enter");
+  await expect(canvas(page)).toHaveAttribute("data-tool", "place:ground");
+  // The palette's part button now shows what is being placed.
+  await expect(page.getByRole("radio", { name: "Placing ground" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+});

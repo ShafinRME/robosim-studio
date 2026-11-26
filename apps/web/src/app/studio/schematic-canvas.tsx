@@ -11,7 +11,6 @@
  * deletes. Every change is one undoable edit.
  */
 import {
-  PLACEABLE_PARTS,
   ProjectEditError,
   SCHEMATIC_GRID,
   applyEdit,
@@ -79,6 +78,7 @@ import {
   FlipVertical2,
   Maximize,
   MousePointer2,
+  PackagePlus,
   RotateCw,
   Trash2,
   ZoomIn,
@@ -101,7 +101,14 @@ import {
 import { DESIGNATOR_SIZE, PlacedSymbol } from "../../components/schematic/schematic-symbol";
 import { SymbolIcon } from "../../components/schematic/symbol-icon";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
-import { setPlaceHandler } from "./part-placement";
+import {
+  PART_DRAG_TYPE,
+  decodePartDrag,
+  focusPartSearch,
+  getActiveDrag,
+  setPlaceHandler,
+} from "./part-placement";
+import { rememberPart } from "./recent-parts";
 import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
@@ -241,6 +248,7 @@ const PartView = memo(function PartView({
           value={symbol.value ? part.props[symbol.value.key] : undefined}
           showLabels={showLabels}
           connectedPins={connectedPins}
+          props={part.props}
         />
       ) : (
         <UnknownPart part={part} showLabels={showLabels} />
@@ -649,6 +657,8 @@ export function SchematicCanvas() {
   const tool = toolState.projectId === projectId ? toolState.tool : SELECT_TOOL;
   const setTool = (next: Tool) => setToolState({ projectId, tool: next });
   const [ghost, setGhost] = useState<Point | null>(null);
+  /** A part dragged from the parts drawer over the canvas: what and where (snapped). */
+  const [dropGhost, setDropGhost] = useState<{ type: string; at: Point } | null>(null);
   /** Name offered when the label tool starts again. */
   const lastLabelName = useRef("NET1");
   const moveLayer = useRef<SVGGElement>(null);
@@ -897,6 +907,11 @@ export function SchematicCanvas() {
       }),
     [],
   );
+  /** "Add part" (A): go to the parts drawer's search, where Enter or a click starts placing. */
+  const addPart = () => {
+    if (!focusPartSearch())
+      post("info", "Open the Parts panel (View → Parts, Alt+5) to add parts.");
+  };
   const stopPlacing = () => {
     setTool({ kind: "select" });
     setGhost(null);
@@ -1002,11 +1017,12 @@ export function SchematicCanvas() {
         rotation: tool.rotation,
         flip: tool.flip,
       });
-      apply(store, () =>
+      const placed = apply(store, () =>
         projectEdits.addPart(
           tool.props ? { ...part, props: { ...part.props, ...tool.props } } : part,
         ),
       );
+      if (placed) rememberPart(tool.type);
       return;
     }
 
@@ -1238,6 +1254,11 @@ export function SchematicCanvas() {
         handled();
         startLabeling();
         return;
+      case "a":
+      case "A":
+        handled();
+        addPart();
+        return;
       case "Escape":
         if (placing || tool.kind === "label") {
           handled();
@@ -1378,12 +1399,57 @@ export function SchematicCanvas() {
       onDoubleClick={() => {
         if (tool.kind === "wire" && tool.points.length > 0) finishWire(tool.points);
       }}
+      onDragOver={(event) => {
+        if (!viewport || !store || !event.dataTransfer.types.includes(PART_DRAG_TYPE)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        const rect = event.currentTarget.getBoundingClientRect();
+        const at = snapToGrid(
+          toWorld(viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top }),
+          SCHEMATIC_GRID,
+        );
+        const type = getActiveDrag()?.type;
+        if (
+          type &&
+          (dropGhost?.type !== type || dropGhost.at.x !== at.x || dropGhost.at.y !== at.y)
+        ) {
+          setDropGhost({ type, at });
+        }
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropGhost(null);
+      }}
+      onDrop={(event) => {
+        setDropGhost(null);
+        if (!viewport || !store || !parts) return;
+        const request = decodePartDrag(event.dataTransfer.getData(PART_DRAG_TYPE));
+        if (!request) return;
+        event.preventDefault();
+        const rect = event.currentTarget.getBoundingClientRect();
+        const at = snapToGrid(
+          toWorld(viewport, { x: event.clientX - rect.left, y: event.clientY - rect.top }),
+          SCHEMATIC_GRID,
+        );
+        const part = createPart(request.type, at, parts, { id: newId() });
+        const placed = apply(store, () =>
+          projectEdits.addPart(
+            request.props ? { ...part, props: { ...part.props, ...request.props } } : part,
+          ),
+        );
+        if (placed) {
+          rememberPart(request.type);
+          stopPlacing();
+          select([part.id]);
+          ref.current?.focus({ preventScroll: true });
+        }
+      }}
       onContextMenu={(event) => event.preventDefault()}
       onAuxClick={(event) => event.preventDefault()}
     >
       <p id={helpId} className="sr-only">
-        Choose a part in the toolbar and click to place it; R rotates, X and Y mirror, Escape stops.
-        W starts the wire tool: click to start and to add corners, the wire ends on a pin or another
+        A or the Add part button goes to the parts search; choose a part, then click to place it, or
+        drag a part from the Parts panel onto the canvas. R rotates, X and Y mirror, Escape stops. W
+        starts the wire tool: click to start and to add corners, the wire ends on a pin or another
         wire, Enter or a double click ends it, Backspace removes the last corner, slash switches the
         corner direction. Click to select, Shift or Control click to add, drag on empty space to
         box-select. Arrow keys move the selection, Delete removes it. Mouse wheel zooms, middle
@@ -1434,6 +1500,22 @@ export function SchematicCanvas() {
               <g opacity={0.7} data-testid="label-ghost" style={{ pointerEvents: "none" }}>
                 <NetLabelShape
                   label={{ x: ghost.x, y: ghost.y, name: tool.name, rotation: tool.rotation }}
+                />
+              </g>
+            ) : null}
+            {dropGhost && symbolFor(dropGhost.type) ? (
+              <g
+                opacity={0.7}
+                data-testid="drop-ghost"
+                style={
+                  { "--schematic-ink": "var(--brand)", pointerEvents: "none" } as CSSProperties
+                }
+              >
+                <PlacedSymbol
+                  symbol={symbolFor(dropGhost.type) as NonNullable<ReturnType<typeof symbolFor>>}
+                  style={symbolStyle}
+                  placement={{ ...dropGhost.at, rotation: 0, flip: false }}
+                  showLabels={false}
                 />
               </g>
             ) : null}
@@ -1523,12 +1605,12 @@ export function SchematicCanvas() {
             type="single"
             orientation="vertical"
             className="flex-col bg-transparent p-0"
-            value={tool.kind === "place" ? tool.type : tool.kind}
+            value={tool.kind === "place" ? "part" : tool.kind}
             onValueChange={(value) => {
               if (!value || value === "select") stopPlacing();
               else if (value === "wire") startWiring();
               else if (value === "label") startLabeling();
-              else startPlacing(value);
+              else if (value === "part") addPart();
             }}
           >
             <ToolbarToggleItem value="select" label="Select" shortcut="Esc">
@@ -1540,15 +1622,20 @@ export function SchematicCanvas() {
             <ToolbarToggleItem value="label" label="Net label" shortcut="L">
               <LabelIcon />
             </ToolbarToggleItem>
-            {PLACEABLE_PARTS.map((p) => (
-              <ToolbarToggleItem
-                key={p.type}
-                value={p.type}
-                label={`Place ${sentenceCase(p.label)}`}
-              >
-                <SymbolIcon type={p.type} style={symbolStyle} />
-              </ToolbarToggleItem>
-            ))}
+            <ToolbarToggleItem
+              value="part"
+              label={
+                tool.kind === "place" ? `Placing ${sentenceCase(placingLabel ?? "")}` : "Add part"
+              }
+              shortcut="A"
+            >
+              {/* While placing, the button shows the part's own symbol. */}
+              {tool.kind === "place" ? (
+                <SymbolIcon type={tool.type} style={symbolStyle} />
+              ) : (
+                <PackagePlus />
+              )}
+            </ToolbarToggleItem>
           </ToolbarToggleGroup>
           <ToolbarSeparator className="mx-0 my-0.5 h-px w-5 self-center" />
           <ToolbarButton

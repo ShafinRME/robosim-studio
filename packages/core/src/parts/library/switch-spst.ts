@@ -38,6 +38,28 @@ export default definePart({
       ],
     },
     labels: { designator: { x: 0, y: -130 }, value: { x: 0, y: 70 } },
+    // Closed: the lever lies on the fixed contact.
+    states: [
+      {
+        key: "closed",
+        value: true,
+        body: {
+          iec: [
+            line(-200, 0, -80, 0),
+            line(-80, 0, 90, -22),
+            line(80, 0, 80, -22),
+            line(80, 0, 200, 0),
+          ],
+          ansi: [
+            line(-200, 0, -95, 0),
+            { kind: "circle", cx: -80, cy: 0, r: 15 },
+            line(-70, -12, 80, -20),
+            { kind: "circle", cx: 80, cy: 0, r: 15 },
+            line(95, 0, 200, 0),
+          ],
+        },
+      },
+    ],
   },
   model: {
     pins: [

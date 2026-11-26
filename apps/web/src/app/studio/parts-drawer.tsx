@@ -3,7 +3,8 @@
 /**
  * Parts drawer (ADR 010): every part in the library, grouped by category, with a search that also
  * understands values ("10k", "4k7", "9V"). Works fully by keyboard: type, ↑ / ↓ to choose, Enter
- * to place, Esc to clear. Clicking a part starts placing it on the canvas.
+ * to place, Esc to clear. Clicking a part starts placing it on the canvas; a part can also be
+ * dragged onto the canvas. Recently placed parts are listed first.
  */
 import {
   formatQuantity,
@@ -16,13 +17,30 @@ import {
 import { Input } from "@robosim/ui/components/input";
 import { cn } from "@robosim/ui/lib/utils";
 import { Search, X } from "lucide-react";
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { SymbolIcon } from "../../components/schematic/symbol-icon";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
-import { requestPlace } from "./part-placement";
+import {
+  PART_DRAG_TYPE,
+  encodePartDrag,
+  requestPlace,
+  setActiveDrag,
+  setPartSearchFocus,
+  type PlaceRequest,
+} from "./part-placement";
+import { useRecentParts } from "./recent-parts";
 import { useStudioStatus } from "./studio-status";
 
-type Row = { kind: "heading"; label: string } | { kind: "part"; match: PartMatch; index: number };
+type Row =
+  | { kind: "heading"; label: string }
+  | { kind: "part"; match: PartMatch; index: number; key: string };
+
+/** What placing this match means: the part, with the value typed in the search if any. */
+function requestOf(match: PartMatch): PlaceRequest {
+  return match.preset
+    ? { type: match.part.type, props: { [match.preset.key]: match.preset.value } }
+    : { type: match.part.type };
+}
 
 /** The preset value as it will be shown on the part ("10 kΩ"). */
 function presetText(match: PartMatch): string | null {
@@ -60,7 +78,16 @@ function PartRow({
         "flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 select-none",
         active ? "bg-brand-soft text-foreground" : "hover:bg-surface-2",
       )}
-      onPointerDown={(event) => event.preventDefault()} // keep focus in the search box
+      draggable
+      onDragStart={(event) => {
+        setActiveDrag(requestOf(match));
+        event.dataTransfer.effectAllowed = "copy";
+        event.dataTransfer.setData(PART_DRAG_TYPE, encodePartDrag(requestOf(match)));
+        event.dataTransfer.setData("text/plain", part.name);
+        const icon = event.currentTarget.querySelector("svg");
+        if (icon) event.dataTransfer.setDragImage(icon, 16, 16);
+      }}
+      onDragEnd={() => setActiveDrag(null)}
       onClick={onPick}
       onPointerMove={onHover}
     >
@@ -98,27 +125,48 @@ export function PartsDrawer() {
   const listRef = useRef<HTMLDivElement>(null);
 
   const matches = useMemo(() => searchParts(query), [query]);
+  const recent = useRecentParts();
+  const searchRef = useRef<HTMLInputElement>(null);
+  // "Add part" (A on the canvas) puts the cursor here.
+  useEffect(
+    () =>
+      setPartSearchFocus(() => {
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }),
+    [],
+  );
   // Grouped by category when browsing; best match first when searching.
   const rows = useMemo((): Row[] => {
-    if (query.trim()) return matches.map((match, index) => ({ kind: "part", match, index }));
+    if (query.trim()) {
+      return matches.map((match, index) => ({ kind: "part", match, index, key: match.part.type }));
+    }
     let index = 0;
-    return groupParts().flatMap((group): Row[] => [
+    const recentParts = recent.flatMap((type) => {
+      const part = partFor(type);
+      return part ? [part] : [];
+    });
+    const groups = [
+      ...(recentParts.length ? [{ label: "Recently used", parts: recentParts }] : []),
+      ...groupParts(),
+    ];
+    return groups.flatMap((group): Row[] => [
       { kind: "heading", label: group.label },
       ...group.parts.map((part): Row => ({
         kind: "part",
         match: { part, score: 0 },
         index: index++,
+        key: `${group.label}:${part.type}`,
       })),
     ]);
-  }, [query, matches]);
+  }, [query, matches, recent]);
   const ordered = rows.flatMap((r) => (r.kind === "part" ? [r.match] : []));
   const current = Math.min(active, Math.max(ordered.length - 1, 0));
   const optionId = (i: number) => `${listId}-option-${i}`;
 
   const pick = (match: PartMatch | undefined) => {
     if (!match) return;
-    const preset = match.preset ? { [match.preset.key]: match.preset.value } : undefined;
-    if (requestPlace({ type: match.part.type, ...(preset ? { props: preset } : {}) })) {
+    if (requestPlace(requestOf(match))) {
       post("info", `Placing ${describe(match.part)}: click on the canvas, Esc to stop.`);
     } else {
       post("warning", "Open the Canvas panel to place parts (View → Canvas).");
@@ -176,6 +224,7 @@ export function PartsDrawer() {
             aria-hidden
           />
           <Input
+            ref={searchRef}
             type="search"
             role="combobox"
             aria-label="Search parts"
@@ -229,7 +278,7 @@ export function PartsDrawer() {
             </div>
           ) : (
             <PartRow
-              key={row.match.part.type}
+              key={row.key}
               id={optionId(row.index)}
               match={row.match}
               active={row.index === current}
@@ -252,8 +301,8 @@ export function PartsDrawer() {
       <p className="border-t px-2.5 py-1.5 text-2xs text-faint-foreground" aria-live="polite">
         {query.trim()
           ? `${ordered.length} ${ordered.length === 1 ? "part" : "parts"} found`
-          : `${ordered.length} parts`}{" "}
-        · Enter or click to place
+          : `${matches.length} parts`}{" "}
+        · click, Enter or drag to place
       </p>
     </div>
   );

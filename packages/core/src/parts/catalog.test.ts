@@ -30,6 +30,7 @@ describe("parts catalogue", () => {
   it("needs every word to match", () => {
     expect(types("dc current")).toEqual(["source.dc-current"]);
     expect(types("resistor banana")).toEqual([]);
+    expect(types("Switch (SPST)")).toEqual(["switch.spst"]);
   });
 
   it("understands values: 10k → resistor (and pot) with 10 kΩ ready", () => {

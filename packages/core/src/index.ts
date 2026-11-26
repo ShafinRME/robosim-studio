@@ -300,6 +300,7 @@ export {
 export type { LengthUnit, Point, Rect, Size, Viewport } from "./schematic/viewport";
 export {
   SYMBOLS,
+  bodyFor,
   SYMBOL_STYLES,
   designatorPrefix,
   nextDesignator,
@@ -317,11 +318,11 @@ export type {
   Primitive,
   SymbolDefinition,
   SymbolPin,
+  SymbolState,
   SymbolStyle,
 } from "./schematic/symbols";
 export { DEFAULT_GRID } from "./project-store";
 export {
-  PLACEABLE_PARTS,
   UNKNOWN_PART_HALF,
   boxModeOf,
   createPart,
@@ -337,7 +338,7 @@ export {
   rectFromPoints,
   wiresInRect,
 } from "./schematic/selection";
-export type { BoxMode, PlaceablePart } from "./schematic/selection";
+export type { BoxMode } from "./schematic/selection";
 export { isOrthogonal, onSegment, routeL, segmentAt, simplifyWire } from "./schematic/wires";
 export type { Posture } from "./schematic/wires";
 export { connectivityOf, netNameOf, pinKey, placedPinsOf } from "./schematic/connectivity";

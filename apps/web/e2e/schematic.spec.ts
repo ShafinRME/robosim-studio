@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { pickPart } from "./part-helpers";
 
 /** Schematic canvas (ADR 008): grid, zoom, pan, fit, symbol style and units. */
 
@@ -172,7 +173,7 @@ test.describe("placing and editing parts", () => {
   async function placeTwoResistors(page: Page) {
     await page.goto("/studio");
     await expect(zoomLevel(page)).toHaveText("200 %");
-    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await pickPart(page, "Resistor");
     await expect(canvas(page)).toHaveAttribute("data-tool", "place:resistor");
     await canvas(page).click({ position: await at(page, -5, 0) });
     await canvas(page).click({ position: await at(page, 5, 0) });
@@ -197,7 +198,7 @@ test.describe("placing and editing parts", () => {
 
   test("turns the part while placing (R) and shows a ghost", async ({ page }) => {
     await page.goto("/studio");
-    await page.getByRole("radio", { name: "Place ground" }).click();
+    await pickPart(page, "Ground");
     await canvas(page).hover({ position: await at(page, 0, 0) });
     await expect(canvas(page).getByTestId("schematic-ghost")).toBeVisible();
     await page.keyboard.press("r");
@@ -300,9 +301,9 @@ test.describe("wiring (ADR 009)", () => {
   async function setUp(page: Page) {
     await page.goto("/studio");
     await expect(zoomLevel(page)).toHaveText("200 %");
-    await page.getByRole("radio", { name: "Place DC voltage source" }).click();
+    await pickPart(page, "DC voltage source");
     await canvas(page).click({ position: await at(page, -5, 0) });
-    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await pickPart(page, "Resistor");
     await canvas(page).click({ position: await at(page, 0, -2) });
     await page.keyboard.press("Escape");
     await expect(pinCircles(page)).toHaveCount(4);

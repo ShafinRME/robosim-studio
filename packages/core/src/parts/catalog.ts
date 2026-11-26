@@ -100,7 +100,13 @@ function valueMatch(
  */
 export function searchParts(query: string, parts: readonly PartDefinition[] = PARTS): PartMatch[] {
   // Words as typed: values need their case ("2mA" is milli, "2MA" mega); text matching is lowercase.
-  const words = query.slice(0, MAX_QUERY).split(/\s+/).filter(Boolean).slice(0, 8);
+  // Brackets and punctuation around a word are ignored ("(SPST)", "resistor,"), not inside ("4.7k").
+  const words = query
+    .slice(0, MAX_QUERY)
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}µΩ]+|[^\p{L}\p{N}µΩ%]+$/gu, ""))
+    .filter(Boolean)
+    .slice(0, 8);
   if (words.length === 0) {
     return groupParts(parts).flatMap((g) => g.parts.map((part) => ({ part, score: 0 })));
   }

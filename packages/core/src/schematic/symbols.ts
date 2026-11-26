@@ -37,6 +37,26 @@ export interface SymbolDefinition {
   readonly labels?: { readonly designator: Point; readonly value: Point };
   /** The property shown as the value label ("4.7 kΩ"). */
   readonly value?: { readonly key: string; readonly quantity: Quantity };
+  /**
+   * Other artwork while a property has a given value (a closed switch). The first matching state
+   * wins; otherwise `body` is drawn.
+   */
+  readonly states?: readonly SymbolState[];
+}
+
+export interface SymbolState {
+  readonly key: string;
+  readonly value: string | number | boolean;
+  readonly body: Readonly<Record<SymbolStyle, readonly Primitive[]>>;
+}
+
+/** The artwork to draw for a part with these property values. */
+export function bodyFor(
+  symbol: SymbolDefinition,
+  props?: Readonly<Record<string, string | number | boolean>>,
+): Readonly<Record<SymbolStyle, readonly Primitive[]>> {
+  if (!props || !symbol.states) return symbol.body;
+  return symbol.states.find((state) => props[state.key] === state.value)?.body ?? symbol.body;
 }
 
 // Symbols live in the part files (ADR 010); the registry is the one list.

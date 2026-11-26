@@ -1,5 +1,6 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { pickPart } from "../e2e/part-helpers";
 
 const OUT = path.resolve(__dirname, "../../../docs/manual/images");
 const shot = (name: string) => path.join(OUT, `${name}.png`);
@@ -202,7 +203,7 @@ test.describe("schematic canvas", () => {
 
   async function place(page: Page, tool: string, dx: number, dy: number, turns = 0) {
     const canvas = page.getByTestId("studio-canvas");
-    await page.getByRole("radio", { name: tool }).click();
+    await pickPart(page, tool);
     await canvas.hover({ position: await at(page, dx, dy) });
     for (let i = 0; i < turns; i++) await page.keyboard.press("r");
     await canvas.click({ position: await at(page, dx, dy) });
@@ -214,11 +215,11 @@ test.describe("schematic canvas", () => {
     await setTheme(page, "dark");
     await page.goto("/studio");
     await expect(page.locator(".dv-tab", { hasText: "Canvas" })).toBeVisible();
-    await place(page, "Place DC voltage source", -8, 0);
-    await place(page, "Place resistor", -3, -4);
-    await place(page, "Place resistor", 2, 0, 1);
-    await place(page, "Place ground", -8, 4);
-    await place(page, "Place ground", 2, 4);
+    await place(page, "DC voltage source", -8, 0);
+    await place(page, "Resistor", -3, -4);
+    await place(page, "Resistor", 2, 0, 1);
+    await place(page, "Ground", -8, 4);
+    await place(page, "Ground", 2, 4);
     const canvas = page.getByTestId("studio-canvas");
     await canvas.click({ position: await at(page, 2, 0) });
     const value = page.getByRole("textbox", { name: "Resistance" });
@@ -237,7 +238,7 @@ test.describe("schematic canvas", () => {
 
   test("placing a part", async ({ page }) => {
     const canvas = await drawDivider(page);
-    await page.getByRole("radio", { name: "Place resistor" }).click();
+    await pickPart(page, "Resistor");
     await canvas.hover({ position: await at(page, 9, -4) });
     await page.keyboard.press("r");
     await canvas.hover({ position: await at(page, 9, -3) });

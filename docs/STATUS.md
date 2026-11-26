@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 14 · Step 4/8 done — Parts library & inspector (Phase 1 · Circuit Lab)
+**Current:** Day 14 · Step 6/8 done — Parts library & inspector (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-14-parts-library` (from `develop` after Day 13 merge `a3eb283`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -12,9 +12,9 @@
 | 2/8 | Registry in core; resistor, DC V, DC I, ground as one file each; "1 file is enough" tests | ✅ done |
 | 3/8 | New parts as proof: SPST switch, potentiometer | ✅ done |
 | 4/8 | Parts drawer: searchable panel, categories, symbol previews, keyboard | ✅ done |
-| 5/8 | Place from the drawer (click, drag and drop), recently used; palette keeps Select / Wire / Label | ⏳ next |
-| 6/8 | Property inspector from the part's properties (numbers, choices, switches; multi-edit) | ⬜ |
-| 7/8 | e2e + unit; User Manual (parts library, inspector), screenshots, `pnpm manual` | ⬜ |
+| 5/8 | Place from the drawer (click, drag and drop), recently used; palette keeps Select / Wire / Label | ✅ done |
+| 6/8 | Property inspector from the part's properties (numbers, choices, switches; multi-edit) | ✅ done |
+| 7/8 | e2e + unit; User Manual (parts library, inspector), screenshots, `pnpm manual` | ⏳ next |
 | 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⬜ |
 
 ## Decisions (Day 14)
@@ -44,6 +44,20 @@
   description, designator prefix, value chip; click or Enter starts the canvas place tool (with the value) through
   `part-placement.ts`; refuses politely when the Canvas is closed. Inspector and canvas read part names from the
   registry. A reopened Explorer joins the Parts column. 732 unit, 104 e2e.
+- Step 5 — drag a part from the drawer onto the canvas: live ghost while dragging (the drawer tells the canvas what
+  is dragged, since browsers hide drag data until the drop), drop places it on the grid, selects it, returns to the
+  select tool. Drop data is untrusted (any page can drag): size-limited JSON, type must be in the library, only
+  known properties with valid values kept (`decodePartDrag`, unit-tested). "Recently used" group (5 newest, this
+  browser, checked on load). Palette: Select, Wire, Label and **Add part (A)** — A or the button jumps to the
+  parts search; while placing, the button shows that part's symbol. The four temporary part buttons and
+  `PLACEABLE_PARTS` are gone; e2e and manual tests place parts through the drawer (`e2e/part-helpers.ts`).
+  Default left column 280 px (tab titles and search hint were cut off at 240 px, owner screenshot). Search ignores
+  brackets around words ("Switch (SPST)").
+- Step 6 — Inspector rows generated from the part file: numbers (typed with units, allowed range as tooltip, plain
+  message when refused), choices (select), on / off (switch, Yes / No). Several parts of one type: section
+  "Selection · 2 × Resistor", the same rows, "Mixed" where values differ, one undo step (`setPartsProp`, "Set
+  resistance of 2 parts"). Symbols can change with a property (`states`, `bodyFor`): the switch is drawn closed when
+  Closed is on; `checkPart` checks states. 736 unit, 110 e2e.
 
 ## Day 13 steps
 | Step | Task | State |

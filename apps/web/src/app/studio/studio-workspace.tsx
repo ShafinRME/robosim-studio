@@ -248,7 +248,7 @@ const TITLES = Object.fromEntries(STUDIO_PANELS.map((p) => [p.id, p.title])) as 
 const PANEL_IDS: ReadonlySet<string> = new Set(Object.keys(PANELS));
 /** Wait this long after the last layout change before saving. */
 const SAVE_DELAY_MS = 300;
-const SIDE_WIDTH = { explorer: 240, inspector: 280 } as const;
+const SIDE_WIDTH = { explorer: 280, inspector: 280 } as const;
 const CONSOLE_HEIGHT = 180;
 
 /**
