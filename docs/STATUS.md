@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 15 · Step 6/8 done — DC solver (Phase 1 · Circuit Lab)
+**Current:** Day 15 · Step 8/8 ready — waiting for the owner’s final test, then merge — DC solver (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -14,8 +14,8 @@
 | 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ✅ done (22) |
 | 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ✅ done |
 | 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ✅ done |
-| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ⏳ next |
-| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⬜ |
+| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⏳ owner final test (DEVLOG written, CI / CodeQL checked) |
 
 ## Decisions (Day 15)
 - **ADR 011** (`docs/adr/011-dc-solver.md`, **Accepted 2026-11-26**, owner delegated the choice): dense LU with scaled partial pivoting (no library; Day 16 adds
@@ -60,6 +60,11 @@
   problems" when it cannot be solved. Problems go to the Console once the drawing has been still for 1.5 s, each
   only once. **View → Show DC results** (+ command palette), remembered. 780 unit, 114 e2e (new `dc.spec.ts`:
   divider solved live and follows edits, no ground → reason + undo, overload → amber halos, View switch).
+- Step 7 — User Manual 8.9 "Live DC results" (tags, Inspector rows, DC chip, SPICE signs, warnings and problems with
+  what to do, switch / potentiometer notes, View switch) with 3 new screenshots; all 31 screenshots re-captured, PDF
+  rebuilt; every picture ≤ 120 mm. Every quoted message checked against the code. Owner rule (2026-11-26): from
+  Day 16 each prompt does half a Day (Steps 1–4, then 5–8) with a detailed, verified manual test (CLAUDE.md updated).
+- Step 8 — DEVLOG entry; 780 unit, 114 e2e, `pnpm audit` clean; merge after the owner’s final test.
 
 
 ## Day 14 steps
