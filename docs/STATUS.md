@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 15 · Step 8/8 ready — waiting for the owner’s final test, then merge — DC solver (Phase 1 · Circuit Lab)
+**Current:** Day 15 ✅ complete — owner approved the final test (all 14 sections); squash-merged into `develop` (PR #19). Next: Day 16 — Solver robustness, in a new session (Days 16–20).
 **Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -15,7 +15,7 @@
 | 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ✅ done |
 | 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ✅ done |
 | 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ✅ done |
-| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⏳ owner final test (DEVLOG written, CI / CodeQL checked) |
+| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ✅ done (owner approved; merged) |
 
 ## Decisions (Day 15)
 - **ADR 011** (`docs/adr/011-dc-solver.md`, **Accepted 2026-11-26**, owner delegated the choice): dense LU with scaled partial pivoting (no library; Day 16 adds

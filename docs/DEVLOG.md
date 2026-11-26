@@ -17,7 +17,10 @@ One short entry per finished Day: what was built, what was learned, what's next.
   22 textbook DC circuits match hand results within 0.1 % (Ohm, dividers, bridges, superposition, Thévenin, Norton,
   ladder, mesh, switch, potentiometer…). Studio: analysis worker with latest-wins requests and a 2 s timeout /
   restart; blue voltage tags on nets, V / I / P in the Inspector, a DC chip with the problem list, red / amber halos,
-  Console messages once, View → Show DC results. User Manual 8.9. 780 unit, 114 e2e.
+  Console messages once, View → Show DC results. User Manual 8.9. 780 unit, 115 e2e.
+- Owner's final test fixes: results under their own "DC operating point · live" heading (a source showed
+  "Voltage" twice); the status bar always follows the current state ("Circuit solved: all problems fixed." /
+  "Circuit solved with 1 warning: …"); Console levels match the DC chip (ERROR / WARN); Inspector labels fit.
 - Learned: running the solver behind the existing checks keeps almost every failure a friendly message; the forced
   singular-matrix test proved the last safety net. "Latest wins" plus a timeout makes a worker safe for live
   results without freezing anything. Verifying manual-test numbers by running the exact circuits first gave the
