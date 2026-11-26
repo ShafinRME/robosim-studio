@@ -70,6 +70,9 @@
   at the end of the part section; (2) an old warning stayed in the status bar after the circuit was fixed → the
   Console now says "Circuit solved: all problems fixed.", and problems are written least important first so the
   status bar shows the most important one (caught by e2e). Manual 8.9 and screenshots updated.
+- Owner final test, sections 3–7 passed. Two polish fixes: the Console now logs problems as ERROR and warnings
+  as WARN (it used WARN / INFO, unlike the DC chip), and the Inspector's "Not solved" text is short enough to
+  fit ("Not solved (see the DC list)"). Sections 8–14 still to test.
 
 
 ## Day 14 steps

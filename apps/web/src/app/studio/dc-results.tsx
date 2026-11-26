@@ -111,7 +111,7 @@ export function DcAnalysis() {
           // Least important first, so the most important one is the latest line (the status bar).
           for (const issue of shown.slice(0, 3).reverse()) {
             if (reported.current.keys.has(problemKey(issue))) continue;
-            post(issue.severity === "error" ? "warning" : "info", issue.message);
+            post(issue.severity === "error" ? "error" : "warning", issue.message);
           }
           reported.current.keys = keys;
         }, CONSOLE_QUIET_MS);
