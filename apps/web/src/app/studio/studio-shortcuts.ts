@@ -31,6 +31,7 @@ export const STUDIO_SHORTCUTS: ShortcutBindings = {
   "view.toggle.canvas": ["Alt+2"],
   "view.toggle.inspector": ["Alt+3"],
   "view.toggle.console": ["Alt+4"],
+  "view.toggle.parts": ["Alt+5"],
   "view.resetLayout": ["Alt+Shift+R"],
   "view.toggleLowEnd": ["Alt+Shift+L"],
 };

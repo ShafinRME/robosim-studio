@@ -8,7 +8,7 @@
  */
 import {
   NetlistError,
-  PLACEABLE_PARTS,
+  partFor,
   ProjectEditError,
   buildNetlist,
   connectivityOf,
@@ -242,10 +242,10 @@ export function PartInspector({
   }
 
   const part = selected[0] as Part;
-  const placeable = PLACEABLE_PARTS.find((p) => p.type === part.type);
+  const definition = partFor(part.type);
   const symbol = symbolFor(part.type);
   const valueKey = symbol?.value?.key;
-  const property = placeable?.definition?.properties.find(
+  const property = definition?.component?.properties.find(
     (p): p is NumberProperty => p.kind === "number" && p.key === valueKey,
   );
   const rawValue = valueKey ? part.props[valueKey] : undefined;
@@ -276,7 +276,7 @@ export function PartInspector({
         )}
       </InspectorRow>
       <InspectorRow label="Type">
-        <InspectorValue tone="muted">{placeable?.label ?? part.type}</InspectorValue>
+        <InspectorValue tone="muted">{definition?.name ?? part.type}</InspectorValue>
       </InspectorRow>
       {property && typeof rawValue === "number" ? (
         <InspectorRow label={property.label}>

@@ -23,6 +23,7 @@ import {
 } from "@robosim/ui/components/inspector";
 import { PanelErrorBoundary, useDevCrash } from "./panel-error-boundary";
 import { PartInspector } from "./part-inspector";
+import { PartsDrawer } from "./parts-drawer";
 import { SchematicCanvas } from "./schematic-canvas";
 import { useSelection } from "./schematic-selection";
 import { useActiveProject } from "./studio-project";
@@ -59,12 +60,12 @@ function EmptyPanel({
 
 function ExplorerPanel() {
   return (
-    <EmptyPanel
-      icon={FolderTree}
-      title="No files yet"
-      text="Project files and parts will be listed here."
-    />
+    <EmptyPanel icon={FolderTree} title="No files yet" text="Project files will be listed here." />
   );
+}
+
+function PartsPanel() {
+  return <PartsDrawer />;
 }
 
 function CanvasPanel() {
@@ -223,16 +224,18 @@ function guarded(title: string, Panel: FunctionComponent): FunctionComponent<IDo
 /** Panel registry: Dockview creates panels by these ids. Labs will add their own later. */
 const PANELS: Record<string, FunctionComponent<IDockviewPanelProps>> = {
   explorer: guarded("Explorer", ExplorerPanel),
+  parts: guarded("Parts", PartsPanel),
   canvas: guarded("Canvas", CanvasPanel),
   inspector: guarded("Inspector", InspectorPanel),
   console: guarded("Console", ConsolePanel),
 };
 
-export type StudioPanelId = "explorer" | "canvas" | "inspector" | "console";
+export type StudioPanelId = "explorer" | "parts" | "canvas" | "inspector" | "console";
 
 /** Studio panels in menu order, with their titles. */
 export const STUDIO_PANELS: readonly { id: StudioPanelId; title: string }[] = [
   { id: "explorer", title: "Explorer" },
+  { id: "parts", title: "Parts" },
   { id: "canvas", title: "Canvas" },
   { id: "inspector", title: "Inspector" },
   { id: "console", title: "Console" },
@@ -249,18 +252,38 @@ const SIDE_WIDTH = { explorer: 240, inspector: 280 } as const;
 const CONSOLE_HEIGHT = 180;
 
 /**
- * Adds a panel at its "home" place: Explorer on the far left, Inspector on the far right,
- * Console under the canvas, Canvas in the middle.
+ * Adds a panel at its "home" place: Explorer on the far left with Parts as a tab beside it,
+ * Inspector on the far right, Console under the canvas, Canvas in the middle.
  */
 function addPanelAtHome(api: DockviewApi, id: StudioPanelId) {
   const base = { id, component: id, title: TITLES[id] };
   switch (id) {
     case "explorer":
     case "inspector": {
+      // Explorer and Parts share the left column: join it when Parts is open.
+      const parts = id === "explorer" ? api.getPanel("parts") : undefined;
+      if (parts) {
+        api.addPanel({ ...base, position: { referencePanel: parts, direction: "within" } });
+        break;
+      }
       const direction = id === "explorer" ? "left" : "right";
       api.addPanel({ ...base, position: { direction }, initialWidth: SIDE_WIDTH[id] });
       // `initialWidth` is only a hint when splitting; set the width explicitly.
       api.getPanel(id)?.group.api.setSize({ width: SIDE_WIDTH[id] });
+      break;
+    }
+    case "parts": {
+      const explorer = api.getPanel("explorer");
+      if (explorer)
+        api.addPanel({ ...base, position: { referencePanel: explorer, direction: "within" } });
+      else {
+        api.addPanel({
+          ...base,
+          position: { direction: "left" },
+          initialWidth: SIDE_WIDTH.explorer,
+        });
+        api.getPanel(id)?.group.api.setSize({ width: SIDE_WIDTH.explorer });
+      }
       break;
     }
     case "console": {
@@ -273,7 +296,7 @@ function addPanelAtHome(api: DockviewApi, id: StudioPanelId) {
       break;
     }
     case "canvas": {
-      const explorer = api.getPanel("explorer");
+      const explorer = api.getPanel("explorer") ?? api.getPanel("parts");
       if (explorer) {
         api.addPanel({ ...base, position: { referencePanel: explorer, direction: "right" } });
       } else if (api.panels.length > 0) {
@@ -286,11 +309,12 @@ function addPanelAtHome(api: DockviewApi, id: StudioPanelId) {
   }
 }
 
-/** Default layout: Explorer | Canvas over Console | Inspector. */
+/** Default layout: Explorer + Parts (tabs) | Canvas over Console | Inspector. */
 function addDefaultLayout(api: DockviewApi) {
-  for (const id of ["canvas", "explorer", "inspector", "console"] as const) {
+  for (const id of ["canvas", "explorer", "parts", "inspector", "console"] as const) {
     addPanelAtHome(api, id);
   }
+  api.getPanel("parts")?.api.setActive();
   api.getPanel("canvas")?.api.setActive();
   applyHomeSizes(api);
   // On first load the workspace may not be measured yet, so sizes set now can be lost: set them
@@ -302,6 +326,31 @@ function applyHomeSizes(api: DockviewApi) {
   api.getPanel("explorer")?.group.api.setSize({ width: SIDE_WIDTH.explorer });
   api.getPanel("inspector")?.group.api.setSize({ width: SIDE_WIDTH.inspector });
   api.getPanel("console")?.group.api.setSize({ height: CONSOLE_HEIGHT });
+}
+
+/** Panels added to the studio after a layout was saved; each is offered once (Day 14: Parts). */
+const NEW_PANELS: readonly StudioPanelId[] = ["parts"];
+const OFFERED_KEY = "robosim-panels-offered";
+
+function addNewPanels(api: DockviewApi) {
+  let offered: string[] = [];
+  try {
+    const raw = window.localStorage.getItem(OFFERED_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(parsed)) offered = parsed.filter((x): x is string => typeof x === "string");
+  } catch {
+    offered = [];
+  }
+  const missing = NEW_PANELS.filter((id) => !offered.includes(id) && !api.getPanel(id));
+  for (const id of missing) addPanelAtHome(api, id);
+  try {
+    window.localStorage.setItem(
+      OFFERED_KEY,
+      JSON.stringify([...new Set([...offered, ...NEW_PANELS])]),
+    );
+  } catch {
+    // Only a convenience.
+  }
 }
 
 // localStorage can be missing or blocked (private mode, site data disabled): never let it throw.
@@ -332,7 +381,10 @@ function restoreLayout(api: DockviewApi): { level: MessageLevel; text: string } 
   if (saved.ok) {
     try {
       api.fromJSON(saved.layout as unknown as SerializedDockview);
-      if (api.panels.length > 0) return { level: "info", text: "Saved layout restored." };
+      if (api.panels.length > 0) {
+        addNewPanels(api);
+        return { level: "info", text: "Saved layout restored." };
+      }
       problem = "had no panels";
     } catch {
       problem = "could not be opened";

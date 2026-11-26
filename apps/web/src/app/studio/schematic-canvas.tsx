@@ -34,6 +34,7 @@ import {
   gridLevel,
   hitTest,
   newId,
+  partFor,
   panBy,
   partBounds,
   partsInRect,
@@ -97,12 +98,10 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react";
-import {
-  DESIGNATOR_SIZE,
-  PlacedSymbol,
-  SymbolBody,
-} from "../../components/schematic/schematic-symbol";
+import { DESIGNATOR_SIZE, PlacedSymbol } from "../../components/schematic/schematic-symbol";
+import { SymbolIcon } from "../../components/schematic/symbol-icon";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
+import { setPlaceHandler } from "./part-placement";
 import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
@@ -113,7 +112,14 @@ const DRAG_THRESHOLD = 3;
 
 type Tool =
   | { kind: "select" }
-  | { kind: "place"; type: string; rotation: number; flip: boolean }
+  | {
+      kind: "place";
+      type: string;
+      rotation: number;
+      flip: boolean;
+      /** Starting values chosen in the parts drawer ("10k"). */
+      props?: Part["props"];
+    }
   /** Wire tool (ADR 009): `points` are the fixed points of the wire being drawn (empty: not started). */
   | {
       kind: "wire";
@@ -541,25 +547,6 @@ function OriginMark({ viewport }: { viewport: Viewport }) {
   );
 }
 
-/** A tiny drawing of the symbol itself as the tool icon (our artwork, not a stock icon). */
-function SymbolIcon({ type, style }: { type: string; style: SymbolStyle }) {
-  const symbol = symbolFor(type);
-  if (!symbol) return null;
-  const { minX, minY, maxX, maxY } = symbol.bounds;
-  const size = Math.max(maxX - minX, maxY - minY) + 40;
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  return (
-    <svg
-      viewBox={`${cx - size / 2} ${cy - size / 2} ${size} ${size}`}
-      aria-hidden
-      style={{ "--schematic-ink": "currentColor", "--schematic-stroke": 26 } as CSSProperties}
-    >
-      <SymbolBody symbol={symbol} style={style} />
-    </svg>
-  );
-}
-
 /** "Resistor" → "resistor", "DC voltage source" stays (acronyms keep their capitals). */
 function sentenceCase(text: string): string {
   return /^[A-Z][a-z]/.test(text) ? text.charAt(0).toLowerCase() + text.slice(1) : text;
@@ -891,11 +878,25 @@ export function SchematicCanvas() {
     if (apply(store, () => projectEdits.removeItems(ids, nounOf(ids)))) select([]);
   };
 
-  const startPlacing = (type: string) => {
-    setTool({ kind: "place", type, rotation: 0, flip: false });
+  const startPlacing = (type: string, props?: Part["props"]) => {
+    setTool({ kind: "place", type, rotation: 0, flip: false, ...(props ? { props } : {}) });
     select([]);
     ref.current?.focus({ preventScroll: true });
   };
+  /** The parts drawer starts the place tool through this (latest closure, registered once). */
+  const startPlacingRef = useRef<(type: string, props?: Part["props"]) => void>(() => undefined);
+  useEffect(() => {
+    startPlacingRef.current = startPlacing;
+  });
+  useEffect(
+    () =>
+      setPlaceHandler(({ type, props }) => {
+        if (!partFor(type)) return false;
+        startPlacingRef.current(type, props);
+        return true;
+      }),
+    [],
+  );
   const stopPlacing = () => {
     setTool({ kind: "select" });
     setGhost(null);
@@ -1001,7 +1002,11 @@ export function SchematicCanvas() {
         rotation: tool.rotation,
         flip: tool.flip,
       });
-      apply(store, () => projectEdits.addPart(part));
+      apply(store, () =>
+        projectEdits.addPart(
+          tool.props ? { ...part, props: { ...part.props, ...tool.props } } : part,
+        ),
+      );
       return;
     }
 
@@ -1311,8 +1316,7 @@ export function SchematicCanvas() {
   const showLabels = DESIGNATOR_SIZE * scale >= 6;
   const count = parts?.length ?? 0;
   const ghostSymbol = tool.kind === "place" ? symbolFor(tool.type) : undefined;
-  const placingLabel =
-    tool.kind === "place" ? PLACEABLE_PARTS.find((p) => p.type === tool.type)?.label : null;
+  const placingLabel = tool.kind === "place" ? (partFor(tool.type)?.name ?? tool.type) : null;
 
   return (
     <div

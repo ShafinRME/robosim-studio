@@ -4,11 +4,15 @@ import type { PartDefinition } from "../part";
 import dcCurrentSource from "./dc-current-source";
 import dcVoltageSource from "./dc-voltage-source";
 import ground from "./ground";
+import potentiometer from "./potentiometer";
 import resistor from "./resistor";
+import switchSpst from "./switch-spst";
 
 export const LIBRARY: readonly PartDefinition[] = [
   dcCurrentSource,
   dcVoltageSource,
   ground,
+  potentiometer,
   resistor,
+  switchSpst,
 ];

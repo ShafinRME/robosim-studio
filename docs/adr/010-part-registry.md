@@ -1,6 +1,6 @@
 # ADR 010 — Part registry: one file per part
 
-- **Status:** Proposed
+- **Status:** Accepted (owner, 2026-11-26)
 - **Date:** 2026-11-26 (Day 14)
 
 ## Context

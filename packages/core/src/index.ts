@@ -354,3 +354,5 @@ export {
   serializeClipboard,
 } from "./schematic/clipboard";
 export type { SchematicClipboard } from "./schematic/clipboard";
+export { CATEGORY_LABELS, groupParts, searchParts } from "./parts/catalog";
+export type { PartGroup, PartMatch } from "./parts/catalog";
