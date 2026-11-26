@@ -639,7 +639,7 @@ down.
 | Where | What it shows |
 |---|---|
 | **Blue tags on the wires** | The voltage of that connection, measured from ground (0 V). Ground wires have no tag: they are 0 V by definition. A connection without a wire gets its tag next to a pin. Tags hide while you drag a part and come back when you let go. |
-| **Inspector**, selected part | **Voltage**, **Current** and **Power** of the part, live (4 digits). A potentiometer also shows its **Wiper voltage**. |
+| **Inspector**, selected part | Under the heading **DC operating point · live**: **Voltage**, **Current** and **Power** of the part (4 digits). A potentiometer also shows its **Wiper voltage**. These are results, not settings: a source has a *Voltage* setting at the top and its measured *Voltage* here. |
 | **Inspector**, selected wire | The **Voltage** of the wire's net. |
 | **DC chip** (bottom left of the canvas) | **✓ DC · solved** (green), **⚠ DC · 2 warnings** (amber) or **✗ DC · cannot solve** (red). Click it to see the list. |
 
@@ -672,7 +672,9 @@ disappear, the parts concerned get a red dashed outline, and the list explains w
 | *This circuit is too big to solve yet…* / *The calculation took longer than 2 s…* | Very large circuits are supported in a later version. | Split the circuit; your drawing is never changed. |
 
 Click a message in the list to **select the parts** it is about. Problems and warnings are also
-written once to the **Console** when you stop editing for a moment.
+written once to the **Console** when you stop editing for a moment (the most important one last, so
+it is the one the status bar shows). When they are all fixed, the Console says *Circuit solved: all
+problems fixed.*
 
 **Good to know**
 

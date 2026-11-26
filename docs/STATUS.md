@@ -65,6 +65,11 @@
   rebuilt; every picture ≤ 120 mm. Every quoted message checked against the code. Owner rule (2026-11-26): from
   Day 16 each prompt does half a Day (Steps 1–4, then 5–8) with a detailed, verified manual test (CLAUDE.md updated).
 - Step 8 — DEVLOG entry; 780 unit, 114 e2e, `pnpm audit` clean; merge after the owner’s final test.
+- Owner final test, section 2 (screenshots): values correct. Fixed two things it showed: (1) a source showed
+  "Voltage" twice (setting and result) → live results now sit under their own heading "DC operating point · live"
+  at the end of the part section; (2) an old warning stayed in the status bar after the circuit was fixed → the
+  Console now says "Circuit solved: all problems fixed.", and problems are written least important first so the
+  status bar shows the most important one (caught by e2e). Manual 8.9 and screenshots updated.
 
 
 ## Day 14 steps

@@ -60,6 +60,8 @@ test("a divider is solved live: net voltages, V / I / P in the Inspector", async
   await expect(tag(page, "2.5 V")).toHaveCount(1);
 
   await canvas(page).click({ position: await at(page, 0, -2) });
+  // Live results have their own heading (never confused with a setting called "Voltage").
+  await expect(page.getByRole("heading", { name: /DC operating point/ })).toBeVisible();
   await expect(page.locator('[data-readout="voltage"]')).toHaveText("2.5 V");
   await expect(page.locator('[data-readout="current"]')).toHaveText("2.5 mA");
   await expect(page.locator('[data-readout="power"]')).toHaveText("6.25 mW");
@@ -85,10 +87,14 @@ test("a circuit that cannot be solved says why and marks the part", async ({ pag
   await expect(canvas(page).locator("[data-net-voltage]")).toHaveCount(0);
   await status(page).click();
   await expect(page.getByRole("list", { name: "Circuit problems" })).toContainText(/ground/i);
-  // Undo brings the grounds and the results back.
+  // Once the drawing is still, the problem is written to the Console / status bar.
+  const statusBar = page.getByRole("contentinfo", { name: "Status bar" });
+  await expect(statusBar).toContainText("no ground", { timeout: 5_000 });
+  // Undo brings the grounds and the results back, and the status bar says the problems are gone.
   await page.keyboard.press("Control+z");
   await page.keyboard.press("Control+z");
   await expect(status(page)).toHaveAttribute("data-state", "success");
+  await expect(statusBar).toContainText("Circuit solved: all problems fixed.", { timeout: 5_000 });
 });
 
 test("an overloaded resistor gets a rating warning and an amber halo", async ({ page }) => {

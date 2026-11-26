@@ -199,16 +199,32 @@ function PropertyRows({
 
 /** The part's DC operating point (ADR 011): its voltage, current and power, live. */
 function DcRows({ result, partId }: { result: DcResult; partId: string }) {
+  // Its own heading, so a result ("Voltage 5 V") is never mistaken for a setting of the same name.
+  const heading = (
+    <div
+      role="heading"
+      aria-level={4}
+      className="mt-1.5 flex items-center gap-2 border-t pt-2 font-mono text-2xs font-semibold tracking-[0.12em] text-faint-foreground uppercase"
+    >
+      DC operating point
+      <span className="font-normal tracking-normal normal-case">· live</span>
+    </div>
+  );
   if (!result.ok) {
     return (
-      <InspectorRow label="DC">
-        <InspectorValue tone="muted">Not solved: see the problems on the canvas</InspectorValue>
-      </InspectorRow>
+      <>
+        {heading}
+        <InspectorRow label="Result">
+          <InspectorValue tone="muted">Not solved: see the problems on the canvas</InspectorValue>
+        </InspectorRow>
+      </>
     );
   }
   const readouts = result.parts.find((p) => p.id === partId)?.readouts ?? [];
+  if (readouts.length === 0) return null; // ground has no results of its own
   return (
     <>
+      {heading}
       {readouts.map((r) => (
         <InspectorRow key={r.key} label={r.label} hint="DC operating point (live)">
           <InspectorValue>
@@ -460,7 +476,6 @@ export function PartInspector({
         <InspectorValue tone="muted">{definition?.name ?? part.type}</InspectorValue>
       </InspectorRow>
       {definition ? <PropertyRows parts={[part]} definition={definition} apply={apply} /> : null}
-      {dcResult ? <DcRows result={dcResult} partId={part.id} /> : null}
       <InspectorRow label="Position">
         <InspectorValue tone="muted">
           {formatLength(part.x, lengthUnit).replace(/ (mm|in)$/, "")},{" "}
@@ -470,6 +485,7 @@ export function PartInspector({
       <InspectorRow label="Orientation">
         <InspectorValue tone="muted">{orientation(part)}</InspectorValue>
       </InspectorRow>
+      {dcResult ? <DcRows result={dcResult} partId={part.id} /> : null}
     </InspectorSection>
   );
 }

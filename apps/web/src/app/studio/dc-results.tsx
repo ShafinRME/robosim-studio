@@ -103,7 +103,13 @@ export function DcAnalysis() {
           }
           const shown = result.issues.filter((i) => i.severity !== "info");
           const keys = new Set(shown.map(problemKey));
-          for (const issue of shown.slice(0, 3)) {
+          // Problems were reported before and now all are gone: say so, so no old warning stays
+          // as the latest message in the status bar.
+          if (result.ok && shown.length === 0 && reported.current.keys.size > 0) {
+            post("success", "Circuit solved: all problems fixed.");
+          }
+          // Least important first, so the most important one is the latest line (the status bar).
+          for (const issue of shown.slice(0, 3).reverse()) {
             if (reported.current.keys.has(problemKey(issue))) continue;
             post(issue.severity === "error" ? "warning" : "info", issue.message);
           }
