@@ -19,6 +19,7 @@ import {
   netNameOf,
   parseQuantity,
   projectEdits,
+  type DcNet,
   type DcResult,
   type NetLabel,
   type Part,
@@ -197,6 +198,19 @@ function PropertyRows({
   );
 }
 
+/** A wire's net voltage; a net with no path to ground has none (ADR 012). */
+function WireVoltage({ net }: { net: DcNet | undefined }) {
+  return (
+    <InspectorRow label="Voltage">
+      {net ? (
+        <InspectorValue>{formatQuantity(net.voltage, "voltage", 4)}</InspectorValue>
+      ) : (
+        <InspectorValue tone="muted">Not grounded</InspectorValue>
+      )}
+    </InspectorRow>
+  );
+}
+
 /** The part's DC operating point (ADR 011): its voltage, current and power, live. */
 function DcRows({ result, partId }: { result: DcResult; partId: string }) {
   // Its own heading, so a result ("Voltage 5 V") is never mistaken for a setting of the same name.
@@ -220,7 +234,19 @@ function DcRows({ result, partId }: { result: DcResult; partId: string }) {
       </>
     );
   }
-  const readouts = result.parts.find((p) => p.id === partId)?.readouts ?? [];
+  const part = result.parts.find((p) => p.id === partId);
+  if (part?.floating) {
+    // Left out of the solve (ADR 012): no values rather than made-up ones.
+    return (
+      <>
+        {heading}
+        <InspectorRow label="Result" hint="Not connected to ground, so left out of the results">
+          <InspectorValue tone="muted">Not grounded</InspectorValue>
+        </InspectorRow>
+      </>
+    );
+  }
+  const readouts = part?.readouts ?? [];
   if (readouts.length === 0) return null; // ground has no results of its own
   return (
     <>
@@ -373,15 +399,7 @@ export function PartInspector({
           </InspectorValue>
         </InspectorRow>
         {dcResult?.ok && wireNet?.name ? (
-          <InspectorRow label="Voltage">
-            <InspectorValue>
-              {formatQuantity(
-                dcResult.nets.find((n) => n.name === wireNet.name)?.voltage ?? Number.NaN,
-                "voltage",
-                4,
-              )}
-            </InspectorValue>
-          </InspectorRow>
+          <WireVoltage net={dcResult.nets.find((n) => n.name === wireNet.name)} />
         ) : null}
         <InspectorRow label="Length">
           <InspectorValue tone="muted">

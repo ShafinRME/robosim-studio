@@ -100,23 +100,58 @@ test("a circuit that cannot be solved says why and marks the part", async ({ pag
 test("when a problem is fixed but a warning stays, the status bar says so", async ({ page }) => {
   await drawDivider(page);
   const statusBar = page.getByRole("contentinfo", { name: "Status bar" });
-  // A loose R3: an error (not connected to ground) and two loose-pin warnings.
+  // A loose R3 is one warning (ADR 012): the rest of the circuit keeps its results.
   await pickPart(page, "Resistor");
   await canvas(page).click({ position: await at(page, 8, -4) });
   await page.keyboard.press("Escape");
-  await expect(statusBar).toContainText("R3 is not connected to ground", { timeout: 5_000 });
-  // Wire pin 1 of R3 to the circuit: the error is gone, only "pin 2 is loose" stays (reported already).
+  await expect(status(page)).toHaveAttribute("data-state", "warning");
+  await expect(tag(page, "2.5 V")).toHaveCount(1);
+  await expect(statusBar).toContainText("R3 is not connected to anything yet.", {
+    timeout: 5_000,
+  });
+  // An error on top (both grounds deleted), then undone: the warning that stays is named.
+  await canvas(page).click({ position: await at(page, -5, 2.8) });
+  await page.keyboard.press("Delete");
+  await canvas(page).click({ position: await at(page, 4, 2.8) });
+  await page.keyboard.press("Delete");
+  await expect(status(page)).toHaveAttribute("data-state", "danger");
+  await expect(statusBar).toContainText("no ground", { timeout: 5_000 });
+  await page.keyboard.press("Control+z");
+  await page.keyboard.press("Control+z");
+  await expect(status(page)).toHaveAttribute("data-state", "warning");
+  await expect(statusBar).toContainText(
+    "Circuit solved with 1 warning: R3 is not connected to anything yet.",
+    { timeout: 5_000 },
+  );
+});
+
+test("a part wired only to itself is left out; the Inspector says it is not grounded", async ({
+  page,
+}) => {
+  await drawDivider(page);
+  // R3 with a wire from pin 1 to pin 2 is shorted and has no path to ground.
+  await pickPart(page, "Resistor");
+  await canvas(page).click({ position: await at(page, 8, -6) });
+  await page.keyboard.press("Escape");
   await canvas(page).focus();
   await page.keyboard.press("w");
-  await canvas(page).click({ position: await at(page, 6, -4) });
-  await canvas(page).click({ position: await at(page, 4, -2) });
+  await canvas(page).click({ position: await at(page, 6, -6) });
+  await canvas(page).click({ position: await at(page, 6, -8) });
+  await canvas(page).click({ position: await at(page, 10, -8) });
+  await canvas(page).click({ position: await at(page, 10, -6) });
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(status(page)).toHaveAttribute("data-state", "warning");
-  await expect(statusBar).toContainText(
-    "Circuit solved with 1 warning: Pin 2 of R3 is not connected to anything.",
-    { timeout: 5_000 },
+  await expect(tag(page, "2.5 V")).toHaveCount(1);
+  await status(page).click();
+  const problems = page.getByRole("list", { name: "Circuit problems" });
+  await expect(problems).toContainText(
+    "R3 is not connected to ground, so it is left out of the results.",
   );
+  await expect(problems).toContainText("R3 is short-circuited");
+  await page.keyboard.press("Escape");
+  await canvas(page).click({ position: await at(page, 8, -6) });
+  await expect(page.getByText("Not grounded")).toBeVisible();
 });
 
 test("an overloaded resistor gets a rating warning and an amber halo", async ({ page }) => {

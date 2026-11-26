@@ -75,7 +75,7 @@ export function createSolution(
   };
 }
 
-/** Largest dense system (unknowns). 1 024² doubles = 8 MB; bigger circuits use the sparse solver. */
+/** Largest dense system (unknowns). 1 024² doubles = 8 MB; the solver itself uses the sparse MNA (`sparse.ts`). */
 export const MAX_DENSE_UNKNOWNS = 1_024;
 
 export interface DenseMna {
@@ -90,17 +90,22 @@ export interface DenseMna {
   clear(): void;
 }
 
-/** Dense MNA system for `nodeCount` nodes (including ground) and `branchCount` branches. */
-export function createDenseMna(nodeCount: number, branchCount: number): DenseMna {
+/**
+ * The stamping rules of `MnaContext`, written once for every matrix storage (dense here, sparse in
+ * `sparse.ts`): node / branch mapping, finite checks and the SPICE stamps. `add` / `addRhs` only
+ * receive real unknowns (ground rows and columns are dropped here).
+ */
+export function createStampContext(
+  nodeCount: number,
+  branchCount: number,
+  add: (row: number, col: number, value: number) => void,
+  addRhs: (row: number, value: number) => void,
+): MnaContext {
   if (!Number.isInteger(nodeCount) || nodeCount < 1)
     throw new MnaStampError("need at least the ground node");
   if (!Number.isInteger(branchCount) || branchCount < 0)
     throw new MnaStampError("invalid branch count");
   const size = nodeCount - 1 + branchCount;
-  if (size > MAX_DENSE_UNKNOWNS)
-    throw new MnaStampError(`more than ${MAX_DENSE_UNKNOWNS} unknowns`);
-  const matrix = new Float64Array(size * size);
-  const rhs = new Float64Array(size);
 
   const finite = (value: number, what: string) => {
     if (!Number.isFinite(value))
@@ -115,46 +120,44 @@ export function createDenseMna(nodeCount: number, branchCount: number): DenseMna
       throw new MnaStampError(`no branch ${k}`);
     return nodeCount - 1 + k;
   };
-  const add = (row: Unknown, col: Unknown, value: number) => {
-    if (row < 0 || col < 0) return;
-    matrix[row * size + col] = (matrix[row * size + col] ?? 0) + value;
+  const put = (row: Unknown, col: Unknown, value: number) => {
+    if (row >= 0 && col >= 0) add(row, col, value);
   };
-  const addRhs = (row: Unknown, value: number) => {
-    if (row < 0) return;
-    rhs[row] = (rhs[row] ?? 0) + value;
+  const putRhs = (row: Unknown, value: number) => {
+    if (row >= 0) addRhs(row, value);
   };
   const checkUnknown = (u: Unknown) => {
     if (!Number.isInteger(u) || u < GROUND_UNKNOWN || u >= size)
       throw new MnaStampError(`no unknown ${u}`);
   };
 
-  const context: MnaContext = {
+  return {
     node,
     branch,
     conductance(a, b, g) {
       finite(g, "conductance");
       const ua = node(a);
       const ub = node(b);
-      add(ua, ua, g);
-      add(ub, ub, g);
-      add(ua, ub, -g);
-      add(ub, ua, -g);
+      put(ua, ua, g);
+      put(ub, ub, g);
+      put(ua, ub, -g);
+      put(ub, ua, -g);
     },
     current(a, b, i) {
       finite(i, "current");
-      addRhs(node(a), -i);
-      addRhs(node(b), i);
+      putRhs(node(a), -i);
+      putRhs(node(b), i);
     },
     voltageSource(k, plus, minus, v) {
       finite(v, "voltage");
       const j = branch(k);
       const up = node(plus);
       const um = node(minus);
-      add(up, j, 1);
-      add(um, j, -1);
-      add(j, up, 1);
-      add(j, um, -1);
-      addRhs(j, v);
+      put(up, j, 1);
+      put(um, j, -1);
+      put(j, up, 1);
+      put(j, um, -1);
+      putRhs(j, v);
     },
     vccs(outPlus, outMinus, ctrlPlus, ctrlMinus, gm) {
       finite(gm, "transconductance");
@@ -162,35 +165,58 @@ export function createDenseMna(nodeCount: number, branchCount: number): DenseMna
       const om = node(outMinus);
       const cp = node(ctrlPlus);
       const cm = node(ctrlMinus);
-      add(op, cp, gm);
-      add(op, cm, -gm);
-      add(om, cp, -gm);
-      add(om, cm, gm);
+      put(op, cp, gm);
+      put(op, cm, -gm);
+      put(om, cp, -gm);
+      put(om, cm, gm);
     },
     vcvs(k, outPlus, outMinus, ctrlPlus, ctrlMinus, gain) {
       finite(gain, "gain");
       const j = branch(k);
       const op = node(outPlus);
       const om = node(outMinus);
-      add(op, j, 1);
-      add(om, j, -1);
-      add(j, op, 1);
-      add(j, om, -1);
-      add(j, node(ctrlPlus), -gain);
-      add(j, node(ctrlMinus), gain);
+      put(op, j, 1);
+      put(om, j, -1);
+      put(j, op, 1);
+      put(j, om, -1);
+      put(j, node(ctrlPlus), -gain);
+      put(j, node(ctrlMinus), gain);
     },
     matrix(row, col, value) {
       checkUnknown(row);
       checkUnknown(col);
       finite(value, "matrix entry");
-      add(row, col, value);
+      put(row, col, value);
     },
     rhs(row, value) {
       checkUnknown(row);
       finite(value, "right-hand side");
-      addRhs(row, value);
+      putRhs(row, value);
     },
   };
+}
+
+/** Dense MNA system for `nodeCount` nodes (including ground) and `branchCount` branches. */
+export function createDenseMna(nodeCount: number, branchCount: number): DenseMna {
+  if (!Number.isInteger(nodeCount) || nodeCount < 1)
+    throw new MnaStampError("need at least the ground node");
+  if (!Number.isInteger(branchCount) || branchCount < 0)
+    throw new MnaStampError("invalid branch count");
+  const size = nodeCount - 1 + branchCount;
+  if (size > MAX_DENSE_UNKNOWNS)
+    throw new MnaStampError(`more than ${MAX_DENSE_UNKNOWNS} unknowns`);
+  const matrix = new Float64Array(size * size);
+  const rhs = new Float64Array(size);
+  const context = createStampContext(
+    nodeCount,
+    branchCount,
+    (row, col, value) => {
+      matrix[row * size + col] = (matrix[row * size + col] ?? 0) + value;
+    },
+    (row, value) => {
+      rhs[row] = (rhs[row] ?? 0) + value;
+    },
+  );
 
   return {
     size,

@@ -1,9 +1,40 @@
 # Status
 
-**Current:** Day 15 ✅ complete — owner approved the final test (all 14 sections); squash-merged into `develop` (PR #19). Next: Day 16 — Solver robustness, in a new session (Days 16–20).
-**Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
-**Session:** Days 11–15 – Circuit Lab foundations
+**Current:** Day 16 · Steps 1–4 ✅ done — waiting for the owner's manual test of the first half, then Steps 5–8.
+**Branch:** `feat/day-16-solver-robustness` (from `develop` after Day 15 merge `7d7f535`)
+**Session:** Days 16–20 – Circuit Lab solver
 **Updated:** 2026-11-26
+
+## Day 16 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; ADR 012 — sparse solver + beginner diagnostics | ✅ done (Accepted; owner delegated the choice) |
+| 2/8 | Sparse MNA + sparse LU (minimum degree, Gilbert–Peierls, threshold pivoting); tests vs dense | ✅ done |
+| 3/8 | `solveDc` on the sparse solver; limit 50 000 unknowns; residual check + refinement | ✅ done |
+| 4/8 | Diagnostics: floating parts left out (warning), unwired part, shorted part, short circuit, singular wording | ✅ done |
+| 5/8 | Studio: highlight the pins / nets an issue names; Console wording | ⏳ next |
+| 6/8 | "Never NaN" fuzz test (thousands of random broken circuits) | — |
+| 7/8 | e2e + User Manual, screenshots, `pnpm manual` | — |
+| 8/8 | Owner review → DEVLOG, squash-merge | — |
+
+## Decisions (Day 16)
+- **ADR 012** (`docs/adr/012-sparse-solver-and-diagnostics.md`, Accepted 2026-11-26): KLU-style sparse LU, floating
+  parts left out with a warning (GMIN 1e-12 S keeps the matrix regular, no values shown for them), new warnings
+  `shorted-part`, `short-circuit` (> 10 A), `low-accuracy`; singular-matrix names the voltage or current that
+  cannot be worked out.
+- Step 2 — `circuit/sparse.ts`: `createSparseMna` (same `MnaContext`; stamping now shared with the dense MNA via
+  `createStampContext`), CSC matrices, `analyzeSparse` (exact minimum degree on A + Aᵀ) reused across re-solves,
+  `factorSparse` (left-looking Gilbert–Peierls, scaled threshold pivoting 0.1, singular → original unknown).
+  Matches the dense LU on random circuit matrices; 20 000-unknown ladder ~0.1 s with linear fill.
+- Step 3 — `solveDc` uses the sparse solver; `MAX_UNKNOWNS` 50 000 (a drawing is still ≤ 2 000 parts, ADR 007);
+  `solveChecked`: residual check, one refinement step, else a `low-accuracy` warning.
+- Step 4 — `floating-node` is now a warning ("R3 and R4 are not connected to ground, so they are left out of the
+  results."), the rest solves; such parts have `floating: true` and no readouts, their nets are not listed;
+  Inspector shows "Not grounded". A part with no wire: one warning "R3 is not connected to anything yet.".
+  Shorted parts ("R2 is short-circuited: a wire joins its two pins…"; rheostat wiring is not flagged). Short
+  circuits after the solve ("V1 is short-circuited through SW1: 5 kA would flow."). Singular: "The voltage where
+  R2 and X1 meet cannot be worked out." / "The current through X1 cannot be worked out.", with the check warnings.
+  809 unit; e2e `dc.spec.ts` updated (+1 test).
 
 ## Day 15 steps
 | Step | Task | State |
@@ -372,9 +403,9 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 13 · Steps 5–6:** rubber-band wires when parts move; select / move / delete wires (and mixed selections);
-Inspector shows a wire's net; net labels (L) and copy / cut / paste / duplicate.
-Release flow from now on: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
+**Day 16 · Steps 5–8** after the owner reports on the first-half test: issue highlights (pins / nets) in the studio,
+fuzz test, e2e + User Manual, owner review and merge.
+Release flow: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
 - **Studio start-up performance (owner: accepted 85–88 for v0.0.1, 2026-11-24 — "optimize in future when needed").**

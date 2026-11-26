@@ -125,6 +125,76 @@ describe("checkCircuit", () => {
     );
   });
 
+  it("says a part with no wire at all is not connected yet — once, not once per pin", () => {
+    const issues = check([...BASIC_PARTS(), R("r3")], BASIC_WIRES());
+    expect(issues).toEqual([
+      {
+        code: "unconnected-pin",
+        severity: "warning",
+        message: "R3 is not connected to anything yet.",
+        hint: "Draw wires from its pins to the circuit, or delete R3 if you do not need it.",
+        parts: ["r3"],
+        pins: [pin("r3", "1"), pin("r3", "2")],
+        nets: [expect.any(Number) as number, expect.any(Number) as number],
+      },
+    ]);
+    expect(canSimulate(issues)).toBe(true);
+  });
+
+  it("warns when a wire joins the two pins of a part (shorted part)", () => {
+    const issues = check(
+      [...BASIC_PARTS(), R("r2")],
+      [...BASIC_WIRES(), [pin("r2", "1"), pin("r1", "1")], [pin("r2", "2"), pin("r2", "1")]],
+    );
+    expect(issues).toEqual([
+      {
+        code: "shorted-part",
+        severity: "warning",
+        message:
+          "R2 is short-circuited: a wire joins its two pins, so no current flows through it.",
+        hint: "Remove that wire if R2 should do something in the circuit.",
+        parts: ["r2"],
+        pins: [pin("r2", "1"), pin("r2", "2")],
+        nets: [expect.any(Number) as number],
+      },
+    ]);
+    expect(canSimulate(issues)).toBe(true);
+  });
+
+  it("words a shorted current source and a fully shorted potentiometer, but not a rheostat", () => {
+    const pot = requireComponent("resistor.potentiometer");
+    const shortedSource = check(
+      [...BASIC_PARTS(), I("i1")],
+      [...BASIC_WIRES(), [pin("i1", "out"), pin("r1", "1")], [pin("i1", "in"), pin("r1", "1")]],
+    );
+    expect(shortedSource.map((i) => i.message)).toEqual([
+      "I1 is short-circuited: a wire joins its two pins, so its current only flows around that wire.",
+    ]);
+    const allPins = check(
+      [...BASIC_PARTS(), make(pot, "rv1", "RV1")],
+      [
+        ...BASIC_WIRES(),
+        [pin("rv1", "1"), pin("r1", "1")],
+        [pin("rv1", "2"), pin("r1", "1")],
+        [pin("rv1", "w"), pin("r1", "1")],
+      ],
+    );
+    expect(allPins.map((i) => i.message)).toEqual([
+      "RV1 is short-circuited: a wire joins all its pins, so no current flows through it.",
+    ]);
+    // Wiper joined to one end is the usual variable-resistor connection: no warning.
+    const rheostat = check(
+      [...BASIC_PARTS(), make(pot, "rv1", "RV1")],
+      [
+        ...BASIC_WIRES(),
+        [pin("rv1", "1"), pin("r1", "1")],
+        [pin("rv1", "w"), pin("rv1", "2")],
+        [pin("rv1", "2"), pin("gnd", "1")],
+      ],
+    );
+    expect(rheostat).toEqual([]);
+  });
+
   it("finds a group of parts that is not connected to ground", () => {
     const issues = check(
       [...BASIC_PARTS(), R("r3"), R("r4")],
@@ -133,8 +203,9 @@ describe("checkCircuit", () => {
     expect(issues).toMatchObject([
       {
         code: "floating-node",
-        severity: "error",
-        message: "R3 and R4 are not connected to ground, so their voltages cannot be worked out.",
+        severity: "warning",
+        message: "R3 and R4 are not connected to ground, so they are left out of the results.",
+        hint: "Connect them to the rest of the circuit, or to ground (GND).",
         parts: ["r3", "r4"],
       },
     ]);
@@ -162,6 +233,13 @@ describe("checkCircuit", () => {
         message: "V1 is short-circuited: a wire connects its two sides directly.",
         hint: "Remove the wire, or add a resistor in series to limit the current.",
         parts: ["v1"],
+      },
+      {
+        code: "shorted-part",
+        severity: "warning",
+        message:
+          "R1 is short-circuited: a wire joins its two pins, so no current flows through it.",
+        parts: ["r1"],
       },
     ]);
   });

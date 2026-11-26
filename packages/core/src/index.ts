@@ -218,8 +218,24 @@ export {
   MnaStampError,
   createDenseMna,
   createSolution,
+  createStampContext,
 } from "./circuit/mna";
 export type { DenseMna, MnaContext, Solution, Unknown } from "./circuit/mna";
+export {
+  DIAGONAL_PREFERENCE,
+  analyzeSparse,
+  checkSparse,
+  createSparseMna,
+  factorSparse,
+  multiplySparse,
+  normInfSparse,
+  RESIDUAL_TOLERANCE,
+  relativeResidual,
+  solveChecked,
+  sparseFromDense,
+  sparseFromEntries,
+} from "./circuit/sparse";
+export type { SparseLuFactors, SparseMatrix, SparseMna, SparseSymbolic } from "./circuit/sparse";
 export {
   PART_CATEGORIES,
   PIN_TYPES,
@@ -266,6 +282,7 @@ export {
   MAX_REPORTED_ISSUES,
   canSimulate,
   checkCircuit,
+  floatingNodes,
   listNames,
   solverIssues,
   sortIssues,
@@ -359,5 +376,11 @@ export { CATEGORY_LABELS, groupParts, searchParts } from "./parts/catalog";
 export type { PartGroup, PartMatch } from "./parts/catalog";
 export { PIVOT_TOLERANCE, SingularMatrixError, factorLu } from "./circuit/lu";
 export type { LuFactors } from "./circuit/lu";
-export { solveCircuitDc, solveDc } from "./circuit/dc";
+export {
+  FLOATING_GMIN,
+  MAX_UNKNOWNS,
+  SHORT_CIRCUIT_CURRENT,
+  solveCircuitDc,
+  solveDc,
+} from "./circuit/dc";
 export type { DcNet, DcPart, DcResult } from "./circuit/dc";
