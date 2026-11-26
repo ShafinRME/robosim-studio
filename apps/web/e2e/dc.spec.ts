@@ -9,7 +9,7 @@ const status = (page: Page) => page.getByTestId("dc-status");
 const tag = (page: Page, text: string) =>
   canvas(page)
     .locator("[data-net-voltage]")
-    .filter({ hasText: new RegExp(`^${text.replace(/\./g, "\\.")}$`) });
+    .filter({ has: page.getByText(text, { exact: true }) });
 
 /** Canvas point `dx`, `dy` grid steps (100 mil = 19.2 px at 200 %) from the origin. */
 async function at(page: Page, dx: number, dy: number) {
