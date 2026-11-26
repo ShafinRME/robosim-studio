@@ -656,6 +656,24 @@ show positive power.
   **Power rating** (Inspector). In a real circuit it would get too hot. The part gets an amber dashed
   outline. Use a larger resistance or a resistor with a higher rating.
 - *"Pin 2 of R3 is not connected to anything."* — a loose pin. Normal while you are still drawing.
+  A part with no wire at all gets one message instead: *"R3 is not connected to anything yet."*
+- *"V1 is short-circuited through SW1: 5 kA would flow."* — more than 10 A flows, far more than a
+  battery or bench supply can give: there is a short circuit. The supply and the parts on the short
+  get an amber outline. Add a resistor or a load so the current is limited.
+- *"R2 is short-circuited: a wire joins its two pins, so no current flows through it."* — a wire
+  goes straight from one pin of the part to the other, so the part does nothing. Rings mark the two
+  joined pins. (A potentiometer with its wiper wired to one end is a normal *variable resistor* and
+  is not flagged.)
+- *"R3 is not connected to ground, so it is left out of the results."* — a part, or a group of parts,
+  has no path to ground. The **rest of the circuit is still solved**; the parts left out get an amber
+  outline, have no voltage tags, and the Inspector shows **Result: Not grounded** for them. Wire them
+  into the circuit (or to a ground), or delete them.
+- *"The results may be inaccurate…"* — very rare: part values so extreme (for example 1 mΩ next to
+  1 TΩ) that the numbers cannot be exact. Bring the values closer together.
+
+![V1 shorted through the closed switch SW1: pointing at the warning highlights V1 and SW1](images/dc-short-circuit.png)
+
+![R3 is wired only to itself: it is left out of the results, and the Inspector shows "Not grounded"](images/dc-left-out.png)
 
 ![Without a ground the circuit cannot be solved; the list says why and what to do](images/dc-no-ground.png)
 
@@ -665,13 +683,17 @@ disappear, the parts concerned get a red dashed outline, and the list explains w
 | Message | What it means | What to do |
 |---|---|---|
 | *The circuit has no ground (GND)…* | There is no 0 V point to measure from. | Place a **Ground** and connect it to the − side of your supply. |
-| *R3 is not connected to ground, so its voltages cannot be worked out.* | A part or group of parts floats, connected to nothing that leads to ground. | Wire it into the circuit, or delete it. |
+| *V1 is short-circuited: a wire connects its two sides directly.* | A wire joins the + and − of a supply. | Remove the wire, or add a resistor in series. |
 | *V1 and V2 are joined directly (in parallel or in a loop)…* | Two ideal supplies fight each other with nothing to limit the current. | Put a resistor between them, or remove one. |
+| *I1 has nowhere to send its current.* | A current source with no path for its current. | Connect a resistor (or another path) across it. |
 | *Resistance of R1 must be more than 0 Ω.* | A value that is not possible. | Change it in the Inspector. |
-| *The circuit around X1 … cannot be solved as drawn.* | The equations have no single answer (rare: the checks above catch almost everything). | Look at the parts named and how they are connected. |
-| *This circuit is too big to solve yet…* / *The calculation took longer than 2 s…* | Very large circuits are supported in a later version. | Split the circuit; your drawing is never changed. |
+| *The voltage where R2 and X1 meet cannot be worked out.* / *The current through X1 cannot be worked out.* | The equations have no single answer (rare: the checks above catch almost everything). Any warnings shown with it usually point at the cause. | Look at the parts named and how they are connected. |
+| *This circuit is too big to solve yet…* / *The calculation took longer than 2 s…* | Far bigger than any drawing (the solver handles up to 50 000 unknowns). | Split the circuit; your drawing is never changed. |
 
-Click a message in the list to **select the parts** it is about. Problems and warnings are also
+**Finding the problem on the drawing.** Parts with a problem have a dashed outline (red for
+problems, amber for warnings), and **rings** mark the pins a message is about (for example the two
+joined pins of a short-circuited part). **Point at a message** in the list and its parts and pins
+light up on the drawing; **click** it to **select the parts**. Problems and warnings are also
 written once to the **Console** when you stop editing for a moment (the most important one last, so
 it is the one the status bar shows). When they are all fixed, the Console says *Circuit solved: all
 problems fixed.*
@@ -685,7 +707,9 @@ problems fixed.*
   is at 3.75 V.
 - **View → Show DC results** (or **Ctrl + K** → *Show DC results*) turns all of this off and on;
   your choice is remembered.
-- Results are exact to far better than 0.1 % (checked against 22 textbook circuits).
+- Results are exact to far better than 0.1 % (checked against 22 textbook circuits), and every
+  answer is checked again before it is shown. Thousands of random, deliberately broken circuits are
+  tested on every change: each one gives either real numbers or a plain-word message, never "NaN".
 
 # 9. If something goes wrong
 
@@ -726,3 +750,4 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.1 · Day 13 | 2026-11-25 | New sections 8.6–8.8: wires (wire tool, what connects), moving and editing wires (wires follow parts, the wire's net in the Inspector), net labels, copy / paste / duplicate. |
 | 0.0.1 · Day 15 | 2026-11-26 | New section 8.9: live DC results — voltage tags on wires, voltage / current / power in the Inspector, the DC chip, warnings (power rating, loose pins) and problems with what to do, SPICE signs, switch and potentiometer notes, View → Show DC results. |
 | 0.0.1 · Day 14 | 2026-11-26 | Section 8.2 rewritten: the **Parts** panel (search, search by value, drag and drop, Add part, recently used) and the list of parts, with the new potentiometer and switch. Section 8.4: every property in the Inspector, editing several parts at once. Tool palette, window parts and shortcuts (Alt + 5, A) updated. |
+| 0.0.1 · Day 16 | 2026-11-26 | Section 8.9: a part not connected to ground is now left out (warning, "Not grounded") instead of stopping the whole circuit; new warnings for short circuits, short-circuited parts and parts with no wire; rings on problem pins and highlight on pointing at a message; clearer wording when a circuit cannot be solved; two new screenshots. |

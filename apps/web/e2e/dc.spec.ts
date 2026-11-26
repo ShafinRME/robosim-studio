@@ -149,6 +149,15 @@ test("a part wired only to itself is left out; the Inspector says it is not grou
     "R3 is not connected to ground, so it is left out of the results.",
   );
   await expect(problems).toContainText("R3 is short-circuited");
+  // R3 gets an amber halo and rings on both shorted pins (ADR 012).
+  await expect(canvas(page).locator('[data-part][data-problem="warning"]')).toHaveCount(1);
+  await expect(canvas(page).locator('[data-problem-pin="warning"]')).toHaveCount(2);
+  // Pointing at a problem in the list highlights its part; leaving it clears the highlight.
+  await problems.getByRole("button", { name: /R3 is short-circuited/ }).hover();
+  await expect(canvas(page).locator("[data-focus-part]")).toHaveCount(1);
+  await expect(canvas(page).locator("[data-focus-pin]")).toHaveCount(2);
+  await canvas(page).hover({ position: await at(page, -12, -8) });
+  await expect(canvas(page).getByTestId("problem-focus")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await canvas(page).click({ position: await at(page, 8, -6) });
   await expect(page.getByText("Not grounded")).toBeVisible();

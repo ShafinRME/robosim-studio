@@ -51,6 +51,8 @@ import {
   unionRects,
   wheelZoom,
   zoomTo,
+  type CircuitIssue,
+  type DcResult,
   type NetLabel,
   type Part,
   type Point,
@@ -109,7 +111,15 @@ import {
   setPlaceHandler,
 } from "./part-placement";
 import { rememberPart } from "./recent-parts";
-import { DcStatus, NetVoltages, problemParts, voltageTags } from "./dc-overlay";
+import {
+  DcStatus,
+  NetVoltages,
+  ProblemFocus,
+  ProblemPins,
+  problemParts,
+  problemPins,
+  voltageTags,
+} from "./dc-overlay";
 import { useDcResults } from "./dc-results";
 import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
@@ -811,6 +821,15 @@ export function SchematicCanvas() {
     () => (showDcResults ? problemParts(dc.result) : new Map<string, "error" | "warning">()),
     [dc.result, showDcResults],
   );
+  const pinMarks = useMemo(
+    () => (showDcResults && parts ? problemPins(dc.result, parts) : []),
+    [showDcResults, dc.result, parts],
+  );
+  // The problem the pointer is on in the DC list (cleared when the results change).
+  const [focusIssue, setFocusIssue] = useState<{ issue: CircuitIssue; result: DcResult } | null>(
+    null,
+  );
+  const focused = focusIssue && focusIssue.result === dc.result ? focusIssue.issue : null;
   const tags = useMemo(
     () =>
       showDcResults && dc.result && parts && wires
@@ -1537,6 +1556,10 @@ export function SchematicCanvas() {
             ) : null}
             {shownLabels ? <LabelsLayer labels={shownLabels} selected={selection} /> : null}
             {showVoltages ? <NetVoltages tags={tags} /> : null}
+            {showDcResults && !dragOffset ? <ProblemPins pins={pinMarks} /> : null}
+            {showDcResults && !dragOffset && focused && parts ? (
+              <ProblemFocus issue={focused} parts={parts} />
+            ) : null}
             {tool.kind === "label" && !tool.naming && ghost ? (
               <g opacity={0.7} data-testid="label-ghost" style={{ pointerEvents: "none" }}>
                 <NetLabelShape
@@ -1743,6 +1766,9 @@ export function SchematicCanvas() {
         <DcStatus
           result={dc.result}
           solving={dc.solving}
+          onFocusIssue={(issue) =>
+            setFocusIssue(issue && dc.result ? { issue, result: dc.result } : null)
+          }
           onSelectParts={(ids) => {
             setTool({ kind: "select" });
             select(ids);

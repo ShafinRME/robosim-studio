@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 16 · Steps 1–4 ✅ done — waiting for the owner's manual test of the first half, then Steps 5–8.
+**Current:** Day 16 · Steps 1–7 ✅ done, Step 8 waiting for the owner's final test (first-half test passed: all 6 sections).
 **Branch:** `feat/day-16-solver-robustness` (from `develop` after Day 15 merge `7d7f535`)
 **Session:** Days 16–20 – Circuit Lab solver
 **Updated:** 2026-11-26
@@ -12,10 +12,10 @@
 | 2/8 | Sparse MNA + sparse LU (minimum degree, Gilbert–Peierls, threshold pivoting); tests vs dense | ✅ done |
 | 3/8 | `solveDc` on the sparse solver; limit 50 000 unknowns; residual check + refinement | ✅ done |
 | 4/8 | Diagnostics: floating parts left out (warning), unwired part, shorted part, short circuit, singular wording | ✅ done |
-| 5/8 | Studio: highlight the pins / nets an issue names; Console wording | ⏳ next |
-| 6/8 | "Never NaN" fuzz test (thousands of random broken circuits) | — |
-| 7/8 | e2e + User Manual, screenshots, `pnpm manual` | — |
-| 8/8 | Owner review → DEVLOG, squash-merge | — |
+| 5/8 | Studio: highlight the parts / pins an issue names | ✅ done |
+| 6/8 | "Never NaN" fuzz test (thousands of random broken circuits) | ✅ done (3 000 per run) |
+| 7/8 | e2e + User Manual, screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge | ⏳ DEVLOG written; waiting for the owner's final test |
 
 ## Decisions (Day 16)
 - **ADR 012** (`docs/adr/012-sparse-solver-and-diagnostics.md`, Accepted 2026-11-26): KLU-style sparse LU, floating
@@ -35,6 +35,16 @@
   circuits after the solve ("V1 is short-circuited through SW1: 5 kA would flow."). Singular: "The voltage where
   R2 and X1 meet cannot be worked out." / "The current through X1 cannot be worked out.", with the check warnings.
   809 unit; e2e `dc.spec.ts` updated (+1 test).
+- Owner tested the first half (2026-11-26): all 6 sections passed. The open switch shows 5 nA: correct (1 GΩ
+  leakage model), explained.
+- Step 5 — studio: amber halos for every warning about a part (short circuit, shorted part, not grounded, over
+  rating; loose pins only show their open end), rings on the pins an issue names, pointing at (or focusing) a problem
+  in the DC list highlights its parts and pins (`ProblemFocus`). e2e extended.
+- Step 6 — `dc.fuzz.test.ts`: 3 000 seeded random circuits (every part, extreme / invalid values, shorts, loose pins,
+  no ground): never a throw, NaN, simulator fault or bad message; asserts both outcomes and every beginner code
+  occur. Plus every part at its min / max values.
+- Step 7 — User Manual 8.9: new warnings, "Not grounded", rings and highlights, new wording table; screenshots
+  `dc-short-circuit`, `dc-left-out`; all 33 screenshots re-captured, PDF rebuilt. 811 unit.
 
 ## Day 15 steps
 | Step | Task | State |
@@ -403,11 +413,13 @@
 - Day 09 merged into `develop` as `8dec085` (PR #10).
 
 ## Next action
-**Day 16 · Steps 5–8** after the owner reports on the first-half test: issue highlights (pins / nets) in the studio,
-fuzz test, e2e + User Manual, owner review and merge.
+**Day 16 · Step 8:** owner's final test → mark PR #20 ready, squash-merge into `develop`; then Day 17 (non-linear parts).
 Release flow: Day branches squash into `develop`; releases = PR `develop` → `main` with a merge commit + tag.
 
 ## Open issues
+- Short-circuit warning threshold is a fixed 10 A (`SHORT_CIRCUIT_CURRENT`, ADR 012). Revisit when the power-electronics
+  parts arrive (motor drivers and power stages legitimately carry more): make it per-source (current limit / internal
+  resistance) then.
 - **Studio start-up performance (owner: accepted 85–88 for v0.0.1, 2026-11-24 — "optimize in future when needed").**
   Lighthouse desktop Performance 85–88 (target 90): start-up TBT ~300 ms from React + Dockview building the workspace
   in one go. Home page is 100. **Must be revisited:** re-run Lighthouse whenever a lab adds panels (first in Phase 1)

@@ -488,6 +488,69 @@ test.describe("schematic canvas", () => {
     await settle(page);
     await page.screenshot({ path: shot("dc-no-ground"), clip: await canvasClip(page) });
   });
+
+  test("DC warning: a supply shorted through a closed switch", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    // SW1 upright from the V1 + wire to its own ground.
+    await place(page, "Switch (SPST)", 7, 0, 1);
+    await place(page, "Ground", 7, 2);
+    await canvas.focus();
+    await page.keyboard.press("w");
+    for (const [dx, dy] of [
+      [7, -2],
+      [7, -6],
+      [-8, -6],
+      [-8, -4], // ends on the corner of the V1 + wire
+    ] as const) {
+      await canvas.click({ position: await at(page, dx, dy) });
+    }
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await canvas.click({ position: await at(page, 7, 0) });
+    await page.getByRole("switch", { name: "Closed" }).click();
+    await expect(page.getByTestId("dc-status")).toHaveAttribute("data-state", "warning");
+    await canvas.click({ position: await at(page, 12, 6) }); // nothing selected
+    await page.getByTestId("dc-status").click();
+    await page
+      .getByRole("list", { name: "Circuit problems" })
+      .getByRole("button", { name: /short-circuited through SW1/ })
+      .hover();
+    await expect(canvas.locator("[data-focus-part]")).toHaveCount(2);
+    await settle(page);
+    await page.screenshot({ path: shot("dc-short-circuit"), clip: await canvasClip(page) });
+  });
+
+  test("DC warning: a part left out because it is not grounded", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    // R3 with a wire from pin 1 round to pin 2: shorted, and no path to ground.
+    await place(page, "Resistor", 8, -8);
+    await canvas.focus();
+    await page.keyboard.press("w");
+    for (const [dx, dy] of [
+      [6, -8],
+      [6, -10],
+      [10, -10],
+      [10, -8],
+    ] as const) {
+      await canvas.click({ position: await at(page, dx, dy) });
+    }
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("dc-status")).toContainText("2 warnings");
+    await canvas.click({ position: await at(page, 8, -8) });
+    await expect(page.getByText("Not grounded")).toBeVisible();
+    await page.getByRole("combobox", { name: "Search parts" }).fill("");
+    // Wait until the Console has written the warnings (once the drawing is still).
+    await expect(page.getByRole("contentinfo", { name: "Status bar" })).toContainText(
+      "R3 is not connected to ground",
+      { timeout: 5_000 },
+    );
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("dc-left-out") });
+  });
 });
 
 test("schematic symbols: IEC and ANSI", async ({ page }) => {
