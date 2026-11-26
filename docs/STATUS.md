@@ -1,9 +1,35 @@
 # Status
 
-**Current:** Day 14 · 8/8 done, merged — Parts library & inspector (Phase 1 · Circuit Lab). **Next:** Day 15 · DC solver
-**Branch:** `feat/day-14-parts-library` (from `develop` after Day 13 merge `a3eb283`)
+**Current:** Day 15 · Step 2/8 done — DC solver (Phase 1 · Circuit Lab)
+**Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
+
+## Day 15 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; ADR 011 — DC solver (LU, operating point, analysis worker) | ✅ done (waiting for owner review) |
+| 2/8 | LU solver with scaled partial pivoting + singular check; unit tests | ✅ done |
+| 3/8 | DC operating point: netlist → checks → stamps → solve → V / I / P per part | ⏳ next |
+| 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ⬜ |
+| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ⬜ |
+| 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ⬜ |
+| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ⬜ |
+| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⬜ |
+
+## Decisions (Day 15)
+- **ADR 011** (`docs/adr/011-dc-solver.md`, Proposed): dense LU with scaled partial pivoting (no library; Day 16 adds
+  the sparse solver behind the same factor / solve interface); `solveDc` = `checkCircuit` first (no solve on
+  errors), then devices from the registry, stamp, factor, solve; singular → `singular-matrix` issue naming parts;
+  results by net name, all finite. A separate analysis worker (Comlink, Zod-validated input, sequence numbers so the
+  latest edit wins, 2 s timeout → restart). Live DC results, **View → Show DC results** (default on).
+- Step 2 — `circuit/lu.ts`: `factorLu(matrix, size)` copies and factors once (P·A = L·U in one array), `solve(b)`
+  for any number of right-hand sides; pivot = largest entry relative to its row's largest (1 mΩ next to 1 GΩ stays
+  exact); pivot < 1e-13 × row scale or a zero row → `SingularMatrixError` with the undetermined unknown; rejects
+  non-finite input, never returns NaN. Tests: exact small systems, voltage-source zero diagonal, 1 mΩ / 1 GΩ via
+  real MNA stamps, many right-hand sides, singular and nearly singular, random systems (‖Ax − b‖ < 1e-9), 500
+  unknowns fast. 746 unit.
+
 
 ## Day 14 steps
 | Step | Task | State |
