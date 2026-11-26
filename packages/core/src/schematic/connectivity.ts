@@ -13,12 +13,11 @@
  * The result is a `CircuitInput` for `buildNetlist` (ADR 007) plus what the canvas needs: junction
  * dots and which pins are connected (their open circles are hidden).
  */
-import { REFERENCE_PARTS } from "../circuit/reference-parts";
+import { componentFor } from "../parts/registry";
 import type { CircuitInput, CircuitPart, Netlist, PinRef } from "../circuit/netlist";
 import type { NetLabel, Part, Wire, WirePoint } from "../project";
 import { placedPins, symbolFor } from "./symbols";
 
-const DEFINITION_PINS = new Map(REFERENCE_PARTS.map((d) => [d.type, d.pins.map((p) => p.id)]));
 const DESIGNATOR = /^[A-Za-z][A-Za-z0-9_]{0,15}$/;
 
 const key = (x: number, y: number) => `${x},${y}`;
@@ -233,7 +232,8 @@ export function connectivityOf(project: {
       id: part.id,
       type: part.type,
       designator: DESIGNATOR.test(part.name) ? part.name : `X${index + 1}`,
-      pins: DEFINITION_PINS.get(part.type) ?? symbol.pins.map((p) => p.id),
+      // Model pin order (netlist order); parts with a fixed role use their symbol's pins.
+      pins: (componentFor(part.type)?.pins ?? symbol.pins).map((p) => p.id),
       props: part.props,
     });
   });

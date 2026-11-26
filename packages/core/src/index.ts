@@ -248,11 +248,15 @@ export type {
 export { QUANTITIES, unitOf } from "./circuit/quantities";
 export type { Quantity } from "./circuit/quantities";
 export {
-  REFERENCE_PARTS,
-  dcCurrentSourceDefinition,
-  dcVoltageSourceDefinition,
-  resistorDefinition,
-} from "./circuit/reference-parts";
+  COMPONENTS,
+  PARTS,
+  componentFor,
+  partFor,
+  requireComponent,
+  requirePart,
+} from "./parts/registry";
+export { checkPart, definePart } from "./parts/part";
+export type { PartDefinition, PartModel, PartSpec } from "./parts/part";
 export { dcPathsOf } from "./circuit/component";
 export { formatQuantity, parseQuantity } from "./circuit/quantities";
 export type { QuantityParseResult, QuantityRange } from "./circuit/quantities";
@@ -295,10 +299,6 @@ export {
 } from "./schematic/viewport";
 export type { LengthUnit, Point, Rect, Size, Viewport } from "./schematic/viewport";
 export {
-  DC_CURRENT_SYMBOL,
-  DC_VOLTAGE_SYMBOL,
-  GROUND_SYMBOL,
-  RESISTOR_SYMBOL,
   SYMBOLS,
   SYMBOL_STYLES,
   designatorPrefix,

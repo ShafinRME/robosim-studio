@@ -10,7 +10,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "parts": "node scripts/generate-parts-index.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3"

@@ -8,12 +8,12 @@ import {
 } from "./component";
 import { createDenseMna, createSolution } from "./mna";
 import { buildNetlist, type CircuitInput, type CircuitPart, type PinRef } from "./netlist";
-import {
-  REFERENCE_PARTS,
-  dcCurrentSourceDefinition,
-  dcVoltageSourceDefinition,
-  resistorDefinition,
-} from "./reference-parts";
+import { COMPONENTS, requireComponent } from "../parts/registry";
+
+const REFERENCE_PARTS = COMPONENTS;
+const resistorDefinition = requireComponent("resistor");
+const dcVoltageSourceDefinition = requireComponent("source.dc-voltage");
+const dcCurrentSourceDefinition = requireComponent("source.dc-current");
 
 /** Test-only Gaussian elimination with partial pivoting (the real LU solver arrives on Day 15). */
 function solveDense(matrix: Float64Array, rhs: Float64Array, n: number): Float64Array {

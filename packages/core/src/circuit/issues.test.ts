@@ -11,12 +11,12 @@ import {
   type CircuitIssue,
 } from "./issues";
 import { buildNetlist, type CircuitPart, type PinRef } from "./netlist";
-import {
-  REFERENCE_PARTS,
-  dcCurrentSourceDefinition,
-  dcVoltageSourceDefinition,
-  resistorDefinition,
-} from "./reference-parts";
+import { COMPONENTS, requireComponent } from "../parts/registry";
+
+const REFERENCE_PARTS = COMPONENTS;
+const resistorDefinition = requireComponent("resistor");
+const dcVoltageSourceDefinition = requireComponent("source.dc-voltage");
+const dcCurrentSourceDefinition = requireComponent("source.dc-current");
 
 /** A capacitor-like part: no DC path, not a source (the real one arrives on Day 18). */
 const capacitorLike: ComponentDefinition = {
