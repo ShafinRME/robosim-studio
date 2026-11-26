@@ -215,7 +215,7 @@ function DcRows({ result, partId }: { result: DcResult; partId: string }) {
       <>
         {heading}
         <InspectorRow label="Result">
-          <InspectorValue tone="muted">Not solved (see the DC list)</InspectorValue>
+          <InspectorValue tone="muted">Not solved</InspectorValue>
         </InspectorRow>
       </>
     );

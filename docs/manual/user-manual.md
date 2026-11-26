@@ -639,7 +639,7 @@ down.
 | Where | What it shows |
 |---|---|
 | **Blue tags on the wires** | The voltage of that connection, measured from ground (0 V). Ground wires have no tag: they are 0 V by definition. A connection without a wire gets its tag next to a pin. Tags hide while you drag a part and come back when you let go. |
-| **Inspector**, selected part | Under the heading **DC operating point · live**: **Voltage**, **Current** and **Power** of the part (4 digits). A potentiometer also shows its **Wiper voltage**. These are results, not settings: a source has a *Voltage* setting at the top and its measured *Voltage* here. |
+| **Inspector**, selected part | Under the heading **DC operating point · live**: **Voltage**, **Current** and **Power** of the part (4 digits). A potentiometer also shows **Wiper (to 2)**: the wiper's voltage measured from pin 2. These are results, not settings: a source has a *Voltage* setting at the top and its measured *Voltage* here. |
 | **Inspector**, selected wire | The **Voltage** of the wire's net. |
 | **DC chip** (bottom left of the canvas) | **✓ DC · solved** (green), **⚠ DC · 2 warnings** (amber) or **✗ DC · cannot solve** (red). Click it to see the list. |
 

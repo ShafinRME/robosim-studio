@@ -97,6 +97,28 @@ test("a circuit that cannot be solved says why and marks the part", async ({ pag
   await expect(statusBar).toContainText("Circuit solved: all problems fixed.", { timeout: 5_000 });
 });
 
+test("when a problem is fixed but a warning stays, the status bar says so", async ({ page }) => {
+  await drawDivider(page);
+  const statusBar = page.getByRole("contentinfo", { name: "Status bar" });
+  // A loose R3: an error (not connected to ground) and two loose-pin warnings.
+  await pickPart(page, "Resistor");
+  await canvas(page).click({ position: await at(page, 8, -4) });
+  await page.keyboard.press("Escape");
+  await expect(statusBar).toContainText("R3 is not connected to ground", { timeout: 5_000 });
+  // Wire pin 1 of R3 to the circuit: the error is gone, only "pin 2 is loose" stays (reported already).
+  await canvas(page).focus();
+  await page.keyboard.press("w");
+  await canvas(page).click({ position: await at(page, 6, -4) });
+  await canvas(page).click({ position: await at(page, 4, -2) });
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect(status(page)).toHaveAttribute("data-state", "warning");
+  await expect(statusBar).toContainText(
+    "Circuit solved with 1 warning: Pin 2 of R3 is not connected to anything.",
+    { timeout: 5_000 },
+  );
+});
+
 test("an overloaded resistor gets a rating warning and an amber halo", async ({ page }) => {
   await drawDivider(page);
   await canvas(page).click({ position: await at(page, 0, -2) });

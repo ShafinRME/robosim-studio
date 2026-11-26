@@ -103,15 +103,28 @@ export function DcAnalysis() {
           }
           const shown = result.issues.filter((i) => i.severity !== "info");
           const keys = new Set(shown.map(problemKey));
-          // Problems were reported before and now all are gone: say so, so no old warning stays
-          // as the latest message in the status bar.
-          if (result.ok && shown.length === 0 && reported.current.keys.size > 0) {
-            post("success", "Circuit solved: all problems fixed.");
-          }
+          const before = reported.current.keys;
           // Least important first, so the most important one is the latest line (the status bar).
-          for (const issue of shown.slice(0, 3).reverse()) {
-            if (reported.current.keys.has(problemKey(issue))) continue;
+          const fresh = shown
+            .slice(0, 3)
+            .reverse()
+            .filter((issue) => !before.has(problemKey(issue)));
+          for (const issue of fresh) {
             post(issue.severity === "error" ? "error" : "warning", issue.message);
+          }
+          // Some reported problems are gone and nothing new was written: say where the circuit
+          // stands now, so the status bar never keeps an old, fixed problem as its latest line.
+          const fixedSome = [...before].some((key) => !keys.has(key));
+          if (fresh.length === 0 && fixedSome) {
+            const top = shown[0];
+            if (!top) {
+              if (result.ok) post("success", "Circuit solved: all problems fixed.");
+            } else if (result.ok) {
+              const count = shown.length === 1 ? "1 warning" : `${shown.length} warnings`;
+              post("warning", `Circuit solved with ${count}: ${top.message}`);
+            } else {
+              post("error", top.message);
+            }
           }
           reported.current.keys = keys;
         }, CONSOLE_QUIET_MS);
