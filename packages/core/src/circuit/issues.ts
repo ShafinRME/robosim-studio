@@ -21,18 +21,21 @@ export const ISSUE_CODES = [
   "no-ground",
   "voltage-source-loop",
   "current-source-cutset",
-  "floating-node",
   "invalid-value",
   "singular-matrix",
   "no-convergence",
   "model-error",
-  "unconnected-pin",
-  "duplicate-designator",
-  "over-limit",
-  "erc-conflict",
-  "empty-circuit",
   "too-large",
   "timeout",
+  "short-circuit",
+  "floating-node",
+  "shorted-part",
+  "over-limit",
+  "unconnected-pin",
+  "duplicate-designator",
+  "low-accuracy",
+  "erc-conflict",
+  "empty-circuit",
 ] as const;
 export type IssueCode = (typeof ISSUE_CODES)[number];
 export type IssueSeverity = "error" | "warning" | "info";
@@ -42,18 +45,21 @@ export const ISSUE_SEVERITY: Readonly<Record<IssueCode, IssueSeverity>> = {
   "no-ground": "error",
   "voltage-source-loop": "error",
   "current-source-cutset": "error",
-  "floating-node": "error",
   "invalid-value": "error",
   "singular-matrix": "error",
   "no-convergence": "error",
   "model-error": "error",
-  "unconnected-pin": "warning",
-  "duplicate-designator": "warning",
-  "over-limit": "warning",
-  "erc-conflict": "warning",
-  "empty-circuit": "info",
   "too-large": "error",
   timeout: "error",
+  "short-circuit": "warning",
+  "floating-node": "warning",
+  "shorted-part": "warning",
+  "over-limit": "warning",
+  "unconnected-pin": "warning",
+  "duplicate-designator": "warning",
+  "low-accuracy": "warning",
+  "erc-conflict": "warning",
+  "empty-circuit": "info",
 };
 
 export interface CircuitIssue {
@@ -134,12 +140,57 @@ function describeProblem(
 
 /** Messages for issues the solver finds (Days 15–17); kept here so all wording is in one place. */
 export const solverIssues = {
-  singularMatrix: (parts: readonly string[] = []) =>
+  /**
+   * The matrix is singular. `what` says which unknown could not be worked out: the voltage of a
+   * net (named by the parts that meet there) or the current through a part.
+   */
+  singularMatrix: (
+    parts: readonly string[] = [],
+    what?: { kind: "voltage" | "current"; names: readonly string[]; nets?: readonly number[] },
+  ) =>
     issue(
       "singular-matrix",
-      "The circuit cannot be solved as drawn.",
+      !what || what.names.length === 0
+        ? "The circuit cannot be solved as drawn."
+        : what.kind === "current"
+          ? `The current through ${listNames(what.names)} cannot be worked out.`
+          : what.names.length === 1
+            ? `The voltage at ${what.names[0] ?? ""} cannot be worked out.`
+            : `The voltage where ${listNames(what.names)} meet cannot be worked out.`,
       "Check for parts that are connected only to each other, or ideal parts joined directly.",
+      { parts, nets: what?.nets ?? [] },
+    ),
+  /** A source (or any part) carrying more current than a real supply could deliver. */
+  shortCircuit: (
+    sources: readonly { name: string; id: string }[],
+    through: readonly { name: string; id: string }[],
+    current: number,
+  ) => {
+    const amount = formatQuantity(current, "current");
+    const parts = [...new Set([...sources, ...through].map((p) => p.id))].sort();
+    if (sources.length > 0) {
+      const names = sources.map((s) => s.name);
+      const path = through.length ? ` through ${listNames(through.map((t) => t.name))}` : "";
+      return issue(
+        "short-circuit",
+        `${listNames(names)} ${names.length === 1 ? "is" : "are"} short-circuited${path}: ${amount} would flow.`,
+        "No real supply can deliver this: add a resistor or a load so the current is limited.",
+        { parts },
+      );
+    }
+    const names = through.map((t) => t.name);
+    return issue(
+      "short-circuit",
+      `${listNames(names)} ${names.length === 1 ? "carries" : "carry"} ${amount}, far more than a real circuit could.`,
+      "Look for a short circuit: add a resistor or a load so the current is limited.",
       { parts },
+    );
+  },
+  lowAccuracy: () =>
+    issue(
+      "low-accuracy",
+      "The results may be inaccurate: some part values are too extreme for exact numbers.",
+      "Bring very large and very small values closer together (for example 1 mΩ next to 1 TΩ).",
     ),
   noConvergence: (parts: readonly string[] = []) =>
     issue(
@@ -246,23 +297,56 @@ export function checkCircuit(netlist: Netlist, lookup: DefinitionLookup): Circui
     }
   }
 
-  // Pins alone on their net.
+  // Pins alone on their net; a part with no wire at all gets one message, not one per pin.
+  const byId = new Map(known.map((k) => [k.component.id, k]));
+  const loose = new Map<string, { ref: PinRef; pin: PinDefinition | undefined; node: number }[]>();
   for (const net of nets) {
     if (net.node === GROUND_NODE || net.pins.length !== 1) continue;
     const [ref] = net.pins as [PinRef];
-    const entry = known.find((k) => k.component.id === ref.part);
+    const entry = byId.get(ref.part);
     if (!entry) continue;
     const pin = entry.definition?.pins.find((p) => p.id === ref.pin);
     if (pin?.type === "not-connected") continue;
-    issues.push(
-      issue(
-        "unconnected-pin",
-        `${pinPhrase(pin, ref.pin, entry.component.designator)} is not connected to anything.`,
-        "Draw a wire from it, or delete the part if you do not need it.",
-        { parts: [ref.part], pins: [ref], nets: [net.node] },
-      ),
-    );
+    const list = loose.get(ref.part) ?? [];
+    list.push({ ref, pin, node: net.node });
+    loose.set(ref.part, list);
   }
+  const unwired = new Set<string>();
+  for (const [partId, pins] of loose) {
+    const entry = byId.get(partId) as Known;
+    const { designator } = entry.component;
+    const wirable = entry.definition
+      ? entry.definition.pins.filter((p) => p.type !== "not-connected").length
+      : entry.component.pins.length;
+    if (pins.length >= 2 && pins.length === wirable) {
+      unwired.add(partId);
+      issues.push(
+        issue(
+          "unconnected-pin",
+          `${designator} is not connected to anything yet.`,
+          `Draw wires from its pins to the circuit, or delete ${designator} if you do not need it.`,
+          {
+            parts: [partId],
+            pins: pins.map((p) => p.ref),
+            nets: pins.map((p) => p.node),
+          },
+        ),
+      );
+      continue;
+    }
+    for (const { ref, pin, node } of pins) {
+      issues.push(
+        issue(
+          "unconnected-pin",
+          `${pinPhrase(pin, ref.pin, designator)} is not connected to anything.`,
+          "Draw a wire from it, or delete the part if you do not need it.",
+          { parts: [partId], pins: [ref], nets: [node] },
+        ),
+      );
+    }
+  }
+
+  issues.push(...checkShortedParts(known));
 
   const hasGround = (nets[GROUND_NODE]?.pins.length ?? 0) > 0;
   if (!hasGround) {
@@ -275,7 +359,10 @@ export function checkCircuit(netlist: Netlist, lookup: DefinitionLookup): Circui
     );
   }
 
-  issues.push(...checkVoltageLoops(known), ...(hasGround ? checkFloating(known, nets.length) : []));
+  issues.push(
+    ...checkVoltageLoops(known),
+    ...(hasGround ? checkFloating(known, nets.length, unwired) : []),
+  );
   return sortIssues(issues).slice(0, MAX_REPORTED_ISSUES);
 }
 
@@ -378,8 +465,8 @@ function checkVoltageLoops(known: readonly Known[]): CircuitIssue[] {
   return issues;
 }
 
-/** Parts with no DC path to ground, and current sources with nowhere to send their current. */
-function checkFloating(known: readonly Known[], nodeCount: number): CircuitIssue[] {
+/** Union of nodes joined by DC paths through parts, plus the nodes at least one such path reaches. */
+function dcGroups(known: readonly Known[], nodeCount: number) {
   const uf = createUnionFind(nodeCount);
   /** Nodes where at least one pin has a DC path through its part. */
   const fed = new Set<number>();
@@ -398,7 +485,7 @@ function checkFloating(known: readonly Known[], nodeCount: number): CircuitIssue
       fed.add(b);
     }
   }
-
+  /** Groups of used nodes with no DC path to ground, each sorted, in order of their first node. */
   const groups = new Map<number, number[]>();
   for (const node of [...used].sort((a, b) => a - b)) {
     if (node === GROUND_NODE || uf.find(node) === uf.find(GROUND_NODE)) continue;
@@ -407,11 +494,77 @@ function checkFloating(known: readonly Known[], nodeCount: number): CircuitIssue
     group.push(node);
     groups.set(root, group);
   }
+  return { groups: [...groups.values()], fed };
+}
+
+/**
+ * Nodes with no DC path to ground (ADR 012 §3): the solver ties them to ground through a tiny
+ * conductance and reports no values for them. Empty when the circuit has no ground at all.
+ */
+export function floatingNodes(netlist: Netlist, lookup: DefinitionLookup): number[] {
+  if ((netlist.nets[GROUND_NODE]?.pins.length ?? 0) === 0) return [];
+  const known = netlist.components.map((component) => ({
+    component,
+    definition: lookup(component.type),
+  }));
+  return dcGroups(known, netlist.nets.length)
+    .groups.flat()
+    .sort((a, b) => a - b);
+}
+
+/** Two-pin parts (or parts with all pins) on one net: a wire joins their pins (ADR 012 §3). */
+function checkShortedParts(known: readonly Known[]): CircuitIssue[] {
+  const issues: CircuitIssue[] = [];
+  for (const { component, definition } of known) {
+    if (!definition || component.pins.length < 2) continue;
+    const node = component.pins[0]?.node;
+    if (component.pins.some((p) => p.node !== node) || node === undefined) continue;
+    // Voltage sources joined to themselves are the error "short-circuited" (checkVoltageLoops).
+    if ((definition.voltagePairs ?? []).length > 0) continue;
+    const name = component.designator;
+    const two = component.pins.length === 2;
+    const current = definition.category === "source" && dcPathsOf(definition).length === 0;
+    issues.push(
+      issue(
+        "shorted-part",
+        current
+          ? `${name} is short-circuited: a wire joins its two pins, so its current only flows around that wire.`
+          : `${name} is short-circuited: a wire joins ${two ? "its two pins" : "all its pins"}, so no current flows through it.`,
+        `Remove that wire if ${name} should do something in the circuit.`,
+        {
+          parts: [component.id],
+          pins: component.pins.map((p) => ({ part: component.id, pin: p.id })),
+          nets: [node],
+        },
+      ),
+    );
+  }
+  return issues;
+}
+
+/**
+ * Parts with no DC path to ground (a warning: they are left out of the results), and current
+ * sources with nowhere to send their current (an error). Parts already reported as "not connected
+ * to anything" (`unwired`) are not reported again.
+ */
+function checkFloating(
+  known: readonly Known[],
+  nodeCount: number,
+  unwired: ReadonlySet<string>,
+): CircuitIssue[] {
+  const { groups, fed } = dcGroups(known, nodeCount);
+  const partsAt = new Map<number, Known[]>();
+  for (const entry of known) {
+    for (const node of new Set(entry.component.pins.map((p) => p.node))) {
+      const list = partsAt.get(node) ?? [];
+      list.push(entry);
+      partsAt.set(node, list);
+    }
+  }
 
   const issues: CircuitIssue[] = [];
-  for (const nodes of groups.values()) {
-    const inGroup = new Set(nodes);
-    const parts = known.filter((k) => k.component.pins.some((p) => inGroup.has(p.node)));
+  for (const nodes of groups) {
+    const parts = [...new Set(nodes.flatMap((node) => partsAt.get(node) ?? []))];
     const starved = nodes.filter((node) => !fed.has(node));
     const sources = parts.filter(
       ({ component, definition }) =>
@@ -431,12 +584,14 @@ function checkFloating(known: readonly Known[], nodeCount: number): CircuitIssue
       );
       continue;
     }
+    if (parts.every((p) => unwired.has(p.component.id))) continue;
     const names = [...new Set(parts.map((p) => p.component.designator))].sort();
+    const one = names.length === 1;
     issues.push(
       issue(
         "floating-node",
-        `${listNames(names)} ${names.length === 1 ? "is" : "are"} not connected to ground, so ${names.length === 1 ? "its voltages" : "their voltages"} cannot be worked out.`,
-        "Connect this part of the circuit to the rest of it, or to ground (GND).",
+        `${listNames(names)} ${one ? "is" : "are"} not connected to ground, so ${one ? "it is" : "they are"} left out of the results.`,
+        `Connect ${one ? "it" : "them"} to the rest of the circuit, or to ground (GND).`,
         { parts: parts.map((p) => p.component.id).sort(), nets: nodes },
       ),
     );

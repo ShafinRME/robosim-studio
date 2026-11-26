@@ -9,6 +9,24 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 16 — Solver robustness (2026-11-26)
+- Built: ADR 012 (accepted; owner delegated the choice). Core: KLU-style sparse LU (`sparse.ts`: exact minimum-degree
+  ordering reused across re-solves, left-looking Gilbert–Peierls, scaled threshold pivoting, singular check naming the
+  original unknown); dense and sparse MNA share one stamping implementation; `solveDc` on the sparse solver (50 000
+  unknowns), with a residual check, one refinement step and a `low-accuracy` warning as the last guard. Diagnostics:
+  parts with no path to ground are left out with a warning (GMIN keeps the matrix regular, no values shown) and the
+  rest still solves; one warning for a part with no wire; `shorted-part` (rheostat wiring not flagged) and
+  `short-circuit` (> 10 A: "V1 is short-circuited through SW1: 5 kA would flow."); singular circuits say which
+  voltage or current cannot be worked out. Studio: "Not grounded" in the Inspector, amber halos for part warnings,
+  rings on problem pins, pointing at a problem highlights its parts and pins. "Never NaN" fuzz test: 3 000 random
+  broken circuits per run. User Manual 8.9 updated, 2 new screenshots. 811 unit, 116 e2e, `pnpm audit` clean.
+- Learned: the real cost in a sparse LU is often bookkeeping, not arithmetic: caching the factor arrays per column
+  made it 10× faster. A fuzz test needs its own checks: the first generator never built a solvable circuit, and its
+  "invalid" values were outside the input schema, so it tested nothing useful until both were fixed and asserted.
+  Leaving floating parts out (instead of refusing the whole circuit) makes a half-drawn circuit useful at once.
+- Next: Day 17 — non-linear parts (Newton–Raphson with step limiting; diode, Zener, LED with glow and burn-out
+  warning), built on `analyzeSparse` / `factorSparse` reuse.
+
 ## Day 15 — DC solver (2026-11-26)
 - Built: ADR 011 (accepted; owner delegated the choice) — dense LU with scaled partial pivoting, DC operating point,
   a separate analysis worker, live results shown by default. Core: `factorLu` (singular check names the undetermined

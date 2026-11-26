@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { componentFor, requireComponent } from "../parts/registry";
-import { solveCircuitDc, type DcResult } from "./dc";
+import { MAX_UNKNOWNS, solveCircuitDc, type DcResult } from "./dc";
 import type { CircuitInput, CircuitPart, PinRef } from "./netlist";
 
 /**
@@ -584,8 +584,12 @@ describe("DC operating point — circuits that cannot be solved say why", () => 
     ]);
     const result = solveCircuitDc(input, lookup);
     expect(result.ok).toBe(false);
-    expect(codes(result)).toEqual(["singular-matrix"]);
-    expect(result.issues[0]?.message).toMatch(/around .*X1/);
+    expect(codes(result)).toEqual(["singular-matrix", "shorted-part"]);
+    expect(result.issues[0]).toMatchObject({
+      message: "The voltage where R2 and X1 meet cannot be worked out.",
+      parts: ["r2", "x1"],
+    });
+    expect(result.issues[1]?.message).toMatch(/^R2 is short-circuited/);
   });
 
   it("an empty circuit is not an error", () => {
@@ -607,5 +611,182 @@ describe("DC operating point — circuits that cannot be solved say why", () => 
     const { readout } = solved(parts, nets);
     expect(Date.now() - start).toBeLessThan(1_000);
     near(readout("R1", "current"), 10 / 30_000);
+  });
+});
+
+describe("DC operating point — robustness (Day 16)", () => {
+  const codes = (result: DcResult) => result.issues.map((i) => i.code);
+  const divider = (): [PartSpec[], string[][]] => [
+    [
+      ["V1", V, { voltage: 10 }],
+      ["R1", R, { resistance: 1_000 }],
+      ["R2", R, { resistance: 1_000 }],
+    ],
+    [
+      ["V1.+", "R1.1"],
+      ["R1.2", "R2.1"],
+      ["R2.2", "V1.-", "0"],
+    ],
+  ];
+
+  it("leaves a group that is not connected to ground out, and solves the rest", () => {
+    const [parts, nets] = divider();
+    parts.push(["R3", R], ["R4", R], ["V2", V, { voltage: 3 }]);
+    nets.push(["R3.1", "R4.1", "V2.+"], ["R3.2", "R4.2", "V2.-"]);
+    const { result, at, readout } = solved(parts, nets);
+    near(at("R1.2"), 5);
+    near(readout("R1", "current"), 5e-3);
+    expect(codes(result)).toEqual(["floating-node"]);
+    expect(result.issues[0]?.message).toBe(
+      "R3, R4 and V2 are not connected to ground, so they are left out of the results.",
+    );
+    if (!result.ok) throw new Error("not solved");
+    for (const designator of ["R3", "R4", "V2"]) {
+      const part = result.parts.find((p) => p.designator === designator);
+      expect(part).toMatchObject({ floating: true, readouts: [] });
+    }
+    expect(result.parts.find((p) => p.designator === "R1")?.floating).toBe(false);
+    // Floating nets have no voltage at all (not 0 V, not NaN).
+    expect(result.nets.some((n) => n.pins.some((p) => p.part === "r3"))).toBe(false);
+    expect(result.nets.every((n) => Number.isFinite(n.voltage))).toBe(true);
+  });
+
+  it("a part with no wire yet: one warning, the circuit still solves", () => {
+    const [parts, nets] = divider();
+    parts.push(["R3", R]);
+    const { result, at } = solved(parts, nets);
+    near(at("R1.2"), 5);
+    expect(result.issues.map((i) => i.message)).toEqual(["R3 is not connected to anything yet."]);
+  });
+
+  it("a supply shorted through a closed switch: a short-circuit warning with the path", () => {
+    const [parts, nets] = divider();
+    parts.push(["SW1", SW, { closed: true }]);
+    nets.push(["SW1.1", "V1.+"], ["SW1.2", "0"]);
+    const { result, readout } = solved(parts, nets);
+    near(readout("SW1", "current"), 10_000); // 10 V / 1 mΩ
+    expect(result.issues[0]).toMatchObject({
+      code: "short-circuit",
+      severity: "warning",
+      message: "V1 is short-circuited through SW1: 10 kA would flow.",
+      parts: ["sw1", "v1"],
+    });
+  });
+
+  it("a 0.1 Ω resistor across a supply: short circuit and rating, both named", () => {
+    const { result } = solved(
+      [
+        ["V1", V, { voltage: 9 }],
+        ["R1", R, { resistance: 0.1 }],
+      ],
+      [
+        ["V1.+", "R1.1"],
+        ["R1.2", "V1.-", "0"],
+      ],
+    );
+    expect(result.issues.map((i) => i.message)).toEqual([
+      "V1 is short-circuited through R1: 90 A would flow.",
+      "R1 is beyond its rating: 810 W of 250 mW.",
+    ]);
+  });
+
+  it("a large current set by a current source is not called a short of the source", () => {
+    const { result } = solved(
+      [
+        ["I1", I, { current: 20 }],
+        ["R1", R, { resistance: 0.01 }],
+      ],
+      [
+        ["I1.out", "R1.1"],
+        ["R1.2", "I1.in", "0"],
+      ],
+    );
+    expect(result.issues[0]?.message).toBe("R1 carries 20 A, far more than a real circuit could.");
+  });
+
+  it("says which current could not be worked out", () => {
+    // A test-only part with a branch it never stamps: its current is undetermined.
+    const resistor = requireComponent(R);
+    const branchless = {
+      ...resistor,
+      type: "test.branch",
+      branches: 1,
+      create: () => ({ stamp: () => undefined, report: () => [] }),
+    };
+    const lookup = (type: string) => (type === "test.branch" ? branchless : componentFor(type));
+    const [parts, nets] = divider();
+    const input = circuit(parts, nets);
+    input.parts.push({
+      id: "x1",
+      type: "test.branch",
+      designator: "X1",
+      pins: ["1", "2"],
+      props: {},
+    });
+    input.connections.push([
+      { part: "x1", pin: "1" },
+      { part: "r1", pin: "2" },
+    ]);
+    input.connections.push([
+      { part: "x1", pin: "2" },
+      { part: "gnd", pin: "1" },
+    ]);
+    const result = solveCircuitDc(input, lookup);
+    expect(result.ok).toBe(false);
+    expect(result.issues[0]).toMatchObject({
+      code: "singular-matrix",
+      message: "The current through X1 cannot be worked out.",
+      parts: ["x1"],
+    });
+  });
+
+  it("solves the largest drawing (2 000 parts) quickly", () => {
+    const parts: PartSpec[] = [["V1", V, { voltage: 10 }]];
+    const nets: string[][] = [
+      ["V1.+", "R1.1"],
+      ["V1.-", "0"],
+    ];
+    const rungs = 999; // 1 998 resistors + V1 + ground = MAX_NETLIST_PARTS
+    for (let i = 1; i <= rungs; i++) {
+      // Series R(2i−1) then shunt R(2i) to ground at each step.
+      parts.push(
+        [`R${2 * i - 1}`, R, { resistance: 1_000 }],
+        [`R${2 * i}`, R, { resistance: 2_000 }],
+      );
+      nets.push([`R${2 * i - 1}.2`, `R${2 * i}.1`, ...(i < rungs ? [`R${2 * i + 1}.1`] : [])]);
+      nets.push([`R${2 * i}.2`, "0"]);
+    }
+    const start = Date.now();
+    const { readout } = solved(parts, nets);
+    expect(Date.now() - start).toBeLessThan(1_000);
+    // A long 1 k / 2 k ladder has input resistance 2 kΩ: 10 V → 5 mA.
+    near(readout("V1", "current"), -5e-3);
+  });
+
+  it("refuses a netlist above the solver limit with a clear message", () => {
+    // A test-only part asking for more current unknowns than the solver allows.
+    const huge = { ...requireComponent(R), type: "test.huge", branches: MAX_UNKNOWNS };
+    const lookup = (type: string) => (type === "test.huge" ? huge : componentFor(type));
+    const [parts, nets] = divider();
+    const input = circuit(parts, nets);
+    input.parts.push({
+      id: "x1",
+      type: "test.huge",
+      designator: "X1",
+      pins: ["1", "2"],
+      props: {},
+    });
+    input.connections.push([
+      { part: "x1", pin: "1" },
+      { part: "r1", pin: "2" },
+    ]);
+    input.connections.push([
+      { part: "x1", pin: "2" },
+      { part: "gnd", pin: "1" },
+    ]);
+    const result = solveCircuitDc(input, lookup);
+    expect(result.issues[0]?.message).toMatch(
+      /^This circuit is too big to solve yet \(50\d{3} unknowns, at most 50000\)\.$/,
+    );
   });
 });
