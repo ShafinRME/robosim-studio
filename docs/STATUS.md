@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 14 · Step 7/8 done — Parts library & inspector (Phase 1 · Circuit Lab)
+**Current:** Day 14 · 8/8 done, merged — Parts library & inspector (Phase 1 · Circuit Lab). **Next:** Day 15 · DC solver
 **Branch:** `feat/day-14-parts-library` (from `develop` after Day 13 merge `a3eb283`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -15,7 +15,7 @@
 | 5/8 | Place from the drawer (click, drag and drop), recently used; palette keeps Select / Wire / Label | ✅ done |
 | 6/8 | Property inspector from the part's properties (numbers, choices, switches; multi-edit) | ✅ done |
 | 7/8 | e2e + unit; User Manual (parts library, inspector), screenshots, `pnpm manual` | ✅ done |
-| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ⏳ next (owner final test) |
+| 8/8 | Owner review → DEVLOG, squash-merge into `develop` | ✅ done (owner approved; PR #18) |
 
 ## Decisions (Day 14)
 - **ADR 010** (`docs/adr/010-part-registry.md`, **Accepted by the owner 2026-11-26**): one TypeScript file per part in
@@ -68,6 +68,8 @@
   to full page width overflowed the page). Fixed: tall pictures are cropped to their content (Parts panel to its
   last part; Inspector shown with the canvas, down to the Selection section) and the PDF no longer stretches
   narrow pictures (max 120 mm tall, natural shape). Search hint shortened so it fits the panel.
+- Step 8 — CodeQL flagged `/ohm|r$/` in the value search (anchor only on the `r` alternative); replaced by explicit
+  checks (word "ohm", RKM codes 220R / 4R7) with tests; 0 open alerts before the merge. 737 unit, 110 e2e.
 
 ## Day 13 steps
 | Step | Task | State |

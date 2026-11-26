@@ -9,6 +9,25 @@ One short entry per finished Day: what was built, what was learned, what's next.
 - Next:
 -->
 
+## Day 14 — Parts library & inspector (2026-11-26)
+- Built: ADR 010 (accepted) — one TypeScript file per part (`packages/core/src/parts/library/`): catalogue entry,
+  IEC / ANSI symbol (with artwork per state) and electrical model in one `definePart`, checked by `checkPart`;
+  generated index (`pnpm parts`) guarded by a test; registry (`PARTS`, `partFor`, `componentFor`, `symbolFor`…).
+  The four existing parts moved unchanged (projects open as before); two new parts prove "1 file": SPST switch and
+  potentiometer, with solver tests. Search over names, keywords, categories and typed values ("10k", "4k7", "220R",
+  "9V", "2mA" → part with that value). Studio: Parts panel beside Explorer (groups, symbol previews, keyboard,
+  recently used, Alt+5), click / Enter / drag-and-drop placing with a live ghost (drop data validated), Add part (A)
+  replaces the four temporary buttons; Inspector rows generated from the part's properties (numbers with ranges,
+  choices, on/off), several parts of one type edited at once (one undo step); the switch is drawn closed when
+  closed. User Manual 8.2 and 8.4 rewritten. 737 unit, 110 e2e.
+- Learned: making "1 file" true needed a generated index plus a test, because bundler globbing is not available
+  everywhere core runs. Browsers hide drag data until the drop, so the canvas preview needs a side channel while
+  the drop itself is still validated as untrusted. Owner review caught two things tests could not: a narrow
+  screenshot stretched to page width came out black in the PDF, and the search hint was cut off. CodeQL caught an
+  ambiguous regex (`/ohm|r$/`) in the value search.
+- Next: Day 15 — DC solver (MNA with LU in a Web Worker for R, V, I and the new switch / potentiometer; 20 textbook
+  circuits within 0.1 %). Last Day of this session block.
+
 ## Day 13 — Wiring (2026-11-26)
 - Built: ADR 009 (accepted) — geometric connectivity like KiCad / Altium / LTspice: a wire END connects to a pin,
   a wire end or the inside of a wire (T-junction, dot); pin-on-pin connects; crossings and a wire merely passing over
