@@ -232,7 +232,7 @@ export function PartsDrawer() {
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={ordered.length ? optionId(current) : undefined}
-            placeholder="Search, or type a value: 10k, 9V…"
+            placeholder="Search, or type 10k, 9V…"
             value={query}
             maxLength={64}
             spellCheck={false}

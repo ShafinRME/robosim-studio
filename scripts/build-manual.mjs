@@ -110,7 +110,10 @@ const html = `<!doctype html>
   tr:nth-child(even) td { background: var(--soft); }
   code { background: #f1f5f9; padding: 0 4px; border-radius: 3px; font-size: 9.5pt; }
   figure { margin: 3mm 0 7mm; break-inside: avoid; }
-  figure img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 4px; }
+  /* Wide screenshots fill the width; narrow or tall ones keep their size and shape and never
+     grow taller than part of a page (a tall picture stretched to full width overflowed the page). */
+  figure img { display: block; max-width: 100%; max-height: 120mm; width: auto; height: auto;
+               margin: 0 auto; border: 1px solid var(--line); border-radius: 4px; }
   figcaption { font-size: 9pt; color: var(--muted); text-align: center; margin-top: 2mm; font-style: italic; }
   strong { font-weight: 600; }
 </style></head><body>

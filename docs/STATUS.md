@@ -64,6 +64,10 @@
   hints, on / off, several parts at once), tool palette, window parts and shortcuts (Alt + 5, A); 5 new screenshots,
   all 28 re-captured, PDF rebuilt. The UI-kit symbol gallery now names and values parts from the registry (was "X1"
   for new parts), and the manual screenshot hides the sticky section menu that covered it. 736 unit, 110 e2e.
+  Owner review: the "several parts" picture showed only black in the PDF (a tall, narrow Inspector column stretched
+  to full page width overflowed the page). Fixed: tall pictures are cropped to their content (Parts panel to its
+  last part; Inspector shown with the canvas, down to the Selection section) and the PDF no longer stretches
+  narrow pictures (max 120 mm tall, natural shape). Search hint shortened so it fits the panel.
 
 ## Day 13 steps
 | Step | Task | State |

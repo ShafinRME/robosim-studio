@@ -266,14 +266,15 @@ test.describe("schematic canvas", () => {
     await page.mouse.up();
   });
 
-  /** The left column (Explorer + Parts) as a picture. */
+  /** The left column (Explorer + Parts), cut off a little below the last part in the list. */
   async function partsColumn(page: Page) {
     const box = await page
       .locator(".dv-groupview")
       .filter({ has: page.getByTestId("parts-drawer") })
       .boundingBox();
-    if (!box) throw new Error("no layout");
-    return box;
+    const last = await page.getByTestId("parts-drawer").getByRole("option").last().boundingBox();
+    if (!box || !last) throw new Error("no layout");
+    return { ...box, height: Math.min(box.height, last.y + last.height + 24 - box.y) };
   }
 
   test("parts panel with a value search", async ({ page }) => {
@@ -342,12 +343,24 @@ test.describe("schematic canvas", () => {
     );
     await page.mouse.move(0, 0);
     await settle(page);
-    const inspector = await page
+    // The canvas with both selected resistors and the Inspector beside it, down to the
+    // Selection section (the empty rest of the column is left out).
+    const canvasGroup = await page
       .locator(".dv-groupview")
-      .filter({ has: page.getByRole("region", { name: "Selection" }) })
+      .filter({ has: page.getByTestId("studio-canvas") })
       .boundingBox();
-    if (!inspector) throw new Error("no layout");
-    await page.screenshot({ path: shot("inspector-multi"), clip: inspector });
+    const section = await page.getByRole("region", { name: "Selection" }).boundingBox();
+    const viewport = page.viewportSize();
+    if (!canvasGroup || !section || !viewport) throw new Error("no layout");
+    await page.screenshot({
+      path: shot("inspector-multi"),
+      clip: {
+        x: canvasGroup.x,
+        y: canvasGroup.y,
+        width: viewport.width - canvasGroup.x,
+        height: Math.max(section.y + section.height + 16, 430) - canvasGroup.y,
+      },
+    });
   });
 
   /** Wires the divider with the wire tool: V1 + → R1, R1 → R2, V1 − → ground, R2 → ground. */
