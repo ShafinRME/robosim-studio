@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 15 · Step 2/8 done — DC solver (Phase 1 · Circuit Lab)
+**Current:** Day 15 · Step 4/8 done — DC solver (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -8,17 +8,17 @@
 ## Day 15 steps
 | Step | Task | State |
 |---|---|---|
-| 1/8 | Day branch; ADR 011 — DC solver (LU, operating point, analysis worker) | ✅ done (waiting for owner review) |
+| 1/8 | Day branch; ADR 011 — DC solver (LU, operating point, analysis worker) | ✅ done (Accepted; owner delegated the choice) |
 | 2/8 | LU solver with scaled partial pivoting + singular check; unit tests | ✅ done |
-| 3/8 | DC operating point: netlist → checks → stamps → solve → V / I / P per part | ⏳ next |
-| 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ⬜ |
-| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ⬜ |
+| 3/8 | DC operating point: netlist → checks → stamps → solve → V / I / P per part | ✅ done |
+| 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ✅ done (22) |
+| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ⏳ next |
 | 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ⬜ |
 | 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ⬜ |
 | 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⬜ |
 
 ## Decisions (Day 15)
-- **ADR 011** (`docs/adr/011-dc-solver.md`, Proposed): dense LU with scaled partial pivoting (no library; Day 16 adds
+- **ADR 011** (`docs/adr/011-dc-solver.md`, **Accepted 2026-11-26**, owner delegated the choice): dense LU with scaled partial pivoting (no library; Day 16 adds
   the sparse solver behind the same factor / solve interface); `solveDc` = `checkCircuit` first (no solve on
   errors), then devices from the registry, stamp, factor, solve; singular → `singular-matrix` issue naming parts;
   results by net name, all finite. A separate analysis worker (Comlink, Zod-validated input, sequence numbers so the
@@ -29,6 +29,22 @@
   non-finite input, never returns NaN. Tests: exact small systems, voltage-source zero diagonal, 1 mΩ / 1 GΩ via
   real MNA stamps, many right-hand sides, singular and nearly singular, random systems (‖Ax − b‖ < 1e-9), 500
   unknowns fast. 746 unit.
+- Owner (2026-11-26): "you choose the best option … don't keep any issues". ADR 011 accepted with live DC results
+  shown by default (as interactive teaching simulators do), with a View switch to hide them.
+- Step 3 — `circuit/dc.ts`: `solveDc(netlist, lookup)` and `solveCircuitDc(input, lookup)` (from the drawing;
+  netlist errors become issues). `checkCircuit` first — errors return issues without solving; devices from the
+  registry (branches / state in netlist order); > 1 024 unknowns → new issue `too-large` ("too big to solve yet");
+  singular matrix → "The circuit around X1 … cannot be solved as drawn." naming the parts on the undetermined node
+  or branch; results are plain data (nets with name, voltage, pins; parts with V / I / P readouts), −0 → 0, all
+  finite. Ratings: a part above its `powerRating` gets the over-limit warning ("R1 is beyond its rating: 810 mW
+  of 250 mW.").
+- Step 4 — `circuit/dc.test.ts`: 22 textbook circuits within 0.1 % of hand results (Ohm, divider, series,
+  parallel, series–parallel, balanced and unbalanced Wheatstone, current source, current divider, superposition,
+  nodal two-source, Thévenin, Norton, ladder, two-source mesh with a charging source, resistor power + rating
+  warning, SPICE source sign, switch closed / open, potentiometer unloaded / loaded, negative supply, 1 MΩ / 1 Ω),
+  plus no ground, source loop, stranded current source, invalid value, broken drawing, empty circuit, a forced
+  singular matrix (plain message, never NaN) and 300 resistors in < 1 s. The test solver of Day 14 stays for
+  device tests. 776 unit.
 
 
 ## Day 14 steps

@@ -1,6 +1,6 @@
 # ADR 011 — DC solver: dense LU, operating point, analysis worker
 
-- **Status:** Proposed
+- **Status:** Accepted (owner delegated the choice, 2026-11-26)
 - **Date:** 2026-11-26 (Day 15)
 
 ## Context

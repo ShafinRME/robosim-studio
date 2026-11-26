@@ -359,3 +359,5 @@ export { CATEGORY_LABELS, groupParts, searchParts } from "./parts/catalog";
 export type { PartGroup, PartMatch } from "./parts/catalog";
 export { PIVOT_TOLERANCE, SingularMatrixError, factorLu } from "./circuit/lu";
 export type { LuFactors } from "./circuit/lu";
+export { solveCircuitDc, solveDc } from "./circuit/dc";
+export type { DcNet, DcPart, DcResult } from "./circuit/dc";
