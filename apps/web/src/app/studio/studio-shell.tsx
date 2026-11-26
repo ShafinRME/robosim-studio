@@ -28,6 +28,7 @@ import {
   useProjectImport,
   useShareLinkOpener,
 } from "./project-files";
+import { DcAnalysis } from "./dc-results";
 import { ActiveProjectProvider, useProjectState } from "./studio-project";
 import { SimulationProvider, useSimController } from "./studio-simulation";
 import { StudioStatusProvider, useStudioStatus } from "./studio-status";
@@ -191,6 +192,7 @@ function StudioWindow() {
         <h1 className="sr-only">RoboSim Studio workspace</h1>
         {/* The workspace stays mounted with no project open, so the layout is kept. */}
         <ActiveProjectProvider store={activeStore}>
+          <DcAnalysis />
           <StudioWorkspace onControls={onWorkspaceControls} onOpenPanelsChange={onOpenPanels} />
         </ActiveProjectProvider>
         {!open.restored ? (

@@ -194,7 +194,7 @@ other labs fill the panels in later versions. You can arrange the workspace the 
 | **Explorer** and **Parts** (left, two tabs) | Explorer will list your project's files. **Parts** is the parts library: search it and place parts on the canvas (8.2). |
 | **Canvas** (middle) | The schematic: place, select and arrange circuit parts on a grid (chapter 8). |
 | **Console** (under the canvas) | A log of everything the studio tells you, with the time. |
-| **Inspector** (right) | Shows the selected part with all its properties (8.4), a wire's net, a net label, and the open project (name, lab, parts). |
+| **Inspector** (right) | Shows the selected part with all its properties (8.4) and its live voltage, current and power (8.9), a wire's net, a net label, and the open project (name, lab, parts). |
 | **Status bar** (bottom) | State, latest message, pointer position, Low-end mode and version. |
 
 ## 7.2 Arranging panels
@@ -624,6 +624,69 @@ selected so you can move them straight away. You can copy between project tabs a
 The studio only pastes RoboSim drawings: anything else on the clipboard is ignored with a message, and
 nothing from the clipboard is used without being checked.
 
+## 8.9 Live DC results: voltages, currents and power
+
+![A 5 V supply with R1 (1 kΩ) and R2 (2.2 kΩ): voltages on the wires, R1's voltage, current and power in the Inspector](images/dc-results.png)
+
+RoboSim Studio **solves your circuit while you draw**. A moment after every change, it works out the
+**DC operating point**: the steady voltage at every point of the circuit and the current through
+every part, like a multimeter on every wire at once. It uses Modified Nodal Analysis, the method
+professional circuit simulators (SPICE) use, and runs in the background, so drawing never slows
+down.
+
+**What you see**
+
+| Where | What it shows |
+|---|---|
+| **Blue tags on the wires** | The voltage of that connection, measured from ground (0 V). Ground wires have no tag: they are 0 V by definition. A connection without a wire gets its tag next to a pin. Tags hide while you drag a part and come back when you let go. |
+| **Inspector**, selected part | Under the heading **DC operating point · live**: **Voltage**, **Current** and **Power** of the part (4 digits). A potentiometer also shows **Wiper (to 2)**: the wiper's voltage measured from pin 2. These are results, not settings: a source has a *Voltage* setting at the top and its measured *Voltage* here. |
+| **Inspector**, selected wire | The **Voltage** of the wire's net. |
+| **DC chip** (bottom left of the canvas) | **✓ DC · solved** (green), **⚠ DC · 2 warnings** (amber) or **✗ DC · cannot solve** (red). Click it to see the list. |
+
+**Signs (as in SPICE).** A part's current is positive when it flows into its first pin (pin 1, or +)
+and out of the other. So a supply that **delivers** power shows a **negative** current and negative
+*Power absorbed* — for example −2.5 mA and −12.5 mW for a 5 V supply driving 2 kΩ. Resistors always
+show positive power.
+
+![Two 10 Ω resistors on 5 V: each takes 625 mW, more than its 250 mW rating](images/dc-warnings.png)
+
+**Warnings (amber)** — the circuit is solved, but something deserves a look:
+
+- *"R1 is beyond its rating: 625 mW of 250 mW."* — the resistor takes more power than its
+  **Power rating** (Inspector). In a real circuit it would get too hot. The part gets an amber dashed
+  outline. Use a larger resistance or a resistor with a higher rating.
+- *"Pin 2 of R3 is not connected to anything."* — a loose pin. Normal while you are still drawing.
+
+![Without a ground the circuit cannot be solved; the list says why and what to do](images/dc-no-ground.png)
+
+**Problems (red)** — the circuit cannot be solved as drawn. Nothing is calculated, the tags
+disappear, the parts concerned get a red dashed outline, and the list explains what to do:
+
+| Message | What it means | What to do |
+|---|---|---|
+| *The circuit has no ground (GND)…* | There is no 0 V point to measure from. | Place a **Ground** and connect it to the − side of your supply. |
+| *R3 is not connected to ground, so its voltages cannot be worked out.* | A part or group of parts floats, connected to nothing that leads to ground. | Wire it into the circuit, or delete it. |
+| *V1 and V2 are joined directly (in parallel or in a loop)…* | Two ideal supplies fight each other with nothing to limit the current. | Put a resistor between them, or remove one. |
+| *Resistance of R1 must be more than 0 Ω.* | A value that is not possible. | Change it in the Inspector. |
+| *The circuit around X1 … cannot be solved as drawn.* | The equations have no single answer (rare: the checks above catch almost everything). | Look at the parts named and how they are connected. |
+| *This circuit is too big to solve yet…* / *The calculation took longer than 2 s…* | Very large circuits are supported in a later version. | Split the circuit; your drawing is never changed. |
+
+Click a message in the list to **select the parts** it is about. Problems and warnings are also
+written once to the **Console** when you stop editing for a moment (the most important one last, so
+it is the one the status bar shows). When they are all fixed, the Console says *Circuit solved: all
+problems fixed.*
+
+**Good to know**
+
+- An **open switch** is modelled like a real one: a very large resistance (1 GΩ), so a tiny leakage
+  current (nanoamps) flows and the voltages after it are microvolts — practically zero. A closed
+  switch is 1 mΩ.
+- The **potentiometer's** *Wiper position* is measured from pin 1: at 25 % on a 5 V supply the wiper
+  is at 3.75 V.
+- **View → Show DC results** (or **Ctrl + K** → *Show DC results*) turns all of this off and on;
+  your choice is remembered.
+- Results are exact to far better than 0.1 % (checked against 22 textbook circuits).
+
 # 9. If something goes wrong
 
 RoboSim Studio tries hard never to leave you with a blank or frozen page.
@@ -661,4 +724,5 @@ These parts of the manual will be written as each feature is finished:
 | 0.0.1 | 2026-11-24 | **First public release (v0.0.1).** Version numbers updated throughout; no other changes. |
 | 0.0.1 · Day 12 | 2026-11-24 | New chapter 8, *Drawing a schematic*: zoom and pan, placing parts, selecting and editing, the Inspector, IEC / ANSI symbols and units. Canvas, Inspector and pointer position updated in chapter 7; *If something goes wrong* is now chapter 9. |
 | 0.0.1 · Day 13 | 2026-11-25 | New sections 8.6–8.8: wires (wire tool, what connects), moving and editing wires (wires follow parts, the wire's net in the Inspector), net labels, copy / paste / duplicate. |
+| 0.0.1 · Day 15 | 2026-11-26 | New section 8.9: live DC results — voltage tags on wires, voltage / current / power in the Inspector, the DC chip, warnings (power rating, loose pins) and problems with what to do, SPICE signs, switch and potentiometer notes, View → Show DC results. |
 | 0.0.1 · Day 14 | 2026-11-26 | Section 8.2 rewritten: the **Parts** panel (search, search by value, drag and drop, Add part, recently used) and the list of parts, with the new potentiometer and switch. Section 8.4: every property in the Inspector, editing several parts at once. Tool palette, window parts and shortcuts (Alt + 5, A) updated. |

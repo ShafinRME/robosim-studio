@@ -446,6 +446,48 @@ test.describe("schematic canvas", () => {
     await settle(page);
     await page.screenshot({ path: shot("schematic-net-inspector") });
   });
+
+  test("live DC results", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    await expect(page.getByTestId("dc-status")).toHaveAttribute("data-state", "success");
+    await canvas.click({ position: await at(page, -3, -4) });
+    await expect(page.locator('[data-readout="current"]')).toBeVisible();
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("dc-results") });
+  });
+
+  test("DC warnings: resistors beyond their rating", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    for (const at_ of [await at(page, -3, -4), await at(page, 2, 0)]) {
+      await canvas.click({ position: at_ });
+      const value = page.getByRole("textbox", { name: "Resistance" });
+      await value.fill("10");
+      await value.press("Enter");
+    }
+    await expect(page.getByTestId("dc-status")).toHaveAttribute("data-state", "warning");
+    await canvas.click({ position: await at(page, 10, 6) }); // nothing selected
+    await page.getByTestId("dc-status").click();
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("dc-warnings"), clip: await canvasClip(page) });
+  });
+
+  test("DC problem: no ground", async ({ page }) => {
+    const canvas = await drawDivider(page);
+    await wireDivider(page);
+    for (const at_ of [await at(page, -8, 4.8), await at(page, 2, 4.8)]) {
+      await canvas.click({ position: at_ });
+      await page.keyboard.press("Delete");
+    }
+    await expect(page.getByTestId("dc-status")).toHaveAttribute("data-state", "danger");
+    await page.getByTestId("dc-status").click();
+    await page.mouse.move(0, 0);
+    await settle(page);
+    await page.screenshot({ path: shot("dc-no-ground"), clip: await canvasClip(page) });
+  });
 });
 
 test("schematic symbols: IEC and ANSI", async ({ page }) => {

@@ -1,9 +1,82 @@
 # Status
 
-**Current:** Day 14 · 8/8 done, merged — Parts library & inspector (Phase 1 · Circuit Lab). **Next:** Day 15 · DC solver
-**Branch:** `feat/day-14-parts-library` (from `develop` after Day 13 merge `a3eb283`)
+**Current:** Day 15 ✅ complete — owner approved the final test (all 14 sections); squash-merged into `develop` (PR #19). Next: Day 16 — Solver robustness, in a new session (Days 16–20).
+**Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
+
+## Day 15 steps
+| Step | Task | State |
+|---|---|---|
+| 1/8 | Day branch; ADR 011 — DC solver (LU, operating point, analysis worker) | ✅ done (Accepted; owner delegated the choice) |
+| 2/8 | LU solver with scaled partial pivoting + singular check; unit tests | ✅ done |
+| 3/8 | DC operating point: netlist → checks → stamps → solve → V / I / P per part | ✅ done |
+| 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ✅ done (22) |
+| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ✅ done |
+| 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ✅ done |
+| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ✅ done |
+| 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ✅ done (owner approved; merged) |
+
+## Decisions (Day 15)
+- **ADR 011** (`docs/adr/011-dc-solver.md`, **Accepted 2026-11-26**, owner delegated the choice): dense LU with scaled partial pivoting (no library; Day 16 adds
+  the sparse solver behind the same factor / solve interface); `solveDc` = `checkCircuit` first (no solve on
+  errors), then devices from the registry, stamp, factor, solve; singular → `singular-matrix` issue naming parts;
+  results by net name, all finite. A separate analysis worker (Comlink, Zod-validated input, sequence numbers so the
+  latest edit wins, 2 s timeout → restart). Live DC results, **View → Show DC results** (default on).
+- Step 2 — `circuit/lu.ts`: `factorLu(matrix, size)` copies and factors once (P·A = L·U in one array), `solve(b)`
+  for any number of right-hand sides; pivot = largest entry relative to its row's largest (1 mΩ next to 1 GΩ stays
+  exact); pivot < 1e-13 × row scale or a zero row → `SingularMatrixError` with the undetermined unknown; rejects
+  non-finite input, never returns NaN. Tests: exact small systems, voltage-source zero diagonal, 1 mΩ / 1 GΩ via
+  real MNA stamps, many right-hand sides, singular and nearly singular, random systems (‖Ax − b‖ < 1e-9), 500
+  unknowns fast. 746 unit.
+- Owner (2026-11-26): "you choose the best option … don't keep any issues". ADR 011 accepted with live DC results
+  shown by default (as interactive teaching simulators do), with a View switch to hide them.
+- Step 3 — `circuit/dc.ts`: `solveDc(netlist, lookup)` and `solveCircuitDc(input, lookup)` (from the drawing;
+  netlist errors become issues). `checkCircuit` first — errors return issues without solving; devices from the
+  registry (branches / state in netlist order); > 1 024 unknowns → new issue `too-large` ("too big to solve yet");
+  singular matrix → "The circuit around X1 … cannot be solved as drawn." naming the parts on the undetermined node
+  or branch; results are plain data (nets with name, voltage, pins; parts with V / I / P readouts), −0 → 0, all
+  finite. Ratings: a part above its `powerRating` gets the over-limit warning ("R1 is beyond its rating: 810 mW
+  of 250 mW.").
+- Step 4 — `circuit/dc.test.ts`: 22 textbook circuits within 0.1 % of hand results (Ohm, divider, series,
+  parallel, series–parallel, balanced and unbalanced Wheatstone, current source, current divider, superposition,
+  nodal two-source, Thévenin, Norton, ladder, two-source mesh with a charging source, resistor power + rating
+  warning, SPICE source sign, switch closed / open, potentiometer unloaded / loaded, negative supply, 1 MΩ / 1 Ω),
+  plus no ground, source loop, stranded current source, invalid value, broken drawing, empty circuit, a forced
+  singular matrix (plain message, never NaN) and 300 resistors in < 1 s. The test solver of Day 14 stays for
+  device tests. 776 unit.
+- Step 5 — analysis worker (`apps/web/src/sim/analysis-worker.ts`, Comlink, same origin): `solveDc(seq, input)`
+  → `solveCircuitDc` (input re-validated by the circuit schema inside `buildNetlist`). Client
+  (`analysis-client.ts`): sequence numbers, only the newest answer is delivered; > 2 s → worker terminated, new
+  issue `timeout` ("took longer than 2 s and was stopped"), next request starts a fresh worker; a crash becomes a
+  `model-error` issue; dispose drops answers on the way (4 unit tests with a fake worker). `DcAnalysis` (mounted
+  with the active project) solves 60 ms after parts / wires / labels change (renames do not re-solve) and keeps the
+  answer in a small store (`useDcResults`).
+- Step 6 — results in the studio (`dc-overlay.tsx`): a voltage tag per net (new `--schematic-voltage` blue, on the
+  net's longest wire segment, else beside a pin; ground skipped; hidden while dragging and when too small to read);
+  parts named by an error get a red dashed halo, over-rating parts an amber one; DC chip bottom-left ("DC · solved"
+  / "DC · 2 warnings" / "DC · cannot solve") opens the problem list with hints, a click selects the parts.
+  Inspector: the part's Voltage / Current / Power live (4 digits), a wire's net voltage, "Not solved: see the
+  problems" when it cannot be solved. Problems go to the Console once the drawing has been still for 1.5 s, each
+  only once. **View → Show DC results** (+ command palette), remembered. 780 unit, 114 e2e (new `dc.spec.ts`:
+  divider solved live and follows edits, no ground → reason + undo, overload → amber halos, View switch).
+- Step 7 — User Manual 8.9 "Live DC results" (tags, Inspector rows, DC chip, SPICE signs, warnings and problems with
+  what to do, switch / potentiometer notes, View switch) with 3 new screenshots; all 31 screenshots re-captured, PDF
+  rebuilt; every picture ≤ 120 mm. Every quoted message checked against the code. Owner rule (2026-11-26): from
+  Day 16 each prompt does half a Day (Steps 1–4, then 5–8) with a detailed, verified manual test (CLAUDE.md updated).
+- Step 8 — DEVLOG entry; 780 unit, 114 e2e, `pnpm audit` clean; merge after the owner’s final test.
+- Owner final test, section 2 (screenshots): values correct. Fixed two things it showed: (1) a source showed
+  "Voltage" twice (setting and result) → live results now sit under their own heading "DC operating point · live"
+  at the end of the part section; (2) an old warning stayed in the status bar after the circuit was fixed → the
+  Console now says "Circuit solved: all problems fixed.", and problems are written least important first so the
+  status bar shows the most important one (caught by e2e). Manual 8.9 and screenshots updated.
+- Owner final test, sections 3–7 passed. Two polish fixes: the Console now logs problems as ERROR and warnings
+  as WARN (it used WARN / INFO, unlike the DC chip), and the Inspector's "Not solved" text is short enough to
+  fit. Sections 8–9 passed; fixed what they showed: (1) when an error was fixed but an already-reported warning
+  stayed, the status bar kept the old error → now writes "Circuit solved with 1 warning: …" (new e2e, fails on the
+  old code); (2) "Wiper voltage (to pin 2)" and "Not solved (see…)" were cut off → "Wiper (to 2)", "Not solved".
+  780 unit, 115 e2e. Sections 10–14 still to test.
+
 
 ## Day 14 steps
 | Step | Task | State |

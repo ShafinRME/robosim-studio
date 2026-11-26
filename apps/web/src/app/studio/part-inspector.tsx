@@ -19,6 +19,7 @@ import {
   netNameOf,
   parseQuantity,
   projectEdits,
+  type DcResult,
   type NetLabel,
   type Part,
   type PartDefinition,
@@ -39,6 +40,7 @@ import { Switch } from "@robosim/ui/components/switch";
 import { InspectorRow, InspectorSection, InspectorValue } from "@robosim/ui/components/inspector";
 import { useMemo, useState } from "react";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
+import { useDcResults } from "./dc-results";
 import { useStudioStatus } from "./studio-status";
 
 /** A text field that commits on Enter / blur and restores on Esc. */
@@ -195,6 +197,45 @@ function PropertyRows({
   );
 }
 
+/** The part's DC operating point (ADR 011): its voltage, current and power, live. */
+function DcRows({ result, partId }: { result: DcResult; partId: string }) {
+  // Its own heading, so a result ("Voltage 5 V") is never mistaken for a setting of the same name.
+  const heading = (
+    <div
+      role="heading"
+      aria-level={4}
+      className="mt-1.5 flex items-center gap-2 border-t pt-2 font-mono text-2xs font-semibold tracking-[0.12em] text-faint-foreground uppercase"
+    >
+      DC operating point
+      <span className="font-normal tracking-normal normal-case">· live</span>
+    </div>
+  );
+  if (!result.ok) {
+    return (
+      <>
+        {heading}
+        <InspectorRow label="Result">
+          <InspectorValue tone="muted">Not solved</InspectorValue>
+        </InspectorRow>
+      </>
+    );
+  }
+  const readouts = result.parts.find((p) => p.id === partId)?.readouts ?? [];
+  if (readouts.length === 0) return null; // ground has no results of its own
+  return (
+    <>
+      {heading}
+      {readouts.map((r) => (
+        <InspectorRow key={r.key} label={r.label} hint="DC operating point (live)">
+          <InspectorValue>
+            <span data-readout={r.key}>{formatQuantity(r.value, r.quantity, 4)}</span>
+          </InspectorValue>
+        </InspectorRow>
+      ))}
+    </>
+  );
+}
+
 function orientation(part: Part): string {
   return `${part.rotation}°${part.flip ? " · mirrored" : ""}`;
 }
@@ -256,7 +297,9 @@ export function PartInspector({
   selectedIds: readonly string[];
 }) {
   const { post } = useStudioStatus();
-  const { lengthUnit } = useSchematicPrefs();
+  const { lengthUnit, showDcResults } = useSchematicPrefs();
+  const dc = useDcResults(store.getState().project.id);
+  const dcResult = showDcResults ? dc.result : null;
   const selected = parts.filter((p) => selectedIds.includes(p.id));
   const selectedWires = wires.filter((w) => selectedIds.includes(w.id));
   const selectedLabels = labels.filter((l) => selectedIds.includes(l.id));
@@ -329,6 +372,17 @@ export function PartInspector({
             {(wireNet?.pins.length ?? 0) > 8 ? " …" : ""}
           </InspectorValue>
         </InspectorRow>
+        {dcResult?.ok && wireNet?.name ? (
+          <InspectorRow label="Voltage">
+            <InspectorValue>
+              {formatQuantity(
+                dcResult.nets.find((n) => n.name === wireNet.name)?.voltage ?? Number.NaN,
+                "voltage",
+                4,
+              )}
+            </InspectorValue>
+          </InspectorRow>
+        ) : null}
         <InspectorRow label="Length">
           <InspectorValue tone="muted">
             {formatLength(wireLength(loneWire), lengthUnit)}
@@ -431,6 +485,7 @@ export function PartInspector({
       <InspectorRow label="Orientation">
         <InspectorValue tone="muted">{orientation(part)}</InspectorValue>
       </InspectorRow>
+      {dcResult ? <DcRows result={dcResult} partId={part.id} /> : null}
     </InspectorSection>
   );
 }

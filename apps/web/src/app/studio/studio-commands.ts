@@ -3,7 +3,7 @@
 import { createCommandRegistry, type Command, type CommandRegistry } from "@robosim/core";
 import { useEffect, useRef, useState } from "react";
 import { ISSUES_URL, REPO_URL } from "../../lib/links";
-import { setSchematicPrefs } from "../../lib/schematic-prefs";
+import { getSchematicPrefs, setSchematicPrefs } from "../../lib/schematic-prefs";
 import type { SimController } from "./studio-simulation";
 import { STUDIO_PANELS, type StudioPanelId } from "./studio-workspace";
 
@@ -200,6 +200,13 @@ function studioCommands(ctx: () => StudioCommandContext): Command[] {
       category: "View",
       keywords: ["schematic", "imperial", "inch", "mil", "position"],
       run: () => setSchematicPrefs({ lengthUnit: "in" }),
+    },
+    {
+      id: "view.dcResults",
+      title: "Show DC results (voltages and currents)",
+      category: "View",
+      keywords: ["simulation", "voltage", "current", "operating point", "dc", "probe", "values"],
+      run: () => setSchematicPrefs({ showDcResults: !getSchematicPrefs().showDcResults }),
     },
     {
       id: "view.theme.dark",

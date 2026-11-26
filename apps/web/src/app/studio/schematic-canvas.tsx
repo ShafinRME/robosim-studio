@@ -109,6 +109,8 @@ import {
   setPlaceHandler,
 } from "./part-placement";
 import { rememberPart } from "./recent-parts";
+import { DcStatus, NetVoltages, problemParts, voltageTags } from "./dc-overlay";
+import { useDcResults } from "./dc-results";
 import { setSelection, useSelection } from "./schematic-selection";
 import { SimReadout } from "./sim-controls";
 import { useActiveProject } from "./studio-project";
@@ -201,12 +203,15 @@ const PartView = memo(function PartView({
   showLabels,
   selected,
   connectedPins,
+  problem,
 }: {
   part: Part;
   style: SymbolStyle;
   showLabels: boolean;
   selected: boolean;
   connectedPins: string;
+  /** The DC check names this part in an error (red) or a rating warning (amber). */
+  problem?: "error" | "warning" | undefined;
 }) {
   const symbol = symbolFor(part.type);
   const b = partBounds(part);
@@ -214,6 +219,7 @@ const PartView = memo(function PartView({
     <g
       data-part={part.id}
       data-selected={selected || undefined}
+      data-problem={problem}
       className="schematic-part"
       style={selected ? ({ "--schematic-ink": "var(--brand)" } as CSSProperties) : undefined}
     >
@@ -225,6 +231,21 @@ const PartView = memo(function PartView({
         height={b.maxY - b.minY + 40}
         fill="transparent"
       />
+      {problem ? (
+        <rect
+          x={b.minX - 40}
+          y={b.minY - 40}
+          width={b.maxX - b.minX + 80}
+          height={b.maxY - b.minY + 80}
+          rx={16}
+          strokeDasharray="24 14"
+          style={{
+            fill: "none",
+            stroke: problem === "error" ? "var(--danger)" : "var(--warning)",
+            strokeWidth: "var(--schematic-pin-stroke)",
+          }}
+        />
+      ) : null}
       {selected ? (
         <rect
           x={b.minX - 30}
@@ -269,6 +290,7 @@ const PartsLayer = memo(function PartsLayer({
   selected,
   moveLayer,
   connected,
+  problems,
 }: {
   parts: readonly Part[];
   style: SymbolStyle;
@@ -277,6 +299,7 @@ const PartsLayer = memo(function PartsLayer({
   moveLayer: RefObject<SVGGElement | null>;
   /** Connected pin ids per part id ("1,2"). */
   connected: ReadonlyMap<string, string>;
+  problems: ReadonlyMap<string, "error" | "warning">;
 }) {
   const view = (part: Part, isSelected: boolean) => (
     <PartView
@@ -286,6 +309,7 @@ const PartsLayer = memo(function PartsLayer({
       showLabels={showLabels}
       selected={isSelected}
       connectedPins={connected.get(part.id) ?? ""}
+      problem={problems.get(part.id)}
     />
   );
   return (
@@ -627,7 +651,7 @@ export function SchematicCanvas() {
   const { store, state } = useActiveProject();
   const parts = state?.project.parts;
   const projectId = state?.project.id ?? null;
-  const { symbolStyle } = useSchematicPrefs();
+  const { symbolStyle, showDcResults } = useSchematicPrefs();
   const { lowEnd, post } = useStudioStatus();
   const setCursorNow = useSetCanvasCursor();
   // Report the pointer only when its grid position changes (the status bar shows grid steps).
@@ -781,6 +805,19 @@ export function SchematicCanvas() {
     [parts, selection],
   );
   const select = useCallback((ids: readonly string[]) => setSelection(projectId, ids), [projectId]);
+  // Live DC results (ADR 011): tags on nets, halos on parts with problems.
+  const dc = useDcResults(projectId);
+  const problems = useMemo(
+    () => (showDcResults ? problemParts(dc.result) : new Map<string, "error" | "warning">()),
+    [dc.result, showDcResults],
+  );
+  const tags = useMemo(
+    () =>
+      showDcResults && dc.result && parts && wires
+        ? voltageTags(dc.result, connectivity, wires, parts)
+        : [],
+    [showDcResults, dc.result, connectivity, wires, parts],
+  );
 
   // Track the panel size.
   useEffect(() => {
@@ -1335,6 +1372,8 @@ export function SchematicCanvas() {
   const drawViewport = viewport ? panBy(viewport, margin, margin) : null;
   const drawSize = { width: size.width + 2 * margin, height: size.height + 2 * margin };
   const showLabels = DESIGNATOR_SIZE * scale >= 6;
+  // Voltage tags hide while dragging (they would show the old values) and when too small to read.
+  const showVoltages = showDcResults && !dragOffset && showLabels && !!dc.result?.ok;
   const count = parts?.length ?? 0;
   const ghostSymbol = tool.kind === "place" ? symbolFor(tool.type) : undefined;
   const placingLabel = tool.kind === "place" ? (partFor(tool.type)?.name ?? tool.type) : null;
@@ -1493,9 +1532,11 @@ export function SchematicCanvas() {
                 selected={selection}
                 moveLayer={moveLayer}
                 connected={connectedByPart}
+                problems={problems}
               />
             ) : null}
             {shownLabels ? <LabelsLayer labels={shownLabels} selected={selection} /> : null}
+            {showVoltages ? <NetVoltages tags={tags} /> : null}
             {tool.kind === "label" && !tool.naming && ghost ? (
               <g opacity={0.7} data-testid="label-ghost" style={{ pointerEvents: "none" }}>
                 <NetLabelShape
@@ -1697,6 +1738,17 @@ export function SchematicCanvas() {
             <Maximize />
           </ToolbarButton>
         </Toolbar>
+      ) : null}
+      {store && showDcResults ? (
+        <DcStatus
+          result={dc.result}
+          solving={dc.solving}
+          onSelectParts={(ids) => {
+            setTool({ kind: "select" });
+            select(ids);
+            ref.current?.focus({ preventScroll: true });
+          }}
+        />
       ) : null}
       <SimReadout />
     </div>

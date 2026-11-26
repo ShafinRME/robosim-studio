@@ -101,7 +101,7 @@ export default definePart({
             { key: "voltage", label: "Voltage (1 → 2)", quantity: "voltage", value: va - vb },
             {
               key: "wiper",
-              label: "Wiper voltage (to pin 2)",
+              label: "Wiper (to 2)",
               quantity: "voltage",
               value: vw - vb,
             },

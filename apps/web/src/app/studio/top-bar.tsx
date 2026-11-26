@@ -54,7 +54,7 @@ export function TopBar({
   /** Display keys per command id, for menu hints. */
   keysById: Readonly<Record<string, readonly string[]>>;
 }) {
-  const { symbolStyle, lengthUnit } = useSchematicPrefs();
+  const { symbolStyle, lengthUnit, showDcResults } = useSchematicPrefs();
   const hint = (id: string) => {
     const keys = keysById[id];
     return keys ? <MenubarHint>{keys.join("+")}</MenubarHint> : null;
@@ -149,6 +149,12 @@ export function TopBar({
               onCheckedChange={() => run("view.units.in")}
             >
               Units: inches
+            </MenubarCheckboxItem>
+            <MenubarCheckboxItem
+              checked={showDcResults}
+              onCheckedChange={() => run("view.dcResults")}
+            >
+              Show DC results
             </MenubarCheckboxItem>
             <MenubarSeparator />
             <MenubarItem onSelect={() => run("view.resetLayout")}>

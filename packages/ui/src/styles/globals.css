@@ -34,6 +34,7 @@
   --schematic-origin: oklch(0.22 0.02 255 / 35%);
   --schematic-wire: oklch(0.5 0.13 155);
   --schematic-label: oklch(0.48 0.17 290);
+  --schematic-voltage: oklch(0.5 0.15 250);
 
   /* Text */
   --foreground: oklch(0.21 0.02 255);
@@ -114,6 +115,7 @@
   --schematic-origin: oklch(1 0 0 / 30%);
   --schematic-wire: oklch(0.78 0.15 152);
   --schematic-label: oklch(0.8 0.12 290);
+  --schematic-voltage: oklch(0.8 0.11 235);
 
   --foreground: oklch(0.95 0.006 255);
   --muted-foreground: oklch(0.72 0.015 255);
