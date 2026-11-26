@@ -1,6 +1,6 @@
 # Status
 
-**Current:** Day 15 · Step 4/8 done — DC solver (Phase 1 · Circuit Lab)
+**Current:** Day 15 · Step 6/8 done — DC solver (Phase 1 · Circuit Lab)
 **Branch:** `feat/day-15-dc-solver` (from `develop` after Day 14 merge `841fe77`)
 **Session:** Days 11–15 – Circuit Lab foundations
 **Updated:** 2026-11-26
@@ -12,9 +12,9 @@
 | 2/8 | LU solver with scaled partial pivoting + singular check; unit tests | ✅ done |
 | 3/8 | DC operating point: netlist → checks → stamps → solve → V / I / P per part | ✅ done |
 | 4/8 | 20 textbook DC circuits as tests (hand results, < 0.1 %) | ✅ done (22) |
-| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ⏳ next |
-| 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ⬜ |
-| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ⬜ |
+| 5/8 | Analysis Web Worker: validated messages, latest result wins, timeout | ✅ done |
+| 6/8 | Studio: net voltages on the schematic, V / I / P in the Inspector, problems in the Console | ✅ done |
+| 7/8 | e2e + unit; User Manual (DC results), screenshots, `pnpm manual` | ⏳ next |
 | 8/8 | Owner review → DEVLOG, squash-merge; instructions for the next session (Days 16–20) | ⬜ |
 
 ## Decisions (Day 15)
@@ -45,6 +45,21 @@
   plus no ground, source loop, stranded current source, invalid value, broken drawing, empty circuit, a forced
   singular matrix (plain message, never NaN) and 300 resistors in < 1 s. The test solver of Day 14 stays for
   device tests. 776 unit.
+- Step 5 — analysis worker (`apps/web/src/sim/analysis-worker.ts`, Comlink, same origin): `solveDc(seq, input)`
+  → `solveCircuitDc` (input re-validated by the circuit schema inside `buildNetlist`). Client
+  (`analysis-client.ts`): sequence numbers, only the newest answer is delivered; > 2 s → worker terminated, new
+  issue `timeout` ("took longer than 2 s and was stopped"), next request starts a fresh worker; a crash becomes a
+  `model-error` issue; dispose drops answers on the way (4 unit tests with a fake worker). `DcAnalysis` (mounted
+  with the active project) solves 60 ms after parts / wires / labels change (renames do not re-solve) and keeps the
+  answer in a small store (`useDcResults`).
+- Step 6 — results in the studio (`dc-overlay.tsx`): a voltage tag per net (new `--schematic-voltage` blue, on the
+  net's longest wire segment, else beside a pin; ground skipped; hidden while dragging and when too small to read);
+  parts named by an error get a red dashed halo, over-rating parts an amber one; DC chip bottom-left ("DC · solved"
+  / "DC · 2 warnings" / "DC · cannot solve") opens the problem list with hints, a click selects the parts.
+  Inspector: the part's Voltage / Current / Power live (4 digits), a wire's net voltage, "Not solved: see the
+  problems" when it cannot be solved. Problems go to the Console once the drawing has been still for 1.5 s, each
+  only once. **View → Show DC results** (+ command palette), remembered. 780 unit, 114 e2e (new `dc.spec.ts`:
+  divider solved live and follows edits, no ground → reason + undo, overload → amber halos, View switch).
 
 
 ## Day 14 steps

@@ -10,9 +10,18 @@ import { useSyncExternalStore } from "react";
 
 export const SCHEMATIC_PREFS_KEY = "robosim-schematic";
 
-export type SchematicPrefs = { symbolStyle: SymbolStyle; lengthUnit: LengthUnit };
+export type SchematicPrefs = {
+  symbolStyle: SymbolStyle;
+  lengthUnit: LengthUnit;
+  /** Live DC voltages on the schematic and V / I / P in the Inspector (ADR 011). */
+  showDcResults: boolean;
+};
 
-export const DEFAULT_SCHEMATIC_PREFS: SchematicPrefs = { symbolStyle: "iec", lengthUnit: "mm" };
+export const DEFAULT_SCHEMATIC_PREFS: SchematicPrefs = {
+  symbolStyle: "iec",
+  lengthUnit: "mm",
+  showDcResults: true,
+};
 
 /** Reads stored prefs; anything unexpected falls back to the default for that field. */
 export function parseSchematicPrefs(text: string | null): SchematicPrefs {
@@ -33,6 +42,10 @@ export function parseSchematicPrefs(text: string | null): SchematicPrefs {
       record.lengthUnit === "in" || record.lengthUnit === "mm"
         ? record.lengthUnit
         : DEFAULT_SCHEMATIC_PREFS.lengthUnit,
+    showDcResults:
+      typeof record.showDcResults === "boolean"
+        ? record.showDcResults
+        : DEFAULT_SCHEMATIC_PREFS.showDcResults,
   };
 }
 
@@ -47,6 +60,11 @@ function read(): SchematicPrefs {
     current = DEFAULT_SCHEMATIC_PREFS;
   }
   return current;
+}
+
+/** Current prefs outside React (commands). */
+export function getSchematicPrefs(): SchematicPrefs {
+  return read();
 }
 
 export function setSchematicPrefs(change: Partial<SchematicPrefs>): void {

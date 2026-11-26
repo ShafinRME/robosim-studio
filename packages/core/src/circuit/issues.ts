@@ -32,6 +32,7 @@ export const ISSUE_CODES = [
   "erc-conflict",
   "empty-circuit",
   "too-large",
+  "timeout",
 ] as const;
 export type IssueCode = (typeof ISSUE_CODES)[number];
 export type IssueSeverity = "error" | "warning" | "info";
@@ -52,6 +53,7 @@ export const ISSUE_SEVERITY: Readonly<Record<IssueCode, IssueSeverity>> = {
   "erc-conflict": "warning",
   "empty-circuit": "info",
   "too-large": "error",
+  timeout: "error",
 };
 
 export interface CircuitIssue {
@@ -160,6 +162,12 @@ export const solverIssues = {
       "too-large",
       `This circuit is too big to solve yet (${unknowns} unknowns, at most ${max}).`,
       "Split it into smaller circuits; larger circuits are supported in a later version.",
+    ),
+  timedOut: (seconds: number) =>
+    issue(
+      "timeout",
+      `The calculation took longer than ${seconds} s and was stopped.`,
+      "Try a smaller circuit or fewer extreme values; your drawing is not changed.",
     ),
   overLimit: (designator: string, what: string, partId: string) =>
     issue(

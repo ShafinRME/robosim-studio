@@ -19,6 +19,7 @@ import {
   netNameOf,
   parseQuantity,
   projectEdits,
+  type DcResult,
   type NetLabel,
   type Part,
   type PartDefinition,
@@ -39,6 +40,7 @@ import { Switch } from "@robosim/ui/components/switch";
 import { InspectorRow, InspectorSection, InspectorValue } from "@robosim/ui/components/inspector";
 import { useMemo, useState } from "react";
 import { useSchematicPrefs } from "../../lib/schematic-prefs";
+import { useDcResults } from "./dc-results";
 import { useStudioStatus } from "./studio-status";
 
 /** A text field that commits on Enter / blur and restores on Esc. */
@@ -195,6 +197,29 @@ function PropertyRows({
   );
 }
 
+/** The part's DC operating point (ADR 011): its voltage, current and power, live. */
+function DcRows({ result, partId }: { result: DcResult; partId: string }) {
+  if (!result.ok) {
+    return (
+      <InspectorRow label="DC">
+        <InspectorValue tone="muted">Not solved: see the problems on the canvas</InspectorValue>
+      </InspectorRow>
+    );
+  }
+  const readouts = result.parts.find((p) => p.id === partId)?.readouts ?? [];
+  return (
+    <>
+      {readouts.map((r) => (
+        <InspectorRow key={r.key} label={r.label} hint="DC operating point (live)">
+          <InspectorValue>
+            <span data-readout={r.key}>{formatQuantity(r.value, r.quantity, 4)}</span>
+          </InspectorValue>
+        </InspectorRow>
+      ))}
+    </>
+  );
+}
+
 function orientation(part: Part): string {
   return `${part.rotation}°${part.flip ? " · mirrored" : ""}`;
 }
@@ -256,7 +281,9 @@ export function PartInspector({
   selectedIds: readonly string[];
 }) {
   const { post } = useStudioStatus();
-  const { lengthUnit } = useSchematicPrefs();
+  const { lengthUnit, showDcResults } = useSchematicPrefs();
+  const dc = useDcResults(store.getState().project.id);
+  const dcResult = showDcResults ? dc.result : null;
   const selected = parts.filter((p) => selectedIds.includes(p.id));
   const selectedWires = wires.filter((w) => selectedIds.includes(w.id));
   const selectedLabels = labels.filter((l) => selectedIds.includes(l.id));
@@ -329,6 +356,17 @@ export function PartInspector({
             {(wireNet?.pins.length ?? 0) > 8 ? " …" : ""}
           </InspectorValue>
         </InspectorRow>
+        {dcResult?.ok && wireNet?.name ? (
+          <InspectorRow label="Voltage">
+            <InspectorValue>
+              {formatQuantity(
+                dcResult.nets.find((n) => n.name === wireNet.name)?.voltage ?? Number.NaN,
+                "voltage",
+                4,
+              )}
+            </InspectorValue>
+          </InspectorRow>
+        ) : null}
         <InspectorRow label="Length">
           <InspectorValue tone="muted">
             {formatLength(wireLength(loneWire), lengthUnit)}
@@ -422,6 +460,7 @@ export function PartInspector({
         <InspectorValue tone="muted">{definition?.name ?? part.type}</InspectorValue>
       </InspectorRow>
       {definition ? <PropertyRows parts={[part]} definition={definition} apply={apply} /> : null}
+      {dcResult ? <DcRows result={dcResult} partId={part.id} /> : null}
       <InspectorRow label="Position">
         <InspectorValue tone="muted">
           {formatLength(part.x, lengthUnit).replace(/ (mm|in)$/, "")},{" "}
